@@ -20,6 +20,7 @@ import {
 import { ThemeProvider } from './context/ThemeContext.tsx';
 import { DEFAULT_COUNCIL_MEMBERS } from './data/councilMembers.ts';
 import { DEFAULT_ANNOUNCEMENTS } from './data/defaultAnnouncements.ts';
+import { Analytics } from '@vercel/analytics/react';
 
 // Public Components & Views
 import { Header } from './components/Header.tsx';
@@ -455,6 +456,7 @@ export default function App() {
       />
 
       </div>
+      <Analytics />
     </ThemeProvider>
   );
 }
