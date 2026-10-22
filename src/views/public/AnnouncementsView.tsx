@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Announcement, AnnouncementCategory } from '../../types/index.ts';
 import { Bell, Search, Pin, Calendar, User, ArrowRight, X } from 'lucide-react';
+import Reveal from '../../components/Reveal.jsx';
 
 interface AnnouncementsViewProps {
   announcements: Announcement[];
@@ -35,7 +36,7 @@ export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ announceme
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
       
       {/* Banner */}
-      <div className="bg-[#0F2C59] text-white rounded-2xl p-6 sm:p-10 border border-navy-800 shadow-md">
+      <Reveal className="bg-[#0F2C59] text-white rounded-2xl p-6 sm:p-10 border border-navy-800 shadow-md">
         <div className="max-w-3xl space-y-3">
           <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-400 bg-white/10 px-3 py-1 rounded-full">
             <Bell className="w-3.5 h-3.5" />
@@ -48,10 +49,10 @@ export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ announceme
             Read verified releases, scholarship payout schedules, youth assemblies, tournament brackets, and disaster preparedness advisories.
           </p>
         </div>
-      </div>
+      </Reveal>
 
       {/* Filter Bar */}
-      <div className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+      <Reveal className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
         <div className="relative">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
@@ -79,11 +80,14 @@ export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ announceme
             </button>
           ))}
         </div>
-      </div>
+      </Reveal>
 
       {/* Featured Main Announcement */}
       {featured && (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border-2 border-amber-400/60 dark:border-amber-500/50 p-6 sm:p-8 shadow-md relative overflow-hidden">
+        <Reveal className="bg-white dark:bg-slate-900 rounded-2xl border-2 border-amber-400/60 dark:border-amber-500/50 p-6 sm:p-8 shadow-md relative overflow-hidden">
+          {featured.coverImage && (
+            <img src={featured.coverImage} alt="" className="w-full max-h-[28rem] object-cover rounded-xl mb-5" />
+          )}
           <div className="flex items-center gap-2 text-xs font-bold text-amber-700 dark:text-amber-400 mb-2">
             <Pin className="w-4 h-4 fill-amber-500 text-amber-600 dark:text-amber-400" />
             <span>PINNED OFFICIAL ADVISORY · {featured.category}</span>
@@ -117,14 +121,15 @@ export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ announceme
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
-        </div>
+        </Reveal>
       )}
 
       {/* Announcements List Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {listAnnouncements.map((ann) => (
-          <div
+        {listAnnouncements.map((ann, index) => (
+          <Reveal
             key={ann.id}
+            delay={index * 100}
             className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between"
           >
             <div className="space-y-2">
@@ -149,7 +154,7 @@ export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ announceme
                 Read More →
               </button>
             </div>
-          </div>
+          </Reveal>
         ))}
       </div>
 

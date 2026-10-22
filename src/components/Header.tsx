@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PublicPage, UserRole } from '../types/index.ts';
+import { PublicPage } from '../types/index.ts';
 import { ThemeToggle } from './ThemeToggle.tsx';
 import { 
   Menu, 
@@ -12,23 +12,19 @@ import {
   Phone, 
   Layers, 
   Bell, 
-  ChevronRight,
-  User
+  ChevronRight
 } from 'lucide-react';
 
 interface HeaderProps {
   currentPage: PublicPage;
   onNavigate: (page: PublicPage) => void;
   onOpenApplyModal: () => void;
-  onSwitchToAdmin: () => void;
-  role: UserRole;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   currentPage,
   onNavigate,
   onOpenApplyModal,
-  onSwitchToAdmin,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -54,13 +50,12 @@ export const Header: React.FC<HeaderProps> = ({
             <span>City of Valenzuela</span>
           </div>
           <div className="flex items-center gap-4 text-slate-300">
-            <button 
-              onClick={onSwitchToAdmin}
-              className="text-amber-400 hover:text-amber-300 transition-colors font-medium flex items-center gap-1 cursor-pointer"
+            <a
+              href="/admin/login"
+              className="text-amber-400 hover:text-amber-300 transition-colors font-medium"
             >
-              <User className="w-3.5 h-3.5" />
-              <span>Admin Login</span>
-            </button>
+              Admin Login
+            </a>
             <span className="text-white/30">|</span>
             <ThemeToggle variant="header" className="p-1" />
           </div>
@@ -80,7 +75,7 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 p-0.5 flex items-center justify-center shadow-sm shrink-0">
               <div className="w-full h-full rounded-full bg-[#0F2C59] flex items-center justify-center font-bold text-amber-400 text-xs tracking-tighter" >
                 <img
-                  src="/src/assets/images/sklogo.png"
+                  src="/src/assets/images/skLogo.png"
                   alt="SK Bagbaguin Youth Assembly"
                 />
               </div>
@@ -173,16 +168,6 @@ export const Header: React.FC<HeaderProps> = ({
                 <ThemeToggle variant="header" />
               </div>
 
-              <button
-                onClick={() => {
-                  onSwitchToAdmin();
-                  setMobileMenuOpen(false);
-                }}
-                className="w-full py-2.5 px-3 bg-navy-800 hover:bg-navy-700 text-amber-400 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 border border-amber-400/30"
-              >
-                <ShieldCheck className="w-4 h-4" />
-                <span>Authorized SK Admin Portal</span>
-              </button>
             </div>
           </div>
         )}

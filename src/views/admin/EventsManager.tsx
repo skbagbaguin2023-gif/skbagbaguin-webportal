@@ -15,6 +15,7 @@ import {
   Edit,
   UserCheck
 } from 'lucide-react';
+import Reveal from '../../components/Reveal.jsx';
 
 interface EventsManagerProps {
   events: EventItem[];
@@ -124,7 +125,7 @@ export const EventsManager: React.FC<EventsManagerProps> = ({
     <div className="space-y-6">
       
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <Reveal className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-white">Events & Participant Management</h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">Plan youth seminars, tournaments, check-in attendees, and export rosters</p>
@@ -137,10 +138,10 @@ export const EventsManager: React.FC<EventsManagerProps> = ({
           <Plus className="w-4 h-4 text-amber-400" />
           <span>Create New Event</span>
         </button>
-      </div>
+      </Reveal>
 
       {/* Events Table */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
+      <Reveal className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
         <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
           <div className="relative w-72 text-xs">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -224,7 +225,7 @@ export const EventsManager: React.FC<EventsManagerProps> = ({
             </tbody>
           </table>
         </div>
-      </div>
+      </Reveal>
 
       {/* Roster & Participant Modal */}
       {activeEventRoster && (

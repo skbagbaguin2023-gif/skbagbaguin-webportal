@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CouncilMember } from '../../types/index.ts';
 import { Mail, Phone, Edit, Trash2, Plus, Save, X, Upload, GripVertical } from 'lucide-react';
+import Reveal from '../../components/Reveal.jsx';
 
 interface CouncilManagerProps {
   council: CouncilMember[];
@@ -134,7 +135,7 @@ export const CouncilManager: React.FC<CouncilManagerProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <Reveal className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-white">SK Council Directory</h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">Council profiles published on the public website</p>
@@ -147,10 +148,10 @@ export const CouncilManager: React.FC<CouncilManagerProps> = ({
           <Plus className="w-4 h-4 text-amber-400" />
           <span>Add Council Member</span>
         </button>
-      </div>
+      </Reveal>
 
       {isFormOpen && (
-        <form onSubmit={handleSave} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 space-y-4">
+        <Reveal as="form" onSubmit={handleSave} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-sm text-slate-900 dark:text-white">
               {editingId ? 'Edit Council Member' : 'New Council Member'}
@@ -240,7 +241,7 @@ export const CouncilManager: React.FC<CouncilManagerProps> = ({
               <Save className="w-4 h-4" /> {editingId ? 'Save Changes' : 'Validate & Publish'}
             </button>
           </div>
-        </form>
+        </Reveal>
       )}
 
       {council.length === 0 ? (
@@ -249,16 +250,17 @@ export const CouncilManager: React.FC<CouncilManagerProps> = ({
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {council.map((member) => (
-            <div
+          {council.map((member, index) => (
+            <Reveal
               key={member.id}
-              onDragOver={(event) => {
+              delay={index * 100}
+              onDragOver={(event: React.DragEvent<HTMLDivElement>) => {
                 event.preventDefault();
                 event.dataTransfer.dropEffect = 'move';
                 setDropTargetId(member.id);
               }}
               onDragLeave={() => setDropTargetId(null)}
-              onDrop={(event) => {
+              onDrop={(event: React.DragEvent<HTMLDivElement>) => {
                 event.preventDefault();
                 const sourceId = event.dataTransfer.getData('text/plain');
                 if (sourceId) handleDrop(member.id, sourceId);
@@ -312,7 +314,7 @@ export const CouncilManager: React.FC<CouncilManagerProps> = ({
                   <button type="button" onClick={() => onDeleteCouncilMember(member.id)} className="px-2.5 py-1.5 border border-rose-300 text-rose-700 dark:text-rose-300 dark:border-rose-900 rounded-md flex items-center gap-1 cursor-pointer"><Trash2 className="w-3.5 h-3.5" /> Delete</button>
                 </div>
               </div>
-            </div>
+            </Reveal>
           ))}
         </div>
       )}

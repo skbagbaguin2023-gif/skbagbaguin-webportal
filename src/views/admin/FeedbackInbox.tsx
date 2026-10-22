@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   Check
 } from 'lucide-react';
+import Reveal from '../../components/Reveal.jsx';
 
 interface FeedbackInboxProps {
   feedbacks: FeedbackSuggestion[];
@@ -69,7 +70,7 @@ export const FeedbackInbox: React.FC<FeedbackInboxProps> = ({
     <div className="space-y-6">
       
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <Reveal className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-white">Youth Concerns & Feedback Inbox</h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -85,10 +86,10 @@ export const FeedbackInbox: React.FC<FeedbackInboxProps> = ({
             {feedbacks.filter((f) => f.status === 'Resolved').length} Resolved
           </span>
         </div>
-      </div>
+      </Reveal>
 
       {/* Main Inbox Split */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <Reveal className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
         {/* Left List (5 cols) */}
         <div className="lg:col-span-5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col h-[650px]">
@@ -251,7 +252,7 @@ export const FeedbackInbox: React.FC<FeedbackInboxProps> = ({
           </div>
         )}
 
-      </div>
+      </Reveal>
 
     </div>
   );

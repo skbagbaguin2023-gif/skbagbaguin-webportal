@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   FileSpreadsheet
 } from 'lucide-react';
+import Reveal from '../../components/Reveal.jsx';
 
 interface TransparencyViewProps {
   documents: TransparencyDoc[];
@@ -47,7 +48,7 @@ export const TransparencyView: React.FC<TransparencyViewProps> = ({
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
       
       {/* Banner */}
-      <div className="bg-[#0F2C59] text-white rounded-2xl p-6 sm:p-10 border border-navy-800 shadow-md">
+      <Reveal className="bg-[#0F2C59] text-white rounded-2xl p-6 sm:p-10 border border-navy-800 shadow-md">
         <div className="max-w-3xl space-y-3">
           <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-400 bg-white/10 px-3 py-1 rounded-full">
             <ShieldCheck className="w-3.5 h-3.5" />
@@ -60,10 +61,10 @@ export const TransparencyView: React.FC<TransparencyViewProps> = ({
             Every peso of the 10% Sangguniang Kabataan Fund belongs to the youth. Inspect our Annual Investment Plans, Commission on Audit reports, disbursement summaries, and legislative resolutions.
           </p>
         </div>
-      </div>
+      </Reveal>
 
       {/* Compliance Highlights */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <Reveal className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs flex items-start gap-3">
           <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400">
             <CheckCircle2 className="w-5 h-5" />
@@ -93,10 +94,10 @@ export const TransparencyView: React.FC<TransparencyViewProps> = ({
             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Official documents available for citizen review with zero redactions on budgets.</p>
           </div>
         </div>
-      </div>
+      </Reveal>
 
       {/* Filter and Search */}
-      <div className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+      <Reveal className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
           <div className="relative flex-1">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -141,13 +142,14 @@ export const TransparencyView: React.FC<TransparencyViewProps> = ({
             </button>
           ))}
         </div>
-      </div>
+      </Reveal>
 
       {/* Documents List */}
       <div className="space-y-3">
-        {filtered.map((doc) => (
-          <div
+        {filtered.map((doc, index) => (
+          <Reveal
             key={doc.id}
+            delay={index * 100}
             className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 shadow-xs hover:shadow-md transition-shadow flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
           >
             <div className="flex items-start gap-3.5">
@@ -198,7 +200,7 @@ export const TransparencyView: React.FC<TransparencyViewProps> = ({
                 <span>Download</span>
               </button>
             </div>
-          </div>
+          </Reveal>
         ))}
       </div>
 

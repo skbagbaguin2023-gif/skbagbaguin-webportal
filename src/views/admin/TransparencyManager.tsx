@@ -12,6 +12,7 @@ import {
   CheckCircle2, 
   ShieldCheck 
 } from 'lucide-react';
+import Reveal from '../../components/Reveal.jsx';
 
 interface TransparencyManagerProps {
   documents: TransparencyDoc[];
@@ -84,7 +85,7 @@ export const TransparencyManager: React.FC<TransparencyManagerProps> = ({
     <div className="space-y-6">
       
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <Reveal className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-white">Transparency & Financial Documents CMS</h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -99,10 +100,10 @@ export const TransparencyManager: React.FC<TransparencyManagerProps> = ({
           <Plus className="w-4 h-4 text-amber-400" />
           <span>Upload Official Report</span>
         </button>
-      </div>
+      </Reveal>
 
       {/* Drag & Drop Quick Upload Area */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 p-6 text-center space-y-2 hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors">
+      <Reveal className="bg-white dark:bg-slate-900 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 p-6 text-center space-y-2 hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors">
         <Upload className="w-10 h-10 text-slate-400 dark:text-slate-500 mx-auto" />
         <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200">Drag & Drop Audited Financial Reports</h3>
         <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
@@ -114,7 +115,7 @@ export const TransparencyManager: React.FC<TransparencyManagerProps> = ({
         >
           Select File to Upload
         </button>
-      </div>
+      </Reveal>
 
       {/* Documents Table */}
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">

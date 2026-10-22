@@ -4,10 +4,9 @@ import { ShieldCheck, MapPin, Mail, Phone, ExternalLink } from 'lucide-react';
 
 interface FooterProps {
   onNavigate: (page: PublicPage) => void;
-  onSwitchToAdmin: () => void;
 }
 
-export const Footer: React.FC<FooterProps> = ({ onNavigate, onSwitchToAdmin }) => {
+export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   return (
     <footer className="bg-[#081830] text-slate-300 pt-14 pb-8 border-t border-navy-800 text-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -136,13 +135,13 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onSwitchToAdmin }) =
                 </p>
               </div>
               <div className="pt-1">
-                <button
-                  onClick={onSwitchToAdmin}
-                  className="text-xs text-amber-400 hover:text-amber-300 font-medium inline-flex items-center gap-1.5 hover:underline"
+                <a
+                  href="/admin/login"
+                  className="text-[11px] text-slate-400 hover:text-amber-400 font-medium inline-flex items-center gap-1 hover:underline"
                 >
-                  <span>Authorized SK Council Admin Portal</span>
+                  <span>Admin</span>
                   <ExternalLink className="w-3 h-3" />
-                </button>
+                </a>
               </div>
             </div>
           </div>

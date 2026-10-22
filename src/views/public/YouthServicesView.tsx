@@ -12,6 +12,7 @@ import {
   Clock,
   Sparkles
 } from 'lucide-react';
+import Reveal from '../../components/Reveal.jsx';
 
 interface YouthServicesViewProps {
   onOpenApplyModal: (service?: ServiceType) => void;
@@ -84,7 +85,7 @@ export const YouthServicesView: React.FC<YouthServicesViewProps> = ({ onOpenAppl
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
       
       {/* Banner */}
-      <div className="bg-[#0F2C59] text-white rounded-2xl p-6 sm:p-10 border border-navy-800 shadow-md">
+      <Reveal className="bg-[#0F2C59] text-white rounded-2xl p-6 sm:p-10 border border-navy-800 shadow-md">
         <div className="max-w-3xl space-y-3">
           <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-400 bg-white/10 px-3 py-1 rounded-full">
             <Sparkles className="w-3.5 h-3.5" />
@@ -97,13 +98,14 @@ export const YouthServicesView: React.FC<YouthServicesViewProps> = ({ onOpenAppl
             Service descriptions will appear here after official information is added.
           </p>
         </div>
-      </div>
+      </Reveal>
 
       {/* Services List */}
       <div className="space-y-6">
         {services.map((svc, idx) => (
-          <div
+          <Reveal
             key={idx}
+            delay={idx * 100}
             className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-xs hover:shadow-md transition-shadow flex flex-col lg:flex-row items-start justify-between gap-8"
           >
             {/* Left Description */}
@@ -186,7 +188,7 @@ export const YouthServicesView: React.FC<YouthServicesViewProps> = ({ onOpenAppl
               </div>
             </div>
 
-          </div>
+          </Reveal>
         ))}
       </div>
 

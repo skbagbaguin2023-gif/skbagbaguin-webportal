@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   AlertCircle
 } from 'lucide-react';
+import Reveal from '../../components/Reveal.jsx';
 
 interface EventsViewProps {
   events: EventItem[];
@@ -38,7 +39,7 @@ export const EventsView: React.FC<EventsViewProps> = ({ events, onSelectEvent })
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
       
       {/* Banner */}
-      <div className="bg-[#0F2C59] text-white rounded-2xl p-6 sm:p-10 border border-navy-800 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      <Reveal className="bg-[#0F2C59] text-white rounded-2xl p-6 sm:p-10 border border-navy-800 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="max-w-2xl space-y-2">
           <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-400 bg-white/10 px-3 py-1 rounded-full">
             <Sparkles className="w-3.5 h-3.5" />
@@ -77,10 +78,10 @@ export const EventsView: React.FC<EventsViewProps> = ({ events, onSelectEvent })
             <span>Calendar View</span>
           </button>
         </div>
-      </div>
+      </Reveal>
 
       {/* Filter Row */}
-      <div className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+      <Reveal className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
           <div className="relative flex-1">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -123,12 +124,12 @@ export const EventsView: React.FC<EventsViewProps> = ({ events, onSelectEvent })
             </button>
           ))}
         </div>
-      </div>
+      </Reveal>
 
       {/* LIST VIEW */}
       {viewMode === 'list' && (
         <div className="space-y-4">
-          {filteredEvents.map((evt) => {
+          {filteredEvents.map((evt, index) => {
             const cap = calculateEventCapacity(evt.capacity, evt.registeredCount);
             const dateParts = evt.date.split('-');
             const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
@@ -136,8 +137,9 @@ export const EventsView: React.FC<EventsViewProps> = ({ events, onSelectEvent })
             const day = dateParts[2] || '28';
 
             return (
-              <div
+              <Reveal
                 key={evt.id}
+                delay={index * 100}
                 className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs hover:shadow-md transition-shadow flex flex-col md:flex-row items-start md:items-center justify-between gap-6"
               >
                 <div className="flex items-start gap-4">
@@ -210,7 +212,7 @@ export const EventsView: React.FC<EventsViewProps> = ({ events, onSelectEvent })
                     {cap.isFull ? 'Seats Full' : 'Register Now'}
                   </button>
                 </div>
-              </div>
+                </Reveal>
             );
           })}
         </div>
@@ -228,9 +230,10 @@ export const EventsView: React.FC<EventsViewProps> = ({ events, onSelectEvent })
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredEvents.map((evt) => (
-              <div
+            {filteredEvents.map((evt, index) => (
+              <Reveal
                 key={evt.id}
+                delay={index * 100}
                 onClick={() => onSelectEvent(evt)}
                 className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-[#0F2C59] dark:hover:border-amber-400 bg-slate-50/50 dark:bg-slate-800/40 hover:bg-white dark:hover:bg-slate-800 shadow-2xs hover:shadow-sm transition-all cursor-pointer space-y-2"
               >
@@ -248,7 +251,7 @@ export const EventsView: React.FC<EventsViewProps> = ({ events, onSelectEvent })
                   <span className="text-slate-400 dark:text-slate-500">{evt.time}</span>
                   <span className="text-[#0F2C59] dark:text-amber-400 font-bold">Register →</span>
                 </div>
-              </div>
+              </Reveal>
             ))}
           </div>
         </div>

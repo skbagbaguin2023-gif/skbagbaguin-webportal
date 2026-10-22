@@ -8,10 +8,10 @@ import {
   ShieldCheck, 
   CheckCircle2, 
   Clock, 
-  Navigation,
-  Building,
   AlertTriangle
 } from 'lucide-react';
+import Reveal from '../../components/Reveal.jsx';
+import LocationMap from '../../components/LocationMap.jsx';
 
 interface ContactViewProps {
   onSubmitFeedback: (item: FeedbackSuggestion) => void;
@@ -67,7 +67,7 @@ export const ContactView: React.FC<ContactViewProps> = ({ onSubmitFeedback }) =>
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
       
       {/* Banner */}
-      <div className="bg-[#0F2C59] text-white rounded-2xl p-6 sm:p-10 border border-navy-800 shadow-md">
+      <Reveal className="bg-[#0F2C59] text-white rounded-2xl p-6 sm:p-10 border border-navy-800 shadow-md">
         <div className="max-w-3xl space-y-3">
           <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-400 bg-white/10 px-3 py-1 rounded-full">
             <Phone className="w-3.5 h-3.5" />
@@ -80,28 +80,28 @@ export const ContactView: React.FC<ContactViewProps> = ({ onSubmitFeedback }) =>
             Reach out directly to Sangguniang Kabataan officers, submit community concerns, report facility issues, or visit our youth desk at the Barangay Hall.
           </p>
         </div>
-      </div>
+      </Reveal>
 
       {/* Contact Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
         {/* Address Card */}
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
+        <Reveal delay={0} className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
           <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center">
             <MapPin className="w-5 h-5" />
           </div>
           <h3 className="font-bold text-base text-slate-900 dark:text-white">Barangay Hall Desk</h3>
           <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-            Official office address has not been added yet.
+            1625 P. Jacinto, Valenzuela, 1448 Metro Manila
           </p>
           <div className="text-xs text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
             <span>Office hours have not been added yet.</span>
           </div>
-        </div>
+        </Reveal>
 
         {/* Emergency Hotlines */}
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
+        <Reveal delay={100} className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
           <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 flex items-center justify-center">
             <AlertTriangle className="w-5 h-5" />
           </div>
@@ -109,10 +109,10 @@ export const ContactView: React.FC<ContactViewProps> = ({ onSubmitFeedback }) =>
           <ul className="text-xs text-slate-600 dark:text-slate-300 space-y-1.5">
             <li>Official emergency contact details have not been added yet.</li>
           </ul>
-        </div>
+        </Reveal>
 
         {/* Email & Digital Inquiries */}
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
+        <Reveal delay={200} className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
           <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center">
             <Mail className="w-5 h-5" />
           </div>
@@ -120,7 +120,7 @@ export const ContactView: React.FC<ContactViewProps> = ({ onSubmitFeedback }) =>
           <div className="text-xs text-slate-600 dark:text-slate-300 space-y-1">
             <p>Official email and social media links have not been added yet.</p>
           </div>
-        </div>
+        </Reveal>
 
       </div>
 
@@ -128,30 +128,10 @@ export const ContactView: React.FC<ContactViewProps> = ({ onSubmitFeedback }) =>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
         
         {/* Interactive Map Visual */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-xs space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-bold text-base text-slate-900 dark:text-white">
-                Location Directory
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Official location details</p>
-            </div>
-            <span className="text-xs font-semibold text-[#0F2C59] dark:text-amber-400 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded">
-              Not added
-            </span>
-          </div>
-
-          <div className="min-h-56 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center text-sm text-slate-500 dark:text-slate-400">
-            Location information has not been added yet.
-          </div>
-
-          <div className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
-            Geographic scope information has not been added yet.
-          </div>
-        </div>
+        <LocationMap compact />
 
         {/* Public Feedback & Concern Form */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-xs">
+        <Reveal className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-xs">
           <div className="mb-5">
             <h3 className="font-bold text-lg text-slate-900 dark:text-white">
               Submit a Youth Suggestion or Concern
@@ -314,7 +294,7 @@ export const ContactView: React.FC<ContactViewProps> = ({ onSubmitFeedback }) =>
               </button>
             </div>
           )}
-        </div>
+        </Reveal>
 
       </div>
 

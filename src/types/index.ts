@@ -89,6 +89,7 @@ export interface Announcement {
   status: AnnouncementStatus;
   isPinned?: boolean;
   coverImage?: string;
+  sourcePostUrl?: string;
 }
 
 export type ServiceType = 

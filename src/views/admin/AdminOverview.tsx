@@ -19,6 +19,7 @@ import {
   ArrowUpRight,
   UserCheck
 } from 'lucide-react';
+import Reveal from '../../components/Reveal.jsx';
 import { aggregateAdminMetrics } from '../../utils/portalLogic.ts';
 
 interface AdminOverviewProps {
@@ -61,7 +62,7 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
     <div className="space-y-8">
       
       {/* Top Welcome & Quick Actions Strip */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+      <Reveal className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
         <div>
           <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider block">
             Executive Control Center · Sangguniang Kabataan
@@ -96,10 +97,10 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
             <span>Upload Report</span>
           </button>
         </div>
-      </div>
+      </Reveal>
 
       {/* 4 Primary Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <Reveal as="div" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         
         {/* Card 1: Announcements */}
         <div 
@@ -185,10 +186,10 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
           </div>
         </div>
 
-      </div>
+      </Reveal>
 
       {/* Interactive Data Visualizations */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <Reveal as="div" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Chart 1: Youth Services by Category */}
         <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
@@ -265,7 +266,7 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
           </div>
         </div>
 
-      </div>
+      </Reveal>
 
       {/* Recent Submissions Data Table */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">

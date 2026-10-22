@@ -12,6 +12,7 @@ import {
   CheckCircle,
   FileCheck
 } from 'lucide-react';
+import Reveal from '../../components/Reveal.jsx';
 
 interface AboutViewProps {
   council: CouncilMember[];
@@ -56,7 +57,7 @@ export const AboutView: React.FC<AboutViewProps> = ({ council }) => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-14">
       
       {/* 1. Header Banner */}
-      <div className="bg-[#0F2C59] text-white rounded-2xl p-8 sm:p-12 border border-navy-800 shadow-md">
+      <Reveal className="bg-[#0F2C59] text-white rounded-2xl p-8 sm:p-12 border border-navy-800 shadow-md">
         <div className="max-w-3xl space-y-4">
           <div className="inline-flex items-center gap-2 text-xs font-semibold text-amber-400 bg-white/10 px-3 py-1 rounded-full">
             <span>Republic Act No. 10742</span>
@@ -70,10 +71,10 @@ export const AboutView: React.FC<AboutViewProps> = ({ council }) => {
             Council information and official records will be published here when available.
           </p>
         </div>
-      </div>
+      </Reveal>
 
       {/* 2. Mission & Vision */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <Reveal className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
           <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center">
             <Award className="w-5 h-5" />
@@ -93,10 +94,10 @@ export const AboutView: React.FC<AboutViewProps> = ({ council }) => {
             Isang maunlad, nagkakaisa, at makakalikasang Barangay Bagbaguin kung saan ang bawat kabataan ay may boses sa pamamahala, may kakayahang magtagumpay sa pag-aaral at hanapbuhay, at aktibong katuwang sa kaunlaran ng Lungsod ng Valenzuela.
           </p>
         </div>
-      </div>
+      </Reveal>
 
       {/* 3. Core Pillars */}
-      <div className="space-y-6">
+      <Reveal className="space-y-6">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Limang Haligi ng Paglilingkod (Core Pillars)</h2>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Guided by the Comprehensive Barangay Youth Development Plan (CBYDP)</p>
@@ -104,7 +105,7 @@ export const AboutView: React.FC<AboutViewProps> = ({ council }) => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {pillars.map((pillar, i) => (
-            <div key={i} className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+            <Reveal key={i} delay={i * 100} className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between">
               <div>
                 <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 w-fit mb-3">
                   {pillar.icon}
@@ -116,13 +117,13 @@ export const AboutView: React.FC<AboutViewProps> = ({ council }) => {
                   {pillar.desc}
                 </p>
               </div>
-            </div>
+            </Reveal>
           ))}
         </div>
-      </div>
+      </Reveal>
 
       {/* 4. Organizational Chart & Council Directory */}
-      <div className="space-y-8">
+      <Reveal className="space-y-8">
         <div>
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white">SK Council Directory</h2>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">SK council officials</p>
@@ -163,8 +164,8 @@ export const AboutView: React.FC<AboutViewProps> = ({ council }) => {
         <div>
           <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-4">Mga Kagawad ng Sangguniang Kabataan (SK Councilors)</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {councilors.length === 0 ? <p className="sm:col-span-2 lg:col-span-3 xl:col-span-4 text-sm text-slate-500 dark:text-slate-400">Council profiles will appear here once added.</p> : councilors.map((c) => (
-              <div key={c.id} className="min-h-[320px] bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs flex flex-col items-center text-center">
+            {councilors.length === 0 ? <p className="sm:col-span-2 lg:col-span-3 xl:col-span-4 text-sm text-slate-500 dark:text-slate-400">Council profiles will appear here once added.</p> : councilors.map((c, index) => (
+              <Reveal key={c.id} delay={index * 100} className="min-h-[320px] bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs flex flex-col items-center text-center">
                 <div className="flex-1 w-full">
                   <div className="w-20 h-20 rounded-full mx-auto overflow-hidden bg-slate-100 dark:bg-slate-800 mb-4 border-2 border-slate-200 dark:border-slate-700">
                     {c.imageUrl ? (
@@ -182,7 +183,7 @@ export const AboutView: React.FC<AboutViewProps> = ({ council }) => {
                   {c.email && <div className="truncate">Email: {c.email}</div>}
                   {c.contact && <div>Contact: {c.contact}</div>}
                 </div>}
-              </div>
+              </Reveal>
             ))}
           </div>
         </div>
@@ -190,8 +191,8 @@ export const AboutView: React.FC<AboutViewProps> = ({ council }) => {
         <div>
           <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-4">Secretariat & Piskalya (Appointed Officers)</h3>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {officers.length === 0 ? <p className="text-sm text-slate-500 dark:text-slate-400">Appointed officers will appear here once added.</p> : officers.map((o) => (
-              <div key={o.id} className="min-h-32 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs flex items-center gap-4">
+            {officers.length === 0 ? <p className="text-sm text-slate-500 dark:text-slate-400">Appointed officers will appear here once added.</p> : officers.map((o, index) => (
+              <Reveal key={o.id} delay={index * 100} className="min-h-32 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs flex items-center gap-4">
                 <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0 border border-slate-200 dark:border-slate-700">
                   {o.imageUrl ? (
                     <img src={o.imageUrl} alt={o.name} className="w-full h-full object-cover" />
@@ -205,15 +206,15 @@ export const AboutView: React.FC<AboutViewProps> = ({ council }) => {
                   <p className="text-slate-500 dark:text-slate-400">{o.committee}</p>
                   {o.bio && <p className="text-slate-600 dark:text-slate-300 mt-1">{o.bio}</p>}
                 </div>
-              </div>
+              </Reveal>
             ))}
           </div>
         </div>
 
-      </div>
+      </Reveal>
 
       {/* 5. Youth Development Plan Overview */}
-      <div className="bg-slate-50 dark:bg-slate-900/60 rounded-2xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 space-y-4">
+      <Reveal className="bg-slate-50 dark:bg-slate-900/60 rounded-2xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 space-y-4">
         <div className="flex items-center gap-2">
           <FileCheck className="w-5 h-5 text-[#0F2C59] dark:text-amber-400" />
           <h2 className="text-xl font-bold text-slate-900 dark:text-white">
@@ -223,7 +224,7 @@ export const AboutView: React.FC<AboutViewProps> = ({ council }) => {
         <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
           Official youth development plan details have not been added yet.
         </p>
-      </div>
+      </Reveal>
 
     </div>
   );

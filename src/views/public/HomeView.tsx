@@ -25,6 +25,10 @@ import {
   Sparkles
 } from 'lucide-react';
 import { calculateEventCapacity } from '../../utils/portalLogic.ts';
+import Reveal from '../../components/Reveal.jsx';
+import HeroCarousel from '../../components/HeroCarousel.jsx';
+import Announcements from '../../components/Announcements.jsx';
+import LocationMap from '../../components/LocationMap.jsx';
 
 interface HomeViewProps {
   onNavigate: (page: PublicPage) => void;
@@ -49,7 +53,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
   announcements,
   council,
 }) => {
-  const featuredAnnouncements = announcements.slice(0, 3);
   const featuredPrograms = programs.slice(0, 3);
   const upcomingEvents = events.slice(0, 3);
   const councilPreview = council.slice(0, 4);
@@ -61,16 +64,11 @@ export const HomeView: React.FC<HomeViewProps> = ({
       <section className="relative bg-[#0F2C59] text-white overflow-hidden py-14 sm:py-20 lg:py-24 border-b border-navy-800">
         {/* Background Image Scrim */}
         <div className="absolute inset-0 z-0">
-          <img
-            src="/src/assets/images/homeImg1.jpg"
-            alt="SK Bagbaguin Youth Assembly"
-            className="w-full h-full object-cover opacity-20 filter saturate-120"
-            referrerPolicy="no-referrer"
-          />
+          <HeroCarousel />
           <div className="absolute inset-0 bg-gradient-to-r from-[#081830] via-[#0F2C59]/90 to-transparent" />
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <Reveal className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl space-y-6">
             
             {/* Tagline kicker */}
@@ -122,11 +120,13 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </div>
 
           </div>
-        </div>
+        </Reveal>
       </section>
 
+      <Announcements announcements={announcements} />
+
       {/* 2. QUICK ACCESS SERVICES GRID */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <Reveal as="section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-8">
           <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">
             Quick Access Youth Services
@@ -235,63 +235,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </button>
 
         </div>
-      </section>
-
-      {/* 3. FEATURED ANNOUNCEMENTS */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
-              Official Announcements & Advisories
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Latest official notices from the Sangguniang Kabataan Council</p>
-          </div>
-          <button
-            onClick={() => onNavigate('announcements')}
-            className="text-xs font-semibold text-[#0F2C59] dark:text-amber-400 hover:text-navy-800 dark:hover:text-amber-300 flex items-center gap-1 hover:underline cursor-pointer"
-          >
-            <span>View All Notices</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {featuredAnnouncements.length === 0 ? (
-            <p className="md:col-span-3 text-sm text-slate-500 dark:text-slate-400">No announcements have been added yet.</p>
-          ) : featuredAnnouncements.map((ann) => (
-            <div
-              key={ann.id}
-              className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between"
-            >
-              <div className="space-y-2.5">
-                <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                  <span className="font-semibold text-amber-600 dark:text-amber-400">{ann.category}</span>
-                  <span className="font-mono text-[11px]">{ann.date}</span>
-                </div>
-                <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white line-clamp-2 leading-snug">
-                  {ann.title}
-                </h3>
-                <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-3 leading-relaxed">
-                  {ann.excerpt}
-                </p>
-              </div>
-
-              <div className="pt-4 mt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                <span className="text-[11px] text-slate-400 dark:text-slate-500 truncate max-w-[170px]">{ann.author}</span>
-                <button
-                  onClick={() => onNavigate('announcements')}
-                  className="text-xs font-bold text-[#0F2C59] dark:text-amber-400 hover:text-amber-600 dark:hover:text-amber-300 transition-colors cursor-pointer"
-                >
-                  Read Advisory →
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+      </Reveal>
 
       {/* 4. FEATURED PROGRAMS & PROJECTS */}
-      <section className="bg-slate-100/70 dark:bg-slate-900/40 py-12 border-y border-slate-200 dark:border-slate-800">
+      <Reveal as="section" className="bg-slate-100/70 dark:bg-slate-900/40 py-12 border-y border-slate-200 dark:border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-8">
             <div>
@@ -312,9 +259,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {featuredPrograms.length === 0 ? (
               <p className="md:col-span-3 text-sm text-slate-500 dark:text-slate-400">No programs have been added yet.</p>
-            ) : featuredPrograms.map((prog) => (
-              <div
+            ) : featuredPrograms.map((prog, index) => (
+              <Reveal
                 key={prog.id}
+                delay={index * 100}
                 className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-xs hover:shadow-md transition-shadow flex flex-col"
               >
                 <div className="relative h-44 bg-slate-200 dark:bg-slate-800 overflow-hidden">
@@ -368,14 +316,14 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     </button>
                   </div>
                 </div>
-              </div>
+              </Reveal>
             ))}
           </div>
         </div>
-      </section>
+      </Reveal>
 
       {/* 5. UPCOMING EVENTS PREVIEW */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <Reveal as="section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
@@ -395,7 +343,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {upcomingEvents.length === 0 ? (
             <p className="md:col-span-3 text-sm text-slate-500 dark:text-slate-400">No events have been added yet.</p>
-          ) : upcomingEvents.map((evt) => {
+          ) : upcomingEvents.map((evt, index) => {
             const cap = calculateEventCapacity(evt.capacity, evt.registeredCount);
             const dateParts = evt.date.split('-');
             const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
@@ -403,8 +351,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
             const day = dateParts[2] || '28';
 
             return (
-              <div
+              <Reveal
                 key={evt.id}
+                delay={index * 100}
                 className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between"
               >
                 <div>
@@ -451,14 +400,14 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     Register Now
                   </button>
                 </div>
-              </div>
+              </Reveal>
             );
           })}
         </div>
-      </section>
+      </Reveal>
 
       {/* 6. COUNCIL ACHIEVEMENTS & IMPACT METRICS */}
-      <section className="bg-[#081830] dark:bg-[#061224] text-white py-14 border-y border-white/5">
+      <Reveal as="section" className="bg-[#081830] dark:bg-[#061224] text-white py-14 border-y border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-10">
             <span className="text-xs font-bold text-amber-400 uppercase tracking-widest">
@@ -506,10 +455,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </div>
           </div>
         </div>
-      </section>
+      </Reveal>
 
       {/* 7. MEET YOUR SK COUNCIL PREVIEW */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <Reveal as="section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
@@ -529,9 +478,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {councilPreview.length === 0 ? (
             <p className="sm:col-span-2 lg:col-span-4 text-sm text-slate-500 dark:text-slate-400">Council members have not been added yet.</p>
-          ) : councilPreview.map((cm) => (
-            <div
+          ) : councilPreview.map((cm, index) => (
+            <Reveal
               key={cm.id}
+              delay={index * 100}
               className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-xs hover:shadow-md transition-shadow text-center p-5"
             >
               <div className="w-20 h-20 rounded-full mx-auto overflow-hidden bg-slate-200 dark:bg-slate-800 mb-3 border-2 border-amber-400 shadow-xs">
@@ -547,13 +497,15 @@ export const HomeView: React.FC<HomeViewProps> = ({
               <p className="text-[11px] text-slate-400 dark:text-slate-500 italic mt-3 border-t border-slate-100 dark:border-slate-800 pt-2">
                 {cm.motto}
               </p>
-            </div>
+            </Reveal>
           ))}
         </div>
-      </section>
+      </Reveal>
+
+      <LocationMap />
 
       {/* 8. TRANSPARENCY & ACCOUNTABILITY BANNER */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <Reveal as="section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-gradient-to-r from-[#0F2C59] to-[#173B72] rounded-2xl p-6 sm:p-10 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 border border-white/10">
           <div className="space-y-3 max-w-xl text-center md:text-left">
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-400/20 text-amber-300 text-xs font-semibold">
@@ -578,7 +530,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </button>
           </div>
         </div>
-      </section>
+      </Reveal>
 
     </div>
   );

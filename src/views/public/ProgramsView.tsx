@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Program, ProgramCategory, ProgramStatus } from '../../types/index.ts';
 import { filterPrograms, formatCurrencyPHP } from '../../utils/portalLogic.ts';
 import { Search, Filter, Sparkles, ArrowRight, CheckCircle2, SlidersHorizontal } from 'lucide-react';
+import Reveal from '../../components/Reveal.jsx';
 
 interface ProgramsViewProps {
   programs: Program[];
@@ -27,7 +28,7 @@ export const ProgramsView: React.FC<ProgramsViewProps> = ({
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
       
       {/* Header Banner */}
-      <div className="bg-[#0F2C59] text-white rounded-2xl p-6 sm:p-10 border border-navy-800 shadow-md">
+      <Reveal className="bg-[#0F2C59] text-white rounded-2xl p-6 sm:p-10 border border-navy-800 shadow-md">
         <div className="max-w-3xl space-y-3">
           <div className="inline-flex items-center gap-2 text-xs font-semibold text-amber-400 bg-white/10 px-3 py-1 rounded-full">
             <Sparkles className="w-3.5 h-3.5" />
@@ -40,10 +41,10 @@ export const ProgramsView: React.FC<ProgramsViewProps> = ({
             Discover community initiatives designed to support the education, livelihood, wellness, and empowerment of young Bagbaguenos.
           </p>
         </div>
-      </div>
+      </Reveal>
 
       {/* Filter & Search Bar */}
-      <div className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+      <Reveal className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
         
         {/* Top search & status row */}
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
@@ -100,14 +101,15 @@ export const ProgramsView: React.FC<ProgramsViewProps> = ({
           ))}
         </div>
 
-      </div>
+      </Reveal>
 
       {/* Program Cards Grid */}
       {filtered.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map((prog) => (
-            <div
+          {filtered.map((prog, index) => (
+            <Reveal
               key={prog.id}
+              delay={index * 100}
               className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between"
             >
               <div>
@@ -180,7 +182,7 @@ export const ProgramsView: React.FC<ProgramsViewProps> = ({
                 </button>
               </div>
 
-            </div>
+            </Reveal>
           ))}
         </div>
       ) : (

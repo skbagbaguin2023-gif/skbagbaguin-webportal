@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   DollarSign
 } from 'lucide-react';
+import Reveal from '../../components/Reveal.jsx';
 
 interface ProgramsManagerProps {
   programs: Program[];
@@ -126,7 +127,7 @@ export const ProgramsManager: React.FC<ProgramsManagerProps> = ({
     <div className="space-y-6">
       
       {/* Header & Budget Snapshot */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <Reveal className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-white">Programs & Projects Manager</h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -141,10 +142,10 @@ export const ProgramsManager: React.FC<ProgramsManagerProps> = ({
           <Plus className="w-4 h-4 text-amber-400" />
           <span>New Project</span>
         </button>
-      </div>
+      </Reveal>
 
       {/* Search */}
-      <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
+      <Reveal className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
         <div className="relative w-full sm:w-80 text-xs">
           <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
@@ -155,13 +156,14 @@ export const ProgramsManager: React.FC<ProgramsManagerProps> = ({
             className="w-full pl-8 pr-3 py-1.5 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-[#0F2C59] dark:focus:ring-amber-400"
           />
         </div>
-      </div>
+      </Reveal>
 
       {/* Program Management Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {filtered.map((prog) => (
-          <div
+        {filtered.map((prog, index) => (
+          <Reveal
             key={prog.id}
+            delay={index * 100}
             className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs flex flex-col justify-between space-y-4"
           >
             <div>
@@ -237,7 +239,7 @@ export const ProgramsManager: React.FC<ProgramsManagerProps> = ({
                 </button>
               </div>
             </div>
-          </div>
+          </Reveal>
         ))}
       </div>
 

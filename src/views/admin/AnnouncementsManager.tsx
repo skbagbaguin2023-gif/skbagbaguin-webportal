@@ -12,6 +12,7 @@ import {
   Pin,
   Check
 } from 'lucide-react';
+import Reveal from '../../components/Reveal.jsx';
 
 interface AnnouncementsManagerProps {
   announcements: Announcement[];
@@ -39,6 +40,8 @@ export const AnnouncementsManager: React.FC<AnnouncementsManagerProps> = ({
   const [formTitle, setFormTitle] = useState('');
   const [formExcerpt, setFormExcerpt] = useState('');
   const [formContent, setFormContent] = useState('');
+  const [formCoverImage, setFormCoverImage] = useState('');
+  const [formSourcePostUrl, setFormSourcePostUrl] = useState('');
   const [formCategory, setFormCategory] = useState<AnnouncementCategory>('Scholarships');
   const [formAuthor, setFormAuthor] = useState('');
   const [formStatus, setFormStatus] = useState<AnnouncementStatus>('Published');
@@ -65,6 +68,8 @@ export const AnnouncementsManager: React.FC<AnnouncementsManagerProps> = ({
     setFormTitle('');
     setFormExcerpt('');
     setFormContent('');
+    setFormCoverImage('');
+    setFormSourcePostUrl('');
     setFormCategory('Scholarships');
     setFormAuthor('');
     setFormStatus('Published');
@@ -77,6 +82,8 @@ export const AnnouncementsManager: React.FC<AnnouncementsManagerProps> = ({
     setFormTitle(ann.title);
     setFormExcerpt(ann.excerpt);
     setFormContent(ann.content);
+    setFormCoverImage(ann.coverImage || '');
+    setFormSourcePostUrl(ann.sourcePostUrl || '');
     setFormCategory(ann.category);
     setFormAuthor(ann.author);
     setFormStatus(ann.status);
@@ -103,6 +110,8 @@ export const AnnouncementsManager: React.FC<AnnouncementsManagerProps> = ({
           title: formTitle,
           excerpt: formExcerpt,
           content: formContent,
+          coverImage: formCoverImage.trim() || undefined,
+          sourcePostUrl: formSourcePostUrl.trim() || undefined,
           category: formCategory,
           author: formAuthor,
           status: formStatus,
@@ -115,6 +124,8 @@ export const AnnouncementsManager: React.FC<AnnouncementsManagerProps> = ({
         title: formTitle,
         excerpt: formExcerpt,
         content: formContent,
+        coverImage: formCoverImage.trim() || undefined,
+        sourcePostUrl: formSourcePostUrl.trim() || undefined,
         category: formCategory,
         author: formAuthor,
         date: today,
@@ -137,7 +148,7 @@ export const AnnouncementsManager: React.FC<AnnouncementsManagerProps> = ({
     <div className="space-y-6">
       
       {/* Top action header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <Reveal className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-white">Official Announcements Manager</h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">Publish, schedule, and edit public notices, scholarships, and advisories</p>
@@ -150,10 +161,10 @@ export const AnnouncementsManager: React.FC<AnnouncementsManagerProps> = ({
           <Plus className="w-4 h-4 text-amber-400" />
           <span>New Announcement</span>
         </button>
-      </div>
+      </Reveal>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+      <Reveal className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
         <div className="relative w-full sm:w-80">
           <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
@@ -178,7 +189,7 @@ export const AnnouncementsManager: React.FC<AnnouncementsManagerProps> = ({
             ))}
           </select>
         </div>
-      </div>
+      </Reveal>
 
       {/* Data Table */}
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
@@ -352,6 +363,32 @@ export const AnnouncementsManager: React.FC<AnnouncementsManagerProps> = ({
                   value={formContent}
                   onChange={(e) => setFormContent(e.target.value)}
                   className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-sans bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-[#0F2C59] dark:focus:ring-amber-400"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                  Cover Image URL
+                </label>
+                <input
+                  type="text"
+                  value={formCoverImage}
+                  onChange={(e) => setFormCoverImage(e.target.value)}
+                  placeholder="Optional image URL"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-xs bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-[#0F2C59] dark:focus:ring-amber-400"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                  Facebook Source Post URL
+                </label>
+                <input
+                  type="url"
+                  value={formSourcePostUrl}
+                  onChange={(e) => setFormSourcePostUrl(e.target.value)}
+                  placeholder="Optional direct link to this announcement's Facebook post"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-xs bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-[#0F2C59] dark:focus:ring-amber-400"
                 />
               </div>
 
