@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { PublicPage } from '../types/index.ts';
+import skLogo from '../assets/images/skLogo.png';
 import { ThemeToggle } from './ThemeToggle.tsx';
 import { 
   Menu, 
@@ -69,14 +70,15 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Brand Zone */}
           <button
             onClick={() => onNavigate('home')}
-            className="flex items-center gap-3 text-left group focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 rounded-lg p-1"
+            className="flex items-center gap-3 text-left group cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 rounded-lg p-1"
           >
             {/* SK Logo Seal Placeholder */}
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 p-0.5 flex items-center justify-center shadow-sm shrink-0">
               <div className="w-full h-full rounded-full bg-[#0F2C59] flex items-center justify-center font-bold text-amber-400 text-xs tracking-tighter" >
                 <img
-                  src="/src/assets/images/skLogo.png"
+                  src={skLogo}
                   alt="SK Bagbaguin Youth Assembly"
+                  className="h-full w-full rounded-full object-contain pointer-events-none"
                 />
               </div>
             </div>
