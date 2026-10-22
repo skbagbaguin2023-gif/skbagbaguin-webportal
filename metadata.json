@@ -1,0 +1,6 @@
+{
+  "name": "SK Bagbaguin Youth Web Portal & Admin System",
+  "description": "Comprehensive youth engagement platform and government admin management system for Sangguniang Kabataan ng Barangay Bagbaguin, Valenzuela City.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

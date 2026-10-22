@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SK Bagbaguin Youth Web Portal & Admin System</title>
+    <meta name="description" content="Official youth engagement platform and government admin management system for Sangguniang Kabataan ng Barangay Bagbaguin, Valenzuela City." />
+    <meta property="og:title" content="SK Bagbaguin Youth Web Portal & Admin System" />
+    <meta property="og:description" content="Official youth engagement platform and government admin management system for Sangguniang Kabataan ng Barangay Bagbaguin, Valenzuela City." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/src/assets/images/skLogo.png">
+    <script>
+      // Initial theme hydration before render to prevent flash
+      try {
+        const savedTheme = localStorage.getItem('sk_theme');
+        if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      } catch (e) {}
+    </script>
+  </head>
+  <body class="bg-slate-50 text-slate-800 dark:bg-[#071324] dark:text-slate-100 antialiased font-sans selection:bg-amber-200 selection:text-slate-900 transition-colors duration-200">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
