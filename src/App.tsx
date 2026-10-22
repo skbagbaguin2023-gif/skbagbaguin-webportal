@@ -304,6 +304,7 @@ export default function App() {
     return (
       <ThemeProvider>
         <AdminLogin />
+        <Analytics />
       </ThemeProvider>
     );
   }
@@ -346,6 +347,7 @@ export default function App() {
             onReplyFeedback={handleReplyFeedback}
           />
         </ProtectedRoute>
+        <Analytics />
       </ThemeProvider>
     );
   }
