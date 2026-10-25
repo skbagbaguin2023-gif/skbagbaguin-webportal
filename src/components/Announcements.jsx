@@ -4,7 +4,7 @@ import Reveal from './Reveal.jsx';
 import FacebookPostCard from './FacebookPostCard.jsx';
 
 export default function Announcements({ announcements }) {
-  const publishedAnnouncements = announcements.filter((announcement) => announcement.status === 'Published');
+  const publishedAnnouncements = announcements;
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const hasMultipleAnnouncements = publishedAnnouncements.length > 1;

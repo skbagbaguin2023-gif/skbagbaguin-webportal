@@ -56,6 +56,19 @@ Supabase secret/service-role key in `.env.local` or client code.
    admin UI access.
 5. Restart the Vite server and sign in at `/admin/login`.
 
+For Vercel, add these variables under **Project Settings > Environment
+Variables**, select the environments you deploy to, and redeploy:
+`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, and
+`VITE_SUPABASE_ADMIN_UIDS`. The first two connect the live site to this
+Supabase project; the UID variable must contain your administrator's auth user
+UUID so the admin page is enabled. Use the public publishable key, never a
+secret/service-role key.
+
+All announcements created or edited in the admin system are published to the
+public portal. If the database already has the older announcement policy, run
+[`supabase/announcements_public_migration.sql`](./supabase/announcements_public_migration.sql)
+in Supabase SQL Editor to publish existing drafts and allow public reads.
+
 Public content can be read publicly. Visitors can submit applications and
 feedback, while those private records are readable only by admins. Event
 registration is handled by a database function that checks capacity

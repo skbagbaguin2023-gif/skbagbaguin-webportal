@@ -56,7 +56,7 @@ create policy "public content and admins can read portal records"
     (select public.is_portal_admin())
     or collection in ('programs', 'events', 'council')
     or (collection = 'services' and data ->> 'isActive' = 'true')
-    or (collection = 'announcements' and data ->> 'status' = 'Published')
+    or collection = 'announcements'
     or (collection = 'transparencyDocs' and data ->> 'isPublic' = 'true')
   );
 

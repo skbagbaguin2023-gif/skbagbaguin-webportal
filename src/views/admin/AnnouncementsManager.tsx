@@ -1,13 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Announcement, AnnouncementCategory, AnnouncementStatus } from '../../types/index.ts';
+import { Announcement, AnnouncementCategory } from '../../types/index.ts';
 import { 
   Plus, 
   Search, 
   Edit3, 
   Trash2, 
   Eye, 
-  CheckCircle, 
-  XCircle, 
   X, 
   Pin,
   Check
@@ -46,7 +44,6 @@ export const AnnouncementsManager: React.FC<AnnouncementsManagerProps> = ({
   const [formSourcePostUrl, setFormSourcePostUrl] = useState('');
   const [formCategory, setFormCategory] = useState<AnnouncementCategory>('Scholarships');
   const [formAuthor, setFormAuthor] = useState('');
-  const [formStatus, setFormStatus] = useState<AnnouncementStatus>('Published');
   const [formIsPinned, setFormIsPinned] = useState(false);
   const [selectedCoverImage, setSelectedCoverImage] = useState<File | null>(null);
   const [coverPreviewUrl, setCoverPreviewUrl] = useState('');
@@ -89,7 +86,6 @@ export const AnnouncementsManager: React.FC<AnnouncementsManagerProps> = ({
     setFormSourcePostUrl('');
     setFormCategory('Scholarships');
     setFormAuthor('');
-    setFormStatus('Published');
     setFormIsPinned(false);
     setIsModalOpen(true);
   };
@@ -106,7 +102,6 @@ export const AnnouncementsManager: React.FC<AnnouncementsManagerProps> = ({
     setFormSourcePostUrl(ann.sourcePostUrl || '');
     setFormCategory(ann.category);
     setFormAuthor(ann.author);
-    setFormStatus(ann.status);
     setFormIsPinned(!!ann.isPinned);
     setIsModalOpen(true);
   };
@@ -163,7 +158,7 @@ export const AnnouncementsManager: React.FC<AnnouncementsManagerProps> = ({
             sourcePostUrl: formSourcePostUrl.trim() || undefined,
             category: formCategory,
             author: formAuthor,
-            status: formStatus,
+            status: 'Published',
             isPinned: formIsPinned,
           });
           if (uploadedImageUrl && existing.coverImage) {
@@ -185,7 +180,7 @@ export const AnnouncementsManager: React.FC<AnnouncementsManagerProps> = ({
           category: formCategory,
           author: formAuthor,
           date: today,
-          status: formStatus,
+          status: 'Published',
           isPinned: formIsPinned,
         };
         await onAddAnnouncement(newAnn);
@@ -205,18 +200,6 @@ export const AnnouncementsManager: React.FC<AnnouncementsManagerProps> = ({
       setManagerError(message);
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  const toggleStatus = async (ann: Announcement) => {
-    try {
-      await onUpdateAnnouncement({
-        ...ann,
-        status: ann.status === 'Published' ? 'Draft' : 'Published',
-      });
-      setManagerError('');
-    } catch (error) {
-      setManagerError(error instanceof Error ? error.message : 'Could not update announcement status.');
     }
   };
 
@@ -302,17 +285,9 @@ export const AnnouncementsManager: React.FC<AnnouncementsManagerProps> = ({
                   <td className="py-3 px-4 text-slate-600 dark:text-slate-300 truncate max-w-[160px]">{ann.author}</td>
                   <td className="py-3 px-4 font-mono text-slate-500 dark:text-slate-400">{ann.date}</td>
                   <td className="py-3 px-4">
-                    <button
-                      onClick={() => toggleStatus(ann)}
-                      className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-colors cursor-pointer ${
-                        ann.status === 'Published'
-                          ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-200 dark:hover:bg-emerald-900/60'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                      }`}
-                      title="Click to toggle status"
-                    >
-                      {ann.status}
-                    </button>
+                    <span className="inline-block rounded bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                      Public
+                    </span>
                   </td>
                   <td className="py-3 px-4 text-right">
                     <div className="flex items-center justify-end gap-2">
@@ -367,7 +342,7 @@ export const AnnouncementsManager: React.FC<AnnouncementsManagerProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div>
                 <div>
                   <label className="block font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
                     Category *
@@ -382,20 +357,7 @@ export const AnnouncementsManager: React.FC<AnnouncementsManagerProps> = ({
                     ))}
                   </select>
                 </div>
-
-                <div>
-                  <label className="block font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
-                    Status
-                  </label>
-                  <select
-                    value={formStatus}
-                    onChange={(e) => setFormStatus(e.target.value as AnnouncementStatus)}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-xs bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                  >
-                    <option value="Published">Published (Public)</option>
-                    <option value="Draft">Draft (Internal)</option>
-                  </select>
-                </div>
+                <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">Announcements are published to the public portal when saved.</p>
               </div>
 
               <div>
