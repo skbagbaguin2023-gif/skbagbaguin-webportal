@@ -1,6 +1,7 @@
 import React from 'react';
 import { PublicPage } from '../types/index.ts';
 import { ShieldCheck, MapPin, Mail, Phone, ExternalLink } from 'lucide-react';
+import skLogo from '../assets/images/skLogo.png';
 
 interface FooterProps {
   onNavigate: (page: PublicPage) => void;
@@ -17,7 +18,11 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             <div className="flex items-center gap-3">
               <div className="w-11 h-11 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 p-0.5 flex items-center justify-center">
                 <div className="w-full h-full rounded-full bg-[#0F2C59] flex items-center justify-center font-extrabold text-amber-400 text-xs">
-                  SKB
+                  <img
+                  src={skLogo}
+                  alt="SK Bagbaguin Youth Assembly"
+                  className="h-full w-full rounded-full object-contain pointer-events-none"
+                />
                 </div>
               </div>
               <div>
