@@ -27,6 +27,7 @@ import Reveal from '../../components/Reveal.jsx';
 import HeroCarousel from '../../components/HeroCarousel.jsx';
 import Announcements from '../../components/Announcements.jsx';
 import LocationMap from '../../components/LocationMap.jsx';
+import { CouncilMemberAvatar } from '../../components/CouncilMemberAvatar.tsx';
 
 interface HomeViewProps {
   onNavigate: (page: PublicPage) => void;
@@ -39,8 +40,6 @@ interface HomeViewProps {
   council: CouncilMember[];
   services: YouthService[];
 }
-
-const getInitials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
 
 export const HomeView: React.FC<HomeViewProps> = ({
   onNavigate,
@@ -417,11 +416,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
               className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-xs hover:shadow-md transition-shadow text-center p-5"
             >
               <div className="w-20 h-20 rounded-full mx-auto overflow-hidden bg-slate-200 dark:bg-slate-800 mb-3 border-2 border-amber-400 shadow-xs">
-                {cm.imageUrl ? (
-                  <img src={cm.imageUrl} alt={cm.name} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-[#0F2C59] text-amber-400 font-bold">{getInitials(cm.name)}</div>
-                )}
+                <CouncilMemberAvatar member={cm} className="h-full w-full bg-[#0F2C59]" />
               </div>
               <h3 className="font-bold text-sm text-slate-900 dark:text-white">{cm.name}</h3>
               <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 mt-0.5">{cm.position}</p>

@@ -13,12 +13,11 @@ import {
   FileCheck
 } from 'lucide-react';
 import Reveal from '../../components/Reveal.jsx';
+import { CouncilMemberAvatar } from '../../components/CouncilMemberAvatar.tsx';
 
 interface AboutViewProps {
   council: CouncilMember[];
 }
-
-const getInitials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
 
 export const AboutView: React.FC<AboutViewProps> = ({ council }) => {
   const chairperson = council.find((member) => /chairperson/i.test(member.position));
@@ -133,11 +132,7 @@ export const AboutView: React.FC<AboutViewProps> = ({ council }) => {
           <div className="bg-white dark:bg-slate-900 rounded-2xl border-2 border-amber-400 p-6 sm:p-8 shadow-md">
             <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
               <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-amber-400 shadow-sm shrink-0">
-                {chairperson.imageUrl ? (
-                  <img src={chairperson.imageUrl} alt={chairperson.name} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-[#0F2C59] text-amber-400 text-xl font-bold">{getInitials(chairperson.name)}</div>
-                )}
+                <CouncilMemberAvatar member={chairperson} className="h-full w-full bg-[#0F2C59] text-xl" />
               </div>
               <div className="space-y-2 flex-1 min-w-0">
                 <div className="inline-block bg-[#0F2C59] dark:bg-slate-800 text-amber-400 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
@@ -168,11 +163,7 @@ export const AboutView: React.FC<AboutViewProps> = ({ council }) => {
               <Reveal key={c.id} delay={index * 100} className="min-h-[320px] bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs flex flex-col items-center text-center">
                 <div className="flex-1 w-full">
                   <div className="w-20 h-20 rounded-full mx-auto overflow-hidden bg-slate-100 dark:bg-slate-800 mb-4 border-2 border-slate-200 dark:border-slate-700">
-                    {c.imageUrl ? (
-                      <img src={c.imageUrl} alt={c.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-[#0F2C59] text-amber-400 text-lg font-bold">{getInitials(c.name)}</div>
-                    )}
+                    <CouncilMemberAvatar member={c} className="h-full w-full bg-[#0F2C59] text-lg" />
                   </div>
                   <h3 className="font-bold text-sm text-slate-900 dark:text-white">{c.name}</h3>
                   <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">{c.position}</p>
@@ -194,11 +185,7 @@ export const AboutView: React.FC<AboutViewProps> = ({ council }) => {
             {officers.length === 0 ? <p className="text-sm text-slate-500 dark:text-slate-400">Appointed officers will appear here once added.</p> : officers.map((o, index) => (
               <Reveal key={o.id} delay={index * 100} className="min-h-32 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs flex items-center gap-4">
                 <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0 border border-slate-200 dark:border-slate-700">
-                  {o.imageUrl ? (
-                    <img src={o.imageUrl} alt={o.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-[#0F2C59] text-amber-400 font-bold">{getInitials(o.name)}</div>
-                  )}
+                  <CouncilMemberAvatar member={o} className="h-full w-full bg-[#0F2C59]" />
                 </div>
                 <div className="space-y-0.5 text-xs">
                   <h4 className="font-bold text-sm text-slate-900 dark:text-white">{o.name}</h4>

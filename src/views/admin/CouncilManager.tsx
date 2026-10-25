@@ -4,6 +4,7 @@ import { Mail, Phone, Edit, Trash2, Plus, Save, X, Upload, GripVertical, ArrowUp
 import Reveal from '../../components/Reveal.jsx';
 import { deletePortalImage, uploadPortalImage } from '../../services/supabaseData.ts';
 import { ConfirmationModal } from '../../components/modals/ConfirmationModal.tsx';
+import { CouncilMemberAvatar } from '../../components/CouncilMemberAvatar.tsx';
 
 interface CouncilManagerProps {
   council: CouncilMember[];
@@ -15,8 +16,6 @@ interface CouncilManagerProps {
 
 type CouncilMemberForm = Omit<CouncilMember, 'id'>;
 const councilPositions = ['SK Chairperson', 'SK Member', 'SK Secretary', 'SK Treasurer'];
-const getInitials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
-
 const emptyForm: CouncilMemberForm = {
   name: '',
   position: '',
@@ -293,7 +292,14 @@ export const CouncilManager: React.FC<CouncilManagerProps> = ({
               </label>
               <span className="block mt-1 text-[11px] text-slate-500">JPG, PNG, or WebP up to 5 MB</span>
               {errors.imageUrl && <span className="block mt-1 text-rose-600">{errors.imageUrl}</span>}
-              {(photoPreviewUrl || form.imageUrl) && <img src={photoPreviewUrl || form.imageUrl} alt="Selected council member" className="mt-2 w-16 h-16 rounded-full object-cover" />}
+              {photoPreviewUrl ? (
+                <img src={photoPreviewUrl} alt="Selected council member" className="mt-2 w-16 h-16 rounded-full object-cover" />
+              ) : form.imageUrl ? (
+                <CouncilMemberAvatar
+                  member={{ id: editingId ?? '', name: form.name, imageUrl: form.imageUrl }}
+                  className="mt-2 h-16 w-16 rounded-full bg-[#0F2C59]"
+                />
+              ) : null}
             </div>
           </div>
 
@@ -343,11 +349,7 @@ export const CouncilManager: React.FC<CouncilManagerProps> = ({
                 <div className="flex items-start gap-3">
                   <div className="flex items-center gap-3 min-w-0 flex-1">
                     <div className="w-14 h-14 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 border-2 border-amber-400 shrink-0">
-                        {member.imageUrl ? (
-                          <img src={member.imageUrl} alt={member.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-[#0F2C59] text-amber-400 font-bold">{getInitials(member.name)}</div>
-                        )}
+                      <CouncilMemberAvatar member={member} className="h-full w-full bg-[#0F2C59]" />
                     </div>
                     <div className="min-w-0">
                       <h3 className="font-bold text-sm text-slate-900 dark:text-white leading-snug">{member.name}</h3>
