@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Announcement, AnnouncementCategory, AnnouncementStatus } from '../../types/index.ts';
 import { 
   Plus, 
@@ -13,11 +13,13 @@ import {
   Check
 } from 'lucide-react';
 import Reveal from '../../components/Reveal.jsx';
+import { deletePortalImage, uploadPortalImage } from '../../services/supabaseData.ts';
+import { ConfirmationModal } from '../../components/modals/ConfirmationModal.tsx';
 
 interface AnnouncementsManagerProps {
   announcements: Announcement[];
-  onAddAnnouncement: (ann: Announcement) => void;
-  onUpdateAnnouncement: (ann: Announcement) => void;
+  onAddAnnouncement: (ann: Announcement) => Promise<void>;
+  onUpdateAnnouncement: (ann: Announcement) => Promise<void>;
   onDeleteAnnouncement: (id: string) => void;
   isCreateOpenInitially?: boolean;
   onCloseCreateModal?: () => void;
@@ -46,6 +48,18 @@ export const AnnouncementsManager: React.FC<AnnouncementsManagerProps> = ({
   const [formAuthor, setFormAuthor] = useState('');
   const [formStatus, setFormStatus] = useState<AnnouncementStatus>('Published');
   const [formIsPinned, setFormIsPinned] = useState(false);
+  const [selectedCoverImage, setSelectedCoverImage] = useState<File | null>(null);
+  const [coverPreviewUrl, setCoverPreviewUrl] = useState('');
+  const [imageError, setImageError] = useState('');
+  const [managerError, setManagerError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [announcementToDelete, setAnnouncementToDelete] = useState<Announcement | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (coverPreviewUrl) URL.revokeObjectURL(coverPreviewUrl);
+    };
+  }, [coverPreviewUrl]);
 
   const categories: AnnouncementCategory[] = [
     'Scholarships',
@@ -69,6 +83,9 @@ export const AnnouncementsManager: React.FC<AnnouncementsManagerProps> = ({
     setFormExcerpt('');
     setFormContent('');
     setFormCoverImage('');
+    setSelectedCoverImage(null);
+    setCoverPreviewUrl('');
+    setImageError('');
     setFormSourcePostUrl('');
     setFormCategory('Scholarships');
     setFormAuthor('');
@@ -83,6 +100,9 @@ export const AnnouncementsManager: React.FC<AnnouncementsManagerProps> = ({
     setFormExcerpt(ann.excerpt);
     setFormContent(ann.content);
     setFormCoverImage(ann.coverImage || '');
+    setSelectedCoverImage(null);
+    setCoverPreviewUrl('');
+    setImageError('');
     setFormSourcePostUrl(ann.sourcePostUrl || '');
     setFormCategory(ann.category);
     setFormAuthor(ann.author);
@@ -97,51 +117,107 @@ export const AnnouncementsManager: React.FC<AnnouncementsManagerProps> = ({
     if (onCloseCreateModal) onCloseCreateModal();
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleCoverImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setImageError('Choose a JPG, PNG, or WebP image.');
+      event.target.value = '';
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setImageError('Image must be 5 MB or smaller.');
+      event.target.value = '';
+      return;
+    }
+    setSelectedCoverImage(file);
+    setCoverPreviewUrl(URL.createObjectURL(file));
+    setImageError('');
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSaving(true);
+    setImageError('');
+    let uploadedImageUrl: string | undefined;
     const now = new Date();
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-    if (editingId) {
-      const existing = announcements.find((a) => a.id === editingId);
-      if (existing) {
-        onUpdateAnnouncement({
-          ...existing,
+    try {
+      const coverImage = selectedCoverImage
+        ? await uploadPortalImage(selectedCoverImage, 'announcements').then((url) => {
+            uploadedImageUrl = url;
+            return url;
+          })
+        : formCoverImage.trim() || undefined;
+
+      if (editingId) {
+        const existing = announcements.find((a) => a.id === editingId);
+        if (existing) {
+          await onUpdateAnnouncement({
+            ...existing,
+            title: formTitle,
+            excerpt: formExcerpt,
+            content: formContent,
+            coverImage,
+            sourcePostUrl: formSourcePostUrl.trim() || undefined,
+            category: formCategory,
+            author: formAuthor,
+            status: formStatus,
+            isPinned: formIsPinned,
+          });
+          if (uploadedImageUrl && existing.coverImage) {
+            try {
+              await deletePortalImage(existing.coverImage);
+            } catch (error) {
+              console.error('Unable to remove the replaced announcement image.', error);
+            }
+          }
+        }
+      } else {
+        const newAnn: Announcement = {
+          id: `ann-${Date.now()}`,
           title: formTitle,
           excerpt: formExcerpt,
           content: formContent,
-          coverImage: formCoverImage.trim() || undefined,
+          coverImage,
           sourcePostUrl: formSourcePostUrl.trim() || undefined,
           category: formCategory,
           author: formAuthor,
+          date: today,
           status: formStatus,
           isPinned: formIsPinned,
-        });
+        };
+        await onAddAnnouncement(newAnn);
       }
-    } else {
-      const newAnn: Announcement = {
-        id: `ann-${Date.now()}`,
-        title: formTitle,
-        excerpt: formExcerpt,
-        content: formContent,
-        coverImage: formCoverImage.trim() || undefined,
-        sourcePostUrl: formSourcePostUrl.trim() || undefined,
-        category: formCategory,
-        author: formAuthor,
-        date: today,
-        status: formStatus,
-        isPinned: formIsPinned,
-      };
-      onAddAnnouncement(newAnn);
+      closeModal();
+      setManagerError('');
+    } catch (error) {
+      if (uploadedImageUrl) {
+        try {
+          await deletePortalImage(uploadedImageUrl);
+        } catch (cleanupError) {
+          console.error('Unable to remove an unlinked announcement image.', cleanupError);
+        }
+      }
+      const message = error instanceof Error ? error.message : 'Could not save this announcement.';
+      setImageError(message);
+      setManagerError(message);
+    } finally {
+      setIsSaving(false);
     }
-    closeModal();
   };
 
-  const toggleStatus = (ann: Announcement) => {
-    onUpdateAnnouncement({
-      ...ann,
-      status: ann.status === 'Published' ? 'Draft' : 'Published',
-    });
+  const toggleStatus = async (ann: Announcement) => {
+    try {
+      await onUpdateAnnouncement({
+        ...ann,
+        status: ann.status === 'Published' ? 'Draft' : 'Published',
+      });
+      setManagerError('');
+    } catch (error) {
+      setManagerError(error instanceof Error ? error.message : 'Could not update announcement status.');
+    }
   };
 
   return (
@@ -162,6 +238,7 @@ export const AnnouncementsManager: React.FC<AnnouncementsManagerProps> = ({
           <span>New Announcement</span>
         </button>
       </Reveal>
+      {managerError && <p role="alert" className="rounded-lg border border-rose-300 bg-rose-50 px-4 py-2 text-xs text-rose-700">{managerError}</p>}
 
       {/* Filter and Search Bar */}
       <Reveal className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
@@ -247,11 +324,7 @@ export const AnnouncementsManager: React.FC<AnnouncementsManagerProps> = ({
                         <Edit3 className="w-3.5 h-3.5" />
                       </button>
                       <button
-                        onClick={() => {
-                          if (confirm(`Delete "${ann.title}"?`)) {
-                            onDeleteAnnouncement(ann.id);
-                          }
-                        }}
+                        onClick={() => setAnnouncementToDelete(ann)}
                         className="p-1 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded cursor-pointer"
                         title="Delete announcement"
                       >
@@ -268,9 +341,9 @@ export const AnnouncementsManager: React.FC<AnnouncementsManagerProps> = ({
 
       {/* Create / Edit Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-xl w-full border border-slate-200 dark:border-slate-800 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
-            <div className="bg-[#0F2C59] text-white px-6 py-4 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/70 p-4 backdrop-blur-xs sm:items-center">
+          <div className="my-0 flex max-h-[calc(100dvh-2rem)] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900 sm:my-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex shrink-0 items-center justify-between bg-[#0F2C59] px-6 py-4 text-white">
               <h3 className="font-bold text-base">
                 {editingId ? 'Edit Official Announcement' : 'Post New Official Announcement'}
               </h3>
@@ -279,7 +352,7 @@ export const AnnouncementsManager: React.FC<AnnouncementsManagerProps> = ({
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs">
+            <form onSubmit={handleSubmit} className="min-h-0 overflow-y-auto p-6 space-y-4 text-xs">
               <div>
                 <label className="block font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
                   Announcement Title *
@@ -368,15 +441,19 @@ export const AnnouncementsManager: React.FC<AnnouncementsManagerProps> = ({
 
               <div>
                 <label className="block font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
-                  Cover Image URL
+                  Cover Image
                 </label>
                 <input
-                  type="text"
-                  value={formCoverImage}
-                  onChange={(e) => setFormCoverImage(e.target.value)}
-                  placeholder="Optional image URL"
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-xs bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-[#0F2C59] dark:focus:ring-amber-400"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleCoverImageChange}
+                  className="block w-full text-xs text-slate-700 dark:text-slate-300"
                 />
+                <p className="mt-1 text-[11px] text-slate-500">JPG, PNG, or WebP up to 5 MB. Existing image URLs remain supported.</p>
+                {imageError && <p role="alert" className="mt-1 text-xs text-rose-600">{imageError}</p>}
+                {(coverPreviewUrl || formCoverImage) && (
+                  <img src={coverPreviewUrl || formCoverImage} alt="Announcement cover preview" className="mt-2 max-h-40 rounded-lg object-cover" />
+                )}
               </div>
 
               <div>
@@ -415,9 +492,10 @@ export const AnnouncementsManager: React.FC<AnnouncementsManagerProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="bg-[#0F2C59] hover:bg-navy-800 text-white font-bold px-5 py-2 rounded-lg text-xs shadow-xs cursor-pointer"
+                  disabled={isSaving}
+                  className="bg-[#0F2C59] hover:bg-navy-800 text-white font-bold px-5 py-2 rounded-lg text-xs shadow-xs cursor-pointer disabled:opacity-60"
                 >
-                  {editingId ? 'Save Changes' : 'Publish Announcement'}
+                  {isSaving ? 'Saving...' : editingId ? 'Save Changes' : 'Publish Announcement'}
                 </button>
               </div>
             </form>
@@ -425,6 +503,17 @@ export const AnnouncementsManager: React.FC<AnnouncementsManagerProps> = ({
         </div>
       )}
 
+      <ConfirmationModal
+        isOpen={announcementToDelete !== null}
+        title="Delete this announcement?"
+        message={announcementToDelete ? `Delete "${announcementToDelete.title}"?` : ''}
+        confirmLabel="Delete Announcement"
+        onConfirm={() => {
+          if (announcementToDelete) onDeleteAnnouncement(announcementToDelete.id);
+          setAnnouncementToDelete(null);
+        }}
+        onCancel={() => setAnnouncementToDelete(null)}
+      />
     </div>
   );
 };

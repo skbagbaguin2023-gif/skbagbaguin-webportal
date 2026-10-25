@@ -49,10 +49,10 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             <ul className="space-y-2 text-xs">
               <li>
                 <button 
-                  onClick={() => onNavigate('programs')} 
+                  onClick={() => onNavigate('services')}
                   className="hover:text-amber-400 transition-colors text-left"
                 >
-                  Scholarships & Educational Assistance
+                  Printing Services
                 </button>
               </li>
               <li>
@@ -76,7 +76,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                   onClick={() => onNavigate('services')} 
                   className="hover:text-amber-400 transition-colors text-left"
                 >
-                  Facility & Covered Court Reservation
+                  Browse All Youth Services
                 </button>
               </li>
               <li>

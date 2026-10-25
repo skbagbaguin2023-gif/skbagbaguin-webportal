@@ -16,6 +16,7 @@ import {
   UserCheck
 } from 'lucide-react';
 import Reveal from '../../components/Reveal.jsx';
+import { ConfirmationModal } from '../../components/modals/ConfirmationModal.tsx';
 
 interface EventsManagerProps {
   events: EventItem[];
@@ -41,6 +42,7 @@ export const EventsManager: React.FC<EventsManagerProps> = ({
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(isCreateOpenInitially);
   const [activeEventRoster, setActiveEventRoster] = useState<EventItem | null>(null);
+  const [eventToDelete, setEventToDelete] = useState<EventItem | null>(null);
 
   // New Event form states
   const [formTitle, setFormTitle] = useState('');
@@ -210,9 +212,7 @@ export const EventsManager: React.FC<EventsManagerProps> = ({
                           <span>Roster</span>
                         </button>
                         <button
-                          onClick={() => {
-                            if (confirm(`Delete event "${evt.title}"?`)) onDeleteEvent(evt.id);
-                          }}
+                          onClick={() => setEventToDelete(evt)}
                           className="p-1 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 cursor-pointer"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -229,9 +229,9 @@ export const EventsManager: React.FC<EventsManagerProps> = ({
 
       {/* Roster & Participant Modal */}
       {activeEventRoster && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-3xl w-full border border-slate-200 dark:border-slate-800 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
-            <div className="bg-[#0F2C59] text-white px-6 py-4 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/70 p-4 backdrop-blur-xs sm:items-center">
+          <div className="my-0 flex max-h-[calc(100dvh-2rem)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900 sm:my-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex shrink-0 items-center justify-between bg-[#0F2C59] px-6 py-4 text-white">
               <div>
                 <span className="text-[11px] font-semibold text-amber-400 uppercase tracking-wider block">
                   Attendee Roster & Check-In
@@ -243,7 +243,7 @@ export const EventsManager: React.FC<EventsManagerProps> = ({
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="min-h-0 overflow-y-auto p-6 space-y-4">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
                 <div>
                   <span className="text-slate-500 dark:text-slate-400">Total Registered: </span>
@@ -324,16 +324,16 @@ export const EventsManager: React.FC<EventsManagerProps> = ({
 
       {/* New Event Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-xl w-full border border-slate-200 dark:border-slate-800 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
-            <div className="bg-[#0F2C59] text-white px-6 py-4 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/70 p-4 backdrop-blur-xs sm:items-center">
+          <div className="my-0 flex max-h-[calc(100dvh-2rem)] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900 sm:my-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex shrink-0 items-center justify-between bg-[#0F2C59] px-6 py-4 text-white">
               <h3 className="font-bold text-base">Schedule New SK Event</h3>
               <button onClick={() => setIsModalOpen(false)} className="text-slate-300 hover:text-white cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveEvent} className="p-6 space-y-4 text-xs">
+            <form onSubmit={handleSaveEvent} className="min-h-0 overflow-y-auto p-6 space-y-4 text-xs">
               <div>
                 <label className="block font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
                   Event Title *
@@ -452,6 +452,17 @@ export const EventsManager: React.FC<EventsManagerProps> = ({
         </div>
       )}
 
+      <ConfirmationModal
+        isOpen={eventToDelete !== null}
+        title="Delete this event?"
+        message={eventToDelete ? `Delete event "${eventToDelete.title}"?` : ''}
+        confirmLabel="Delete Event"
+        onConfirm={() => {
+          if (eventToDelete) onDeleteEvent(eventToDelete.id);
+          setEventToDelete(null);
+        }}
+        onCancel={() => setEventToDelete(null)}
+      />
     </div>
   );
 };

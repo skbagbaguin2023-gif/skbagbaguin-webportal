@@ -120,7 +120,7 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={onOpenApplyModal}
               className="bg-[#F5A623] hover:bg-[#D98E16] text-[#081830] font-bold text-xs sm:text-sm px-3 sm:px-4 py-2 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 whitespace-nowrap shrink-0 flex items-center gap-1.5 cursor-pointer"
             >
-              <span>Apply <span className="hidden sm:inline">for Assistance</span></span>
+              <span>Request <span className="hidden sm:inline">a Service</span></span>
             </button>
 
             {/* Mobile Hamburger Toggle */}

@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { login } from '../utils/auth.js';
+import { supabaseConfigured } from '../services/supabase.ts';
 
 export default function AdminLogin() {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -15,15 +16,14 @@ export default function AdminLogin() {
     setIsLoading(true);
 
     try {
-      const authenticated = await login(username, password);
+      const authenticated = await login(email, password);
       if (authenticated) {
         window.location.assign('/admin');
       } else {
-        setError('Incorrect username or password.');
+        setError('This account is not authorized as an administrator.');
       }
     } catch (error) {
-      if (!(error instanceof DOMException)) throw error;
-      setError('Unable to sign in right now. Please try again.');
+      setError(error instanceof Error ? error.message : 'Unable to sign in right now. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -42,20 +42,26 @@ export default function AdminLogin() {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label htmlFor="username" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-              Username
+            <label htmlFor="email" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+              Email
             </label>
             <input
-              id="username"
-              name="username"
-              type="text"
+              id="email"
+              name="email"
+              type="email"
               autoComplete="username"
-              value={username}
-              onChange={(event) => setUsername(event.target.value)}
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
               required
               className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#0F2C59] dark:focus:ring-amber-400"
             />
           </div>
+
+          {!supabaseConfigured && (
+            <p role="alert" className="rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 px-3 py-2 text-sm text-amber-800 dark:text-amber-300">
+              Supabase is not configured. Add your project URL and publishable key to .env.local.
+            </p>
+          )}
 
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">

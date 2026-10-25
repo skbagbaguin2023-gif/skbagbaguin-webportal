@@ -8,7 +8,13 @@ import {
   validateYouthApplication,
   aggregateAdminMetrics,
 } from './portalLogic.ts';
+import { generateUuid } from './uuid.ts';
 import { Program, EventItem, YouthApplication, Announcement } from '../types/index.ts';
+
+test('generateUuid returns a valid version 4 UUID', () => {
+  const uuid = generateUuid();
+  assert.match(uuid, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+});
 
 test('filterPrograms matches search query, category, and status', () => {
   const samplePrograms: Program[] = [
@@ -76,6 +82,9 @@ test('generateApplicationRef formats civic reference codes consistently', () => 
 
   const refKKP = generateApplicationRef('Youth Profiling & Katipunan ng Kabataan Registration', 105);
   assert.match(refKKP, /^SKB-KKP-\d{4}-0105$/);
+
+  const refPrinting = generateApplicationRef('Printing Services', 7);
+  assert.match(refPrinting, /^SKB-PRT-\d{4}-0007$/);
 });
 
 test('validateYouthApplication enforces Philippine Youth age and Data Privacy consent', () => {

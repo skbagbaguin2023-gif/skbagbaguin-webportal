@@ -9,7 +9,8 @@ import {
   CouncilMember, 
   FeedbackSuggestion,
   EventRegistration,
-  ApplicationStatus
+  ApplicationStatus,
+  YouthService,
 } from '../../types/index.ts';
 import { 
   LayoutDashboard, 
@@ -28,7 +29,8 @@ import {
   X, 
   ChevronDown,
   Sparkles,
-  ExternalLink
+  ExternalLink,
+  Settings,
 } from 'lucide-react';
 import { AdminOverview } from './AdminOverview.tsx';
 import { AnnouncementsManager } from './AnnouncementsManager.tsx';
@@ -38,10 +40,13 @@ import { ApplicationsManager } from './ApplicationsManager.tsx';
 import { TransparencyManager } from './TransparencyManager.tsx';
 import { FeedbackInbox } from './FeedbackInbox.tsx';
 import { CouncilManager } from './CouncilManager.tsx';
+import { ServicesManager } from './ServicesManager.tsx';
 import { ThemeToggle } from '../../components/ThemeToggle.tsx';
+import skLogo from '../../assets/images/skLogo.png';
+import { ConfirmationModal } from '../../components/modals/ConfirmationModal.tsx';
 
 interface AdminLayoutProps {
-  onReturnToPublic: () => void;
+  onReturnToPublic: () => Promise<void>;
   programs: Program[];
   events: EventItem[];
   announcements: Announcement[];
@@ -50,8 +55,9 @@ interface AdminLayoutProps {
   council: CouncilMember[];
   feedbacks: FeedbackSuggestion[];
   registrations: EventRegistration[];
-  onAddAnnouncement: (ann: Announcement) => void;
-  onUpdateAnnouncement: (ann: Announcement) => void;
+  services: YouthService[];
+  onAddAnnouncement: (ann: Announcement) => Promise<void>;
+  onUpdateAnnouncement: (ann: Announcement) => Promise<void>;
   onDeleteAnnouncement: (id: string) => void;
   onAddProgram: (prog: Program) => void;
   onUpdateProgram: (prog: Program) => void;
@@ -61,14 +67,22 @@ interface AdminLayoutProps {
   onDeleteEvent: (id: string) => void;
   onUpdateRegistrationStatus: (regId: string, status: 'Confirmed' | 'Waitlisted' | 'Checked-In') => void;
   onUpdateApplicationStatus: (id: string, status: ApplicationStatus, notes?: string) => void;
-  onAddTransparencyDoc: (doc: TransparencyDoc) => void;
+  onAddTransparencyDoc: (doc: TransparencyDoc, file: File) => Promise<void>;
   onUpdateTransparencyDoc: (doc: TransparencyDoc) => void;
-  onDeleteTransparencyDoc: (id: string) => void;
-  onAddCouncilMember: (member: CouncilMember) => void;
-  onUpdateCouncilMember: (member: CouncilMember) => void;
+  onDeleteTransparencyDoc: (id: string) => Promise<void>;
+  onAddCouncilMember: (member: CouncilMember) => Promise<void>;
+  onUpdateCouncilMember: (member: CouncilMember) => Promise<void>;
   onDeleteCouncilMember: (id: string) => void;
-  onReorderCouncil: (council: CouncilMember[]) => void;
-  onReplyFeedback: (id: string, reply: string, status: 'In Progress' | 'Resolved') => void;
+  onReorderCouncil: (council: CouncilMember[]) => Promise<void>;
+  onReplyFeedback: (
+    id: string,
+    reply: string,
+    status: 'In Progress' | 'Resolved'
+  ) => Promise<{ emailSent: boolean; message?: string }>;
+  onDeleteFeedback: (id: string) => Promise<void>;
+  onAddService: (service: YouthService) => void;
+  onUpdateService: (service: YouthService) => void;
+  onDeleteService: (id: string) => void;
 }
 
 export const AdminLayout: React.FC<AdminLayoutProps> = ({
@@ -81,6 +95,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   council,
   feedbacks,
   registrations,
+  services,
   onAddAnnouncement,
   onUpdateAnnouncement,
   onDeleteAnnouncement,
@@ -100,12 +115,19 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   onDeleteCouncilMember,
   onReorderCouncil,
   onReplyFeedback,
+  onDeleteFeedback,
+  onAddService,
+  onUpdateService,
+  onDeleteService,
 }) => {
   const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [selectedAppForReview, setSelectedAppForReview] = useState<YouthApplication | null>(null);
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState('');
 
   // Quick modals triggers
   const [triggerNewAnn, setTriggerNewAnn] = useState(false);
@@ -133,11 +155,25 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       badge: newFeedbackCount > 0 ? newFeedbackCount : undefined 
     },
     { id: 'council', label: 'Council Profile', icon: <UserCheck className="w-4 h-4" /> },
+    { id: 'services', label: 'Youth Services', icon: <Settings className="w-4 h-4" /> },
   ];
 
   const handleReviewAppFromDashboard = (app: YouthApplication) => {
     setSelectedAppForReview(app);
     setActiveSection('applications');
+  };
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    setLogoutError('');
+    try {
+      await onReturnToPublic();
+      setIsLogoutConfirmOpen(false);
+    } catch (error) {
+      setLogoutError(error instanceof Error ? error.message : 'Unable to log out. Please try again.');
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   return (
@@ -154,7 +190,11 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 p-0.5 flex items-center justify-center shrink-0">
                 <div className="w-full h-full rounded-full bg-[#0F2C59] flex items-center justify-center font-bold text-amber-400 text-xs">
-                  SKB
+                  <img
+                  src={skLogo}
+                  alt="SK Bagbaguin Youth Assembly"
+                  className="h-full w-full rounded-full object-contain pointer-events-none"
+                />
                 </div>
               </div>
               <div>
@@ -211,7 +251,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
           </nav>
         </div>
 
-        {/* Bottom Profile & Return to Public */}
+        {/* Bottom Profile & Logout */}
         <div className="p-4 border-t border-white/10 space-y-3 bg-[#061224]">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-xs border border-amber-400/30 shrink-0">
@@ -224,11 +264,11 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
           </div>
 
           <button
-            onClick={onReturnToPublic}
+            onClick={() => setIsLogoutConfirmOpen(true)}
             className="w-full py-2 px-3 rounded-lg bg-white/10 hover:bg-white/15 text-slate-200 text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer border border-white/10"
           >
             <LogOut className="w-3.5 h-3.5 text-amber-400" />
-            <span>Return to Public Portal</span>
+            <span>Logout</span>
           </button>
         </div>
 
@@ -380,11 +420,11 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
 
             {/* Public portal quick button */}
             <button
-              onClick={onReturnToPublic}
+              onClick={() => setIsLogoutConfirmOpen(true)}
               className="text-xs font-semibold text-[#0F2C59] dark:text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
             >
               <ExternalLink className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">View Public Site</span>
+              <span className="hidden sm:inline">Logout</span>
             </button>
 
           </div>
@@ -392,6 +432,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
 
         {/* Content Area */}
         <main className="flex-1 p-4 sm:p-8 max-w-7xl w-full mx-auto">
+          <div key={activeSection} className="admin-page-transition">
           {activeSection === 'dashboard' && (
             <AdminOverview
               programs={programs}
@@ -447,8 +488,18 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
           {activeSection === 'applications' && (
             <ApplicationsManager
               applications={applications}
+              services={services}
               onUpdateStatus={onUpdateApplicationStatus}
               selectedApplicationId={selectedAppForReview?.id}
+            />
+          )}
+
+          {activeSection === 'services' && (
+            <ServicesManager
+              services={services}
+              onAddService={onAddService}
+              onUpdateService={onUpdateService}
+              onDeleteService={onDeleteService}
             />
           )}
 
@@ -465,6 +516,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
             <FeedbackInbox
               feedbacks={feedbacks}
               onReplyFeedback={onReplyFeedback}
+              onDeleteFeedback={onDeleteFeedback}
             />
           )}
 
@@ -477,9 +529,22 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
               onReorderCouncil={onReorderCouncil}
             />
           )}
+          </div>
         </main>
 
       </div>
+      <ConfirmationModal
+        isOpen={isLogoutConfirmOpen}
+        title="Log out of the admin system?"
+        message={logoutError || 'You will be signed out and returned to the public portal home page.'}
+        confirmLabel="Logout"
+        isLoading={isLoggingOut}
+        onConfirm={handleLogout}
+        onCancel={() => {
+          setIsLogoutConfirmOpen(false);
+          setLogoutError('');
+        }}
+      />
     </div>
   );
 };

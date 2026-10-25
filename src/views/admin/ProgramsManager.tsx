@@ -14,6 +14,7 @@ import {
   DollarSign
 } from 'lucide-react';
 import Reveal from '../../components/Reveal.jsx';
+import { ConfirmationModal } from '../../components/modals/ConfirmationModal.tsx';
 
 interface ProgramsManagerProps {
   programs: Program[];
@@ -31,6 +32,7 @@ export const ProgramsManager: React.FC<ProgramsManagerProps> = ({
   const [search, setSearch] = useState('');
   const [editingProgram, setEditingProgram] = useState<Program | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [programToDelete, setProgramToDelete] = useState<Program | null>(null);
 
   // New program state
   const [formTitle, setFormTitle] = useState('');
@@ -230,9 +232,7 @@ export const ProgramsManager: React.FC<ProgramsManagerProps> = ({
                   <span>Edit</span>
                 </button>
                 <button
-                  onClick={() => {
-                    if (confirm(`Delete project "${prog.title}"?`)) onDeleteProgram(prog.id);
-                  }}
+                  onClick={() => setProgramToDelete(prog)}
                   className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -245,9 +245,9 @@ export const ProgramsManager: React.FC<ProgramsManagerProps> = ({
 
       {/* Program Create/Edit Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-xl w-full border border-slate-200 dark:border-slate-800 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
-            <div className="bg-[#0F2C59] text-white px-6 py-4 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/70 p-4 backdrop-blur-xs sm:items-center">
+          <div className="my-0 flex max-h-[calc(100dvh-2rem)] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900 sm:my-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex shrink-0 items-center justify-between bg-[#0F2C59] px-6 py-4 text-white">
               <h3 className="font-bold text-base">
                 {editingProgram ? 'Edit Program Details' : 'Create New Youth Program'}
               </h3>
@@ -256,7 +256,7 @@ export const ProgramsManager: React.FC<ProgramsManagerProps> = ({
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="p-6 space-y-4 text-xs">
+            <form onSubmit={handleSave} className="min-h-0 overflow-y-auto p-6 space-y-4 text-xs">
               <div>
                 <label className="block font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
                   Project Title *
@@ -401,6 +401,17 @@ export const ProgramsManager: React.FC<ProgramsManagerProps> = ({
         </div>
       )}
 
+      <ConfirmationModal
+        isOpen={programToDelete !== null}
+        title="Delete this project?"
+        message={programToDelete ? `Delete project "${programToDelete.title}"?` : ''}
+        confirmLabel="Delete Project"
+        onConfirm={() => {
+          if (programToDelete) onDeleteProgram(programToDelete.id);
+          setProgramToDelete(null);
+        }}
+        onCancel={() => setProgramToDelete(null)}
+      />
     </div>
   );
 };

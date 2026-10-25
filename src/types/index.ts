@@ -18,7 +18,8 @@ export type AdminSection =
   | 'applications' 
   | 'transparency' 
   | 'feedback'
-  | 'council';
+  | 'council'
+  | 'services';
 
 export type ProgramCategory = 'All' | 'Education' | 'Sports' | 'Livelihood' | 'Environment' | 'Health' | 'Leadership';
 export type ProgramStatus = 'Upcoming' | 'Ongoing' | 'Completed';
@@ -92,12 +93,18 @@ export interface Announcement {
   sourcePostUrl?: string;
 }
 
-export type ServiceType = 
-  | 'Educational Assistance' 
-  | 'Youth Profiling & Katipunan ng Kabataan Registration' 
-  | 'SK Facility / Equipment Booking' 
-  | 'Youth Concern & Suggestion' 
-  | 'SK Barangay Endorsement';
+export type ServiceType = string;
+
+export interface YouthService {
+  id: string;
+  name: string;
+  tagline: string;
+  description: string;
+  turnaroundTime: string;
+  eligibility: string[];
+  requirements: string[];
+  isActive: boolean;
+}
 
 export type ApplicationStatus = 'Pending' | 'Under Review' | 'Approved' | 'Rejected';
 
@@ -119,7 +126,12 @@ export interface YouthApplication {
   status: ApplicationStatus;
   submittedAt: string;
   adminNotes?: string;
-  documentsAttached: { name: string; size: string; status: 'Verified' | 'Pending Review' }[];
+  documentsAttached: {
+    name: string;
+    size: string;
+    status: 'Verified' | 'Pending Review';
+    storagePath?: string;
+  }[];
 }
 
 export type DocCategory = 'Annual Investment Plan (AIP)' | 'CBYDP' | 'Financial & Liquidation' | 'Accomplishment Report' | 'SK Resolution';
@@ -136,10 +148,12 @@ export interface TransparencyDoc {
   publishedDate: string;
   isPublic: boolean;
   description: string;
+  storagePath?: string;
 }
 
 export interface CouncilMember {
   id: string;
+  sortOrder?: number;
   name: string;
   position: string;
   committee: string;

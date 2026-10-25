@@ -14,7 +14,7 @@ export default function Reveal({
   children,
   direction = 'up',
   delay = 0,
-  duration = 700,
+  duration = 450,
   className = '',
   as: Element = 'div',
   ...elementProps
@@ -43,7 +43,11 @@ export default function Reveal({
       {...elementProps}
       ref={ref}
       className={`${motionClasses} ${className}`.trim()}
-      style={prefersReducedMotion ? undefined : { transitionDuration: `${duration}ms`, transitionDelay: `${delay}ms` }}
+      style={prefersReducedMotion ? undefined : {
+        transitionDuration: `${duration}ms`,
+        transitionDelay: `${Math.min(delay, 240)}ms`,
+        transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)',
+      }}
     >
       {children}
     </Element>

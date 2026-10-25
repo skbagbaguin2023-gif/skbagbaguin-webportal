@@ -14,7 +14,7 @@ import Reveal from '../../components/Reveal.jsx';
 import LocationMap from '../../components/LocationMap.jsx';
 
 interface ContactViewProps {
-  onSubmitFeedback: (item: FeedbackSuggestion) => void;
+  onSubmitFeedback: (item: FeedbackSuggestion) => Promise<void>;
 }
 
 export const ContactView: React.FC<ContactViewProps> = ({ onSubmitFeedback }) => {
@@ -29,8 +29,9 @@ export const ContactView: React.FC<ContactViewProps> = ({ onSubmitFeedback }) =>
   const [consent, setConsent] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!subject.trim() || !message.trim()) {
       setError('Please provide a subject and message.');
@@ -59,8 +60,16 @@ export const ContactView: React.FC<ContactViewProps> = ({ onSubmitFeedback }) =>
       submittedAt: formattedDate,
     };
 
-    onSubmitFeedback(newFeedback);
-    setIsSubmitted(true);
+    setIsSubmitting(true);
+    setError('');
+    try {
+      await onSubmitFeedback(newFeedback);
+      setIsSubmitted(true);
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : 'Your message could not be submitted. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -267,10 +276,11 @@ export const ContactView: React.FC<ContactViewProps> = ({ onSubmitFeedback }) =>
 
               <button
                 type="submit"
-                className="w-full bg-[#0F2C59] hover:bg-navy-800 text-white font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+                disabled={isSubmitting}
+                className="w-full bg-[#0F2C59] hover:bg-navy-800 disabled:opacity-60 text-white font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 shadow-xs cursor-pointer"
               >
                 <Send className="w-4 h-4 text-amber-400" />
-                <span>Submit Citizen Message</span>
+                <span>{isSubmitting ? 'Submitting...' : 'Submit Citizen Message'}</span>
               </button>
             </form>
           ) : (

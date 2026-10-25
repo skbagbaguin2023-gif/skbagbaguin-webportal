@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { CouncilMember } from '../../types/index.ts';
-import { Mail, Phone, Edit, Trash2, Plus, Save, X, Upload, GripVertical } from 'lucide-react';
+import { Mail, Phone, Edit, Trash2, Plus, Save, X, Upload, GripVertical, ArrowUp, ArrowDown } from 'lucide-react';
 import Reveal from '../../components/Reveal.jsx';
+import { deletePortalImage, uploadPortalImage } from '../../services/supabaseData.ts';
+import { ConfirmationModal } from '../../components/modals/ConfirmationModal.tsx';
 
 interface CouncilManagerProps {
   council: CouncilMember[];
-  onAddCouncilMember: (member: CouncilMember) => void;
-  onUpdateCouncilMember: (member: CouncilMember) => void;
+  onAddCouncilMember: (member: CouncilMember) => Promise<void>;
+  onUpdateCouncilMember: (member: CouncilMember) => Promise<void>;
   onDeleteCouncilMember: (id: string) => void;
-  onReorderCouncil: (council: CouncilMember[]) => void;
+  onReorderCouncil: (council: CouncilMember[]) => Promise<void>;
 }
 
 type CouncilMemberForm = Omit<CouncilMember, 'id'>;
@@ -41,8 +43,21 @@ export const CouncilManager: React.FC<CouncilManagerProps> = ({
   const [customPosition, setCustomPosition] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+  const [draggedMemberId, setDraggedMemberId] = useState<string | null>(null);
+  const [reorderError, setReorderError] = useState('');
+  const [isReordering, setIsReordering] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [memberToDelete, setMemberToDelete] = useState<CouncilMember | null>(null);
 
-  const handleDrop = (targetId: string, sourceId: string) => {
+  useEffect(() => {
+    return () => {
+      if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
+    };
+  }, [photoPreviewUrl]);
+
+  const handleDrop = async (targetId: string, sourceId: string): Promise<void> => {
     const sourceIndex = council.findIndex((member) => member.id === sourceId);
     const targetIndex = council.findIndex((member) => member.id === targetId);
     if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) return;
@@ -50,12 +65,29 @@ export const CouncilManager: React.FC<CouncilManagerProps> = ({
     const reorderedCouncil = [...council];
     const [movedMember] = reorderedCouncil.splice(sourceIndex, 1);
     reorderedCouncil.splice(targetIndex, 0, movedMember);
-    onReorderCouncil(reorderedCouncil);
+    setReorderError('');
+    setIsReordering(true);
+    try {
+      await onReorderCouncil(reorderedCouncil);
+    } catch (error) {
+      setReorderError(error instanceof Error ? error.message : 'Could not save council member order. Please try again.');
+    } finally {
+      setIsReordering(false);
+    }
+  };
+
+  const moveMember = (memberId: string, offset: -1 | 1) => {
+    const sourceIndex = council.findIndex((member) => member.id === memberId);
+    const targetIndex = sourceIndex + offset;
+    if (sourceIndex < 0 || targetIndex < 0 || targetIndex >= council.length) return;
+    void handleDrop(council[targetIndex].id, memberId);
   };
 
   const openCreateForm = () => {
     setEditingId(null);
     setForm({ ...emptyForm });
+    setSelectedPhoto(null);
+    setPhotoPreviewUrl('');
     setPositionChoice('');
     setCustomPosition('');
     setErrors({});
@@ -66,6 +98,8 @@ export const CouncilManager: React.FC<CouncilManagerProps> = ({
     const { id: memberId, ...memberForm } = member;
     setEditingId(memberId);
     setForm(memberForm);
+    setSelectedPhoto(null);
+    setPhotoPreviewUrl('');
     const isStandardPosition = councilPositions.includes(member.position);
     setPositionChoice(isStandardPosition ? member.position : 'Other');
     setCustomPosition(isStandardPosition ? '' : member.position);
@@ -77,27 +111,21 @@ export const CouncilManager: React.FC<CouncilManagerProps> = ({
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      setErrors((current) => ({ ...current, imageUrl: 'Choose an image file.' }));
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setErrors((current) => ({ ...current, imageUrl: 'Choose a JPG, PNG, or WebP image.' }));
       return;
     }
-    if (file.size >= 20 * 1024 * 1024) {
-      setErrors((current) => ({ ...current, imageUrl: 'Image must be 20 MB or smaller.' }));
+    if (file.size > 5 * 1024 * 1024) {
+      setErrors((current) => ({ ...current, imageUrl: 'Image must be 5 MB or smaller.' }));
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      setForm((current) => ({ ...current, imageUrl: String(reader.result ?? '') }));
-      setErrors((current) => ({ ...current, imageUrl: '' }));
-    };
-    reader.onerror = () => {
-      setErrors((current) => ({ ...current, imageUrl: 'Could not read this image.' }));
-    };
-    reader.readAsDataURL(file);
+    setSelectedPhoto(file);
+    setPhotoPreviewUrl(URL.createObjectURL(file));
+    setErrors((current) => ({ ...current, imageUrl: '' }));
   };
 
-  const handleSave = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSave = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const nextErrors: Record<string, string> = {};
 
@@ -113,24 +141,58 @@ export const CouncilManager: React.FC<CouncilManagerProps> = ({
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
-    const member = {
-      ...form,
-      name: form.name.trim(),
-      position: form.position.trim(),
-      committee: form.committee.trim(),
-      term: form.term.trim(),
-      bio: form.bio.trim(),
-      email: form.email.trim(),
-      contact: form.contact.trim(),
-      motto: form.motto.trim(),
-    };
+    setIsSaving(true);
+    let uploadedImageUrl: string | undefined;
+    let profileSaved = false;
+    const existingImageUrl = editingId ? council.find((item) => item.id === editingId)?.imageUrl : undefined;
+    try {
+      let imageUrl = form.imageUrl;
+      if (selectedPhoto) {
+        imageUrl = await uploadPortalImage(selectedPhoto, 'council');
+        uploadedImageUrl = imageUrl;
+      }
+      const member = {
+        ...form,
+        imageUrl,
+        name: form.name.trim(),
+        position: form.position.trim(),
+        committee: form.committee.trim(),
+        term: form.term.trim(),
+        bio: form.bio.trim(),
+        email: form.email.trim(),
+        contact: form.contact.trim(),
+        motto: form.motto.trim(),
+      };
 
-    if (editingId) {
-      onUpdateCouncilMember({ ...member, id: editingId });
-    } else {
-      onAddCouncilMember({ ...member, id: `council-${Date.now()}` });
+      if (editingId) {
+        await onUpdateCouncilMember({ ...member, id: editingId });
+      } else {
+        await onAddCouncilMember({ ...member, id: `council-${Date.now()}` });
+      }
+      profileSaved = true;
+      setIsFormOpen(false);
+      if (uploadedImageUrl && existingImageUrl && existingImageUrl !== uploadedImageUrl) {
+        try {
+          await deletePortalImage(existingImageUrl);
+        } catch (cleanupError) {
+          console.error('Unable to remove the replaced council image.', cleanupError);
+        }
+      }
+    } catch (error) {
+      if (uploadedImageUrl && !profileSaved) {
+        try {
+          await deletePortalImage(uploadedImageUrl);
+        } catch (cleanupError) {
+          console.error('Unable to remove an unlinked council image.', cleanupError);
+        }
+      }
+      setErrors((current) => ({
+        ...current,
+        imageUrl: error instanceof Error ? error.message : 'Could not save this council profile.',
+      }));
+    } finally {
+      setIsSaving(false);
     }
-    setIsFormOpen(false);
   };
 
   return (
@@ -138,7 +200,7 @@ export const CouncilManager: React.FC<CouncilManagerProps> = ({
       <Reveal className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-white">SK Council Directory</h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Council profiles published on the public website</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Council profiles published on the public website. Drag the grip or use the arrow buttons to reorder cards.</p>
         </div>
         <button
           type="button"
@@ -227,18 +289,18 @@ export const CouncilManager: React.FC<CouncilManagerProps> = ({
               <label className="mt-1 flex items-center gap-2 w-fit px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800">
                 <Upload className="w-4 h-4" />
                 <span>Choose image</span>
-                <input type="file" accept="image/*" onChange={handlePhotoChange} className="sr-only" />
+                <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handlePhotoChange} className="sr-only" />
               </label>
-              <span className="block mt-1 text-[11px] text-slate-500">Image files up to 10 MB</span>
+              <span className="block mt-1 text-[11px] text-slate-500">JPG, PNG, or WebP up to 5 MB</span>
               {errors.imageUrl && <span className="block mt-1 text-rose-600">{errors.imageUrl}</span>}
-              {form.imageUrl && <img src={form.imageUrl} alt="Selected council member" className="mt-2 w-16 h-16 rounded-full object-cover" />}
+              {(photoPreviewUrl || form.imageUrl) && <img src={photoPreviewUrl || form.imageUrl} alt="Selected council member" className="mt-2 w-16 h-16 rounded-full object-cover" />}
             </div>
           </div>
 
           <div className="flex justify-end gap-2">
             <button type="button" onClick={() => setIsFormOpen(false)} className="px-3 py-2 text-xs font-semibold border border-slate-300 dark:border-slate-700 rounded-lg cursor-pointer">Cancel</button>
-            <button type="submit" className="px-3 py-2 text-xs font-semibold bg-[#0F2C59] text-white rounded-lg flex items-center gap-1.5 cursor-pointer">
-              <Save className="w-4 h-4" /> {editingId ? 'Save Changes' : 'Validate & Publish'}
+            <button type="submit" disabled={isSaving} className="px-3 py-2 text-xs font-semibold bg-[#0F2C59] text-white rounded-lg flex items-center gap-1.5 cursor-pointer disabled:opacity-60">
+              <Save className="w-4 h-4" /> {isSaving ? 'Saving...' : editingId ? 'Save Changes' : 'Validate & Publish'}
             </button>
           </div>
         </Reveal>
@@ -249,6 +311,12 @@ export const CouncilManager: React.FC<CouncilManagerProps> = ({
           No council profiles have been added yet.
         </div>
       ) : (
+        <>
+        {reorderError && (
+          <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs font-medium text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">
+            {reorderError}
+          </p>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {council.map((member, index) => (
             <Reveal
@@ -259,11 +327,14 @@ export const CouncilManager: React.FC<CouncilManagerProps> = ({
                 event.dataTransfer.dropEffect = 'move';
                 setDropTargetId(member.id);
               }}
-              onDragLeave={() => setDropTargetId(null)}
+              onDragLeave={(event: React.DragEvent<HTMLDivElement>) => {
+                if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDropTargetId(null);
+              }}
               onDrop={(event: React.DragEvent<HTMLDivElement>) => {
                 event.preventDefault();
-                const sourceId = event.dataTransfer.getData('text/plain');
-                if (sourceId) handleDrop(member.id, sourceId);
+                const sourceId = event.dataTransfer.getData('text/plain') || draggedMemberId;
+                if (sourceId) void handleDrop(member.id, sourceId);
+                setDraggedMemberId(null);
                 setDropTargetId(null);
               }}
               className={`bg-white dark:bg-slate-900 rounded-xl border p-5 shadow-xs flex flex-col justify-between space-y-4 ${dropTargetId === member.id ? 'border-amber-400 ring-2 ring-amber-400/30' : 'border-slate-200 dark:border-slate-800'}`}
@@ -286,14 +357,18 @@ export const CouncilManager: React.FC<CouncilManagerProps> = ({
                   </div>
                   <button
                     type="button"
-                    draggable
+                    draggable={!isReordering}
                     aria-label={`Drag ${member.name} to reorder`}
                     title="Drag to change card order"
                     onDragStart={(event) => {
                       event.dataTransfer.effectAllowed = 'move';
                       event.dataTransfer.setData('text/plain', member.id);
+                      setDraggedMemberId(member.id);
                     }}
-                    onDragEnd={() => setDropTargetId(null)}
+                    onDragEnd={() => {
+                      setDraggedMemberId(null);
+                      setDropTargetId(null);
+                    }}
                     className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-grab active:cursor-grabbing touch-none"
                   >
                     <GripVertical className="w-4 h-4" />
@@ -309,15 +384,52 @@ export const CouncilManager: React.FC<CouncilManagerProps> = ({
               <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 space-y-1">
                 {member.email && <div className="flex items-center gap-1.5"><Mail className="w-3.5 h-3.5" /><span className="truncate">{member.email}</span></div>}
                 {member.contact && <div className="flex items-center gap-1.5"><Phone className="w-3.5 h-3.5" /><span>{member.contact}</span></div>}
-                <div className="flex justify-end gap-2 pt-2">
+                <div className="flex items-center justify-between gap-2 pt-2">
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => moveMember(member.id, -1)}
+                      disabled={index === 0 || isReordering}
+                      aria-label={`Move ${member.name} up`}
+                      title="Move card up"
+                      className="rounded-md border border-slate-300 p-1.5 text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                    >
+                      <ArrowUp className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => moveMember(member.id, 1)}
+                      disabled={index === council.length - 1 || isReordering}
+                      aria-label={`Move ${member.name} down`}
+                      title="Move card down"
+                      className="rounded-md border border-slate-300 p-1.5 text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                    >
+                      <ArrowDown className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <div className="flex justify-end gap-2">
                   <button type="button" onClick={() => openEditForm(member)} className="px-2.5 py-1.5 border border-slate-300 dark:border-slate-700 rounded-md flex items-center gap-1 cursor-pointer"><Edit className="w-3.5 h-3.5" /> Edit</button>
-                  <button type="button" onClick={() => onDeleteCouncilMember(member.id)} className="px-2.5 py-1.5 border border-rose-300 text-rose-700 dark:text-rose-300 dark:border-rose-900 rounded-md flex items-center gap-1 cursor-pointer"><Trash2 className="w-3.5 h-3.5" /> Delete</button>
+                  <button type="button" onClick={() => setMemberToDelete(member)} className="px-2.5 py-1.5 border border-rose-300 text-rose-700 dark:text-rose-300 dark:border-rose-900 rounded-md flex items-center gap-1 cursor-pointer"><Trash2 className="w-3.5 h-3.5" /> Delete</button>
+                  </div>
                 </div>
               </div>
             </Reveal>
           ))}
         </div>
+        </>
       )}
+
+      <ConfirmationModal
+        isOpen={memberToDelete !== null}
+        title="Delete this council profile?"
+        message={memberToDelete ? `Delete the profile for ${memberToDelete.name}?` : ''}
+        confirmLabel="Delete Profile"
+        onConfirm={() => {
+          if (memberToDelete) onDeleteCouncilMember(memberToDelete.id);
+          setMemberToDelete(null);
+        }}
+        onCancel={() => setMemberToDelete(null)}
+      />
     </div>
   );
 };

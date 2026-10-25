@@ -4,6 +4,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
+import type { User } from '@supabase/supabase-js';
 import { 
   PublicPage, 
   Program, 
@@ -15,12 +16,14 @@ import {
   FeedbackSuggestion,
   EventRegistration,
   ServiceType,
-  ApplicationStatus 
+  ApplicationStatus,
+  YouthService,
 } from './types/index.ts';
 import { ThemeProvider } from './context/ThemeContext.tsx';
 import { DEFAULT_COUNCIL_MEMBERS } from './data/councilMembers.ts';
 import { DEFAULT_ANNOUNCEMENTS } from './data/defaultAnnouncements.ts';
 import { Analytics } from '@vercel/analytics/react';
+import { generateUuid } from './utils/uuid.ts';
 
 // Public Components & Views
 import { Header } from './components/Header.tsx';
@@ -45,73 +48,26 @@ import AdminLogin from './pages/AdminLogin.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import { AdminLayout } from './views/admin/AdminLayout.tsx';
 import { logout } from './utils/auth.js';
-
-const ANNOUNCEMENTS_STORAGE_KEY = 'sk_portal_announcements';
-const ANNOUNCEMENTS_MIGRATION_KEY = 'sk_portal_announcements_kk_profiling_seed_version';
-const KK_PROFILING_ANNOUNCEMENT_ID = 'kk-profiling-2024';
-const KK_PROFILING_ANNOUNCEMENT_MIGRATION_VERSION = '2';
-
-function isAnnouncement(value: unknown): value is Announcement {
-  if (typeof value !== 'object' || value === null) return false;
-  const announcement = value as Record<string, unknown>;
-  const categories = ['General Notice', 'Scholarships', 'Sports Leagues', 'Public Safety', 'Youth Assemblies', 'Health'];
-
-  return (
-    typeof announcement.id === 'string' &&
-    typeof announcement.title === 'string' &&
-    typeof announcement.excerpt === 'string' &&
-    typeof announcement.content === 'string' &&
-    typeof announcement.category === 'string' &&
-    categories.includes(announcement.category) &&
-    typeof announcement.author === 'string' &&
-    typeof announcement.date === 'string' &&
-    (announcement.status === 'Published' || announcement.status === 'Draft') &&
-    (announcement.isPinned === undefined || typeof announcement.isPinned === 'boolean') &&
-    (announcement.coverImage === undefined || typeof announcement.coverImage === 'string') &&
-    (announcement.sourcePostUrl === undefined || typeof announcement.sourcePostUrl === 'string')
-  );
-}
-
-function loadAnnouncements(): Announcement[] {
-  const saved = localStorage.getItem(ANNOUNCEMENTS_STORAGE_KEY);
-  if (saved === null) return DEFAULT_ANNOUNCEMENTS;
-
-  try {
-    const parsed: unknown = JSON.parse(saved);
-    if (Array.isArray(parsed) && parsed.every(isAnnouncement)) {
-      let mergedAnnouncements = parsed.map((announcement) => {
-        const defaultAnnouncement = DEFAULT_ANNOUNCEMENTS.find((item) => item.id === announcement.id);
-        if (!announcement.sourcePostUrl?.trim() && defaultAnnouncement?.sourcePostUrl?.trim()) {
-          return { ...announcement, sourcePostUrl: defaultAnnouncement.sourcePostUrl };
-        }
-        return announcement;
-      });
-      const kkProfilingAnnouncement = DEFAULT_ANNOUNCEMENTS.find(
-        (announcement) => announcement.id === KK_PROFILING_ANNOUNCEMENT_ID
-      );
-      const savedKKAnnouncement = mergedAnnouncements.find((announcement) => announcement.id === KK_PROFILING_ANNOUNCEMENT_ID);
-      if (
-        localStorage.getItem(ANNOUNCEMENTS_MIGRATION_KEY) !== KK_PROFILING_ANNOUNCEMENT_MIGRATION_VERSION &&
-        kkProfilingAnnouncement &&
-        !savedKKAnnouncement
-      ) {
-        mergedAnnouncements = [...mergedAnnouncements, kkProfilingAnnouncement];
-      }
-      return mergedAnnouncements;
-    }
-    console.error('Saved announcements are invalid; loading the default announcement.');
-  } catch (error) {
-    if (!(error instanceof SyntaxError)) throw error;
-    console.error('Saved announcements could not be parsed; loading the default announcement.', error);
-  }
-
-  localStorage.removeItem(ANNOUNCEMENTS_STORAGE_KEY);
-  return DEFAULT_ANNOUNCEMENTS;
-}
+import { isAdminUser, observeAuthState, supabaseConfigured } from './services/supabase.ts';
+import {
+  createPortalRecord,
+  deleteTransparencyDocument,
+  deletePortalRecord,
+  initializePortalDefaults,
+  registerForEvent,
+  savePortalRecord,
+  saveCouncilOrder,
+  sendFeedbackReplyEmail,
+  subscribeToPortalCollection,
+  uploadTransparencyDocument,
+  type PortalCollection,
+} from './services/supabaseData.ts';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<PublicPage>('home');
   const [pathname, setPathname] = useState(window.location.pathname);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [backendError, setBackendError] = useState('');
 
   useEffect(() => {
     const updatePathname = () => setPathname(window.location.pathname);
@@ -119,51 +75,117 @@ export default function App() {
     return () => window.removeEventListener('popstate', updatePathname);
   }, []);
 
+  useEffect(() => {
+    return observeAuthState(setCurrentUser);
+  }, []);
+
   // Core Data Collections
   const [programs, setPrograms] = useState<Program[]>([]);
   const [events, setEvents] = useState<EventItem[]>([]);
-  const [announcements, setAnnouncements] = useState<Announcement[]>(loadAnnouncements);
+  const [announcements, setAnnouncements] = useState<Announcement[]>(DEFAULT_ANNOUNCEMENTS);
   const [applications, setApplications] = useState<YouthApplication[]>([]);
   const [transparencyDocs, setTransparencyDocs] = useState<TransparencyDoc[]>([]);
   const [council, setCouncil] = useState<CouncilMember[]>(DEFAULT_COUNCIL_MEMBERS);
   const [feedbacks, setFeedbacks] = useState<FeedbackSuggestion[]>([]);
   const [registrations, setRegistrations] = useState<EventRegistration[]>([]);
+  const [services, setServices] = useState<YouthService[]>([]);
 
   useEffect(() => {
-    localStorage.setItem(ANNOUNCEMENTS_STORAGE_KEY, JSON.stringify(announcements));
-    if (announcements.some((announcement) => announcement.id === KK_PROFILING_ANNOUNCEMENT_ID)) {
-      localStorage.setItem(ANNOUNCEMENTS_MIGRATION_KEY, KK_PROFILING_ANNOUNCEMENT_MIGRATION_VERSION);
+    if (!supabaseConfigured) {
+      setBackendError('Supabase is not configured. Add the project URL and publishable key to .env.local.');
+      return;
     }
-  }, [announcements]);
+
+    setBackendError('');
+    const isAdmin = isAdminUser(currentUser);
+    const reportListenerError = (error: Error) => {
+      console.error('Supabase data subscription failed.', error);
+      setBackendError('Unable to load portal data from Supabase. Check your project and database policies.');
+    };
+    let isActive = true;
+    const subscriptions: (() => void)[] = [];
+    const subscribe = () => {
+      if (!isActive) return;
+      subscriptions.push(
+        subscribeToPortalCollection<Program>('programs', setPrograms, reportListenerError),
+        subscribeToPortalCollection<EventItem>('events', setEvents, reportListenerError),
+        subscribeToPortalCollection<Announcement>(
+          'announcements',
+          (records) => setAnnouncements(
+            records.length > 0 || isAdmin ? records : DEFAULT_ANNOUNCEMENTS
+          ),
+          reportListenerError
+        ),
+        subscribeToPortalCollection<YouthApplication>('applications', setApplications, reportListenerError),
+        subscribeToPortalCollection<TransparencyDoc>('transparencyDocs', setTransparencyDocs, reportListenerError),
+        subscribeToPortalCollection<CouncilMember>(
+          'council',
+          (records) => setCouncil(
+            records.length > 0 ? records : DEFAULT_COUNCIL_MEMBERS
+          ),
+          reportListenerError
+        ),
+        subscribeToPortalCollection<FeedbackSuggestion>('feedbacks', setFeedbacks, reportListenerError),
+        subscribeToPortalCollection<EventRegistration>('registrations', setRegistrations, reportListenerError),
+        subscribeToPortalCollection<YouthService>('services', setServices, reportListenerError)
+      );
+    };
+
+    if (isAdmin) {
+      void initializePortalDefaults(announcements, DEFAULT_COUNCIL_MEMBERS)
+        .then(subscribe)
+        .catch(reportListenerError);
+    } else {
+      subscribe();
+    }
+
+    return () => {
+      isActive = false;
+      subscriptions.forEach((unsubscribe) => unsubscribe());
+    };
+  }, [currentUser]);
+
+  const reportWriteError = (error: unknown) => {
+    console.error('Supabase data write failed.', error);
+    setBackendError(
+      error instanceof Error
+        ? `Supabase could not save this change: ${error.message}`
+        : 'Supabase could not save this change. Please try again.'
+    );
+  };
+
+  const saveRecord = <T extends { id: string }>(collection: PortalCollection, record: T) => {
+    void savePortalRecord(collection, record).catch(reportWriteError);
+  };
+
+  const deleteRecord = (collection: PortalCollection, id: string) => {
+    void deletePortalRecord(collection, id).catch(reportWriteError);
+  };
 
   // Modal State Controls
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
-  const [applyDefaultService, setApplyDefaultService] = useState<ServiceType>('Educational Assistance');
+  const [applyDefaultService, setApplyDefaultService] = useState<ServiceType>('');
 
   const [selectedProgramModal, setSelectedProgramModal] = useState<Program | null>(null);
   const [selectedEventModal, setSelectedEventModal] = useState<EventItem | null>(null);
   const [selectedDocModal, setSelectedDocModal] = useState<TransparencyDoc | null>(null);
 
   // Handlers for Youth Submissions
-  const handleOpenApplyModal = (service?: ServiceType | string) => {
-    if (service) {
-      if (service.includes('Educational')) setApplyDefaultService('Educational Assistance');
-      else if (service.includes('Profiling') || service.includes('KK')) setApplyDefaultService('Youth Profiling & Katipunan ng Kabataan Registration');
-      else if (service.includes('Facility') || service.includes('Booking')) setApplyDefaultService('SK Facility / Equipment Booking');
-      else if (service.includes('Concern')) setApplyDefaultService('Youth Concern & Suggestion');
-      else if (service.includes('Endorsement')) setApplyDefaultService('SK Barangay Endorsement');
-      else setApplyDefaultService('Educational Assistance');
-    } else {
-      setApplyDefaultService('Educational Assistance');
-    }
+  const handleOpenApplyModal = (service?: ServiceType) => {
+    const activeServices = services.filter((item) => item.isActive);
+    setApplyDefaultService(
+      activeServices.find((item) => item.name === service)?.name
+      ?? activeServices[0]?.name
+      ?? ''
+    );
     setIsApplyModalOpen(true);
   };
 
-  const handleSubmitApplication = (newApp: YouthApplication) => {
-    setApplications((prev) => [newApp, ...prev]);
+  const handleSubmitApplication = async (newApp: YouthApplication) => {
+    await createPortalRecord('applications', newApp);
   };
 
-  const handleConfirmEventRegistration = (
+  const handleConfirmEventRegistration = async (
     eventId: string,
     details: {
       fullName: string;
@@ -172,11 +194,12 @@ export default function App() {
       contactNumber: string;
       email: string;
       emergencyContact: string;
+      registrationCode: string;
     }
-  ) => {
+  ): Promise<void> => {
     const targetEvent = events.find((e) => e.id === eventId);
     const newReg: EventRegistration = {
-      id: `reg-${Date.now()}`,
+      id: `reg-${generateUuid()}`,
       eventId,
       eventTitle: targetEvent?.title || 'SK Bagbaguin Event',
       fullName: details.fullName,
@@ -187,85 +210,129 @@ export default function App() {
       emergencyContact: details.emergencyContact,
       registeredAt: new Date().toLocaleString(),
       status: 'Confirmed',
-      registrationCode: `SKB-EVT-${Math.floor(1000 + Math.random() * 9000)}`,
+      registrationCode: details.registrationCode,
     };
 
-    setRegistrations((prev) => [newReg, ...prev]);
-
-    // Increment attendee count on event
-    setEvents((prev) =>
-      prev.map((evt) =>
-        evt.id === eventId
-          ? {
-              ...evt,
-              registeredCount: Math.min(evt.capacity, evt.registeredCount + 1),
-            }
-          : evt
-      )
-    );
+    await registerForEvent(eventId, newReg);
   };
 
-  const handleSubmitFeedback = (item: FeedbackSuggestion) => {
-    setFeedbacks((prev) => [item, ...prev]);
+  const handleSubmitFeedback = async (item: FeedbackSuggestion) => {
+    await createPortalRecord('feedbacks', item);
+  };
+
+  const handleAddService = (service: YouthService) => {
+    setServices((previous) => [service, ...previous]);
+    saveRecord('services', service);
+  };
+
+  const handleUpdateService = (service: YouthService) => {
+    setServices((previous) => previous.map((item) => item.id === service.id ? service : item));
+    saveRecord('services', service);
+  };
+
+  const handleDeleteService = (id: string) => {
+    setServices((previous) => previous.filter((item) => item.id !== id));
+    deleteRecord('services', id);
   };
 
   // CMS Handlers
-  const handleAddAnnouncement = (ann: Announcement) => {
-    setAnnouncements((prev) => [ann, ...prev]);
+  const handleAddAnnouncement = async (ann: Announcement): Promise<void> => {
+    try {
+      await savePortalRecord('announcements', ann);
+      setAnnouncements((prev) => [ann, ...prev]);
+    } catch (error) {
+      reportWriteError(error);
+      throw error;
+    }
   };
 
-  const handleUpdateAnnouncement = (ann: Announcement) => {
-    setAnnouncements((prev) => prev.map((a) => (a.id === ann.id ? ann : a)));
+  const handleUpdateAnnouncement = async (ann: Announcement): Promise<void> => {
+    try {
+      await savePortalRecord('announcements', ann);
+      setAnnouncements((prev) => prev.map((a) => (a.id === ann.id ? ann : a)));
+    } catch (error) {
+      reportWriteError(error);
+      throw error;
+    }
   };
 
   const handleDeleteAnnouncement = (id: string) => {
     setAnnouncements((prev) => prev.filter((a) => a.id !== id));
+    deleteRecord('announcements', id);
   };
 
   const handleAddProgram = (prog: Program) => {
     setPrograms((prev) => [prog, ...prev]);
+    saveRecord('programs', prog);
   };
 
   const handleUpdateProgram = (prog: Program) => {
     setPrograms((prev) => prev.map((p) => (p.id === prog.id ? prog : p)));
+    saveRecord('programs', prog);
   };
 
   const handleDeleteProgram = (id: string) => {
     setPrograms((prev) => prev.filter((p) => p.id !== id));
+    deleteRecord('programs', id);
   };
 
   const handleAddEvent = (evt: EventItem) => {
     setEvents((prev) => [evt, ...prev]);
+    saveRecord('events', evt);
   };
 
   const handleUpdateEvent = (evt: EventItem) => {
     setEvents((prev) => prev.map((e) => (e.id === evt.id ? evt : e)));
+    saveRecord('events', evt);
   };
 
   const handleDeleteEvent = (id: string) => {
     setEvents((prev) => prev.filter((e) => e.id !== id));
+    deleteRecord('events', id);
   };
 
-  const handleAddCouncilMember = (member: CouncilMember) => {
-    setCouncil((prev) => [member, ...prev]);
+  const handleAddCouncilMember = async (member: CouncilMember): Promise<void> => {
+    const orderedMember = { ...member, sortOrder: -1 };
+    try {
+      await savePortalRecord('council', orderedMember);
+      setCouncil((prev) => [orderedMember, ...prev]);
+    } catch (error) {
+      reportWriteError(error);
+      throw error;
+    }
   };
 
-  const handleUpdateCouncilMember = (member: CouncilMember) => {
-    setCouncil((prev) => prev.map((current) => current.id === member.id ? member : current));
+  const handleUpdateCouncilMember = async (member: CouncilMember): Promise<void> => {
+    try {
+      await savePortalRecord('council', member);
+      setCouncil((prev) => prev.map((current) => current.id === member.id ? member : current));
+    } catch (error) {
+      reportWriteError(error);
+      throw error;
+    }
   };
 
   const handleDeleteCouncilMember = (id: string) => {
     setCouncil((prev) => prev.filter((member) => member.id !== id));
+    deleteRecord('council', id);
   };
 
-  const handleReorderCouncil = (orderedCouncil: CouncilMember[]) => {
-    setCouncil(orderedCouncil);
+  const handleReorderCouncil = async (orderedCouncil: CouncilMember[]): Promise<void> => {
+    try {
+      const savedCouncil = await saveCouncilOrder(orderedCouncil);
+      setCouncil(savedCouncil);
+    } catch (error) {
+      reportWriteError(error);
+      throw error;
+    }
   };
 
   const handleUpdateRegistrationStatus = (regId: string, status: 'Confirmed' | 'Waitlisted' | 'Checked-In') => {
     setRegistrations((prev) =>
       prev.map((r) => (r.id === regId ? { ...r, status } : r))
     );
+    const registration = registrations.find((item) => item.id === regId);
+    if (registration) saveRecord('registrations', { ...registration, status });
   };
 
   const handleUpdateApplicationStatus = (id: string, status: ApplicationStatus, notes?: string) => {
@@ -280,24 +347,91 @@ export default function App() {
           : app
       )
     );
+    const application = applications.find((item) => item.id === id);
+    if (application) saveRecord('applications', {
+      ...application,
+      status,
+      adminNotes: notes !== undefined ? notes : application.adminNotes,
+    });
   };
 
-  const handleAddTransparencyDoc = (doc: TransparencyDoc) => {
-    setTransparencyDocs((prev) => [doc, ...prev]);
+  const handleAddTransparencyDoc = async (doc: TransparencyDoc, file: File): Promise<void> => {
+    const storagePath = await uploadTransparencyDocument(file, doc.id);
+    const savedDoc = { ...doc, storagePath };
+    try {
+      await savePortalRecord('transparencyDocs', savedDoc);
+      setTransparencyDocs((prev) => [savedDoc, ...prev]);
+    } catch (error) {
+      try {
+        await deleteTransparencyDocument(storagePath);
+      } catch (cleanupError) {
+        console.error('Unable to remove an unlinked transparency PDF.', cleanupError);
+      }
+      reportWriteError(error);
+      throw error;
+    }
   };
 
   const handleUpdateTransparencyDoc = (doc: TransparencyDoc) => {
     setTransparencyDocs((prev) => prev.map((d) => (d.id === doc.id ? doc : d)));
+    saveRecord('transparencyDocs', doc);
   };
 
-  const handleDeleteTransparencyDoc = (id: string) => {
-    setTransparencyDocs((prev) => prev.filter((d) => d.id !== id));
+  const handleDeleteTransparencyDoc = async (id: string) => {
+    const document = transparencyDocs.find((item) => item.id === id);
+    try {
+      await deletePortalRecord('transparencyDocs', id);
+      setTransparencyDocs((prev) => prev.filter((item) => item.id !== id));
+      if (document?.storagePath) {
+        try {
+          await deleteTransparencyDocument(document.storagePath);
+        } catch (error) {
+          reportWriteError(error);
+        }
+      }
+    } catch (error) {
+      reportWriteError(error);
+      throw error;
+    }
   };
 
-  const handleReplyFeedback = (id: string, reply: string, status: 'In Progress' | 'Resolved') => {
-    setFeedbacks((prev) =>
-      prev.map((f) => (f.id === id ? { ...f, adminReply: reply, status } : f))
-    );
+  const handleDeleteFeedback = async (id: string): Promise<void> => {
+    try {
+      await deletePortalRecord('feedbacks', id);
+      setFeedbacks((previous) => previous.filter((item) => item.id !== id));
+    } catch (error) {
+      reportWriteError(error);
+      throw error;
+    }
+  };
+
+  const handleReplyFeedback = async (
+    id: string,
+    reply: string,
+    status: 'In Progress' | 'Resolved'
+  ): Promise<{ emailSent: boolean; message?: string }> => {
+    const feedback = feedbacks.find((item) => item.id === id);
+    if (!feedback) throw new Error('This feedback message is no longer available. Refresh the inbox and try again.');
+
+    const updatedFeedback = { ...feedback, adminReply: reply, status };
+    await savePortalRecord('feedbacks', updatedFeedback);
+    setFeedbacks((previous) => previous.map((item) => item.id === id ? updatedFeedback : item));
+
+    if (!feedback.email.trim()) {
+      return {
+        emailSent: false,
+        message: 'Reply saved, but this anonymous message has no email address to send to.',
+      };
+    }
+
+    try {
+      await sendFeedbackReplyEmail(id, reply);
+      return { emailSent: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Reply saved, but its email could not be sent.';
+      setBackendError(message);
+      throw error;
+    }
   };
 
   if (pathname === '/admin/login') {
@@ -311,11 +445,20 @@ export default function App() {
   if (pathname === '/admin') {
     return (
       <ThemeProvider>
-        <ProtectedRoute>
-          <AdminLayout
-            onReturnToPublic={() => {
-              logout();
-              window.location.assign('/');
+        <>
+          {backendError && (
+            <div role="alert" className="fixed inset-x-0 top-0 z-[100] bg-amber-100 border-b border-amber-300 px-4 py-2 text-center text-sm text-amber-950">
+              {backendError}
+            </div>
+          )}
+          <ProtectedRoute>
+            <AdminLayout
+            onReturnToPublic={async () => {
+              await logout();
+              window.history.replaceState({}, '', '/');
+              setPathname('/');
+              setCurrentPage('home');
+              setBackendError('');
             }}
             programs={programs}
             events={events}
@@ -325,6 +468,7 @@ export default function App() {
             council={council}
             feedbacks={feedbacks}
             registrations={registrations}
+            services={services}
             onAddAnnouncement={handleAddAnnouncement}
             onUpdateAnnouncement={handleUpdateAnnouncement}
             onDeleteAnnouncement={handleDeleteAnnouncement}
@@ -344,8 +488,13 @@ export default function App() {
             onDeleteCouncilMember={handleDeleteCouncilMember}
             onReorderCouncil={handleReorderCouncil}
             onReplyFeedback={handleReplyFeedback}
-          />
-        </ProtectedRoute>
+            onDeleteFeedback={handleDeleteFeedback}
+            onAddService={handleAddService}
+            onUpdateService={handleUpdateService}
+            onDeleteService={handleDeleteService}
+            />
+          </ProtectedRoute>
+        </>
       </ThemeProvider>
     );
   }
@@ -353,22 +502,28 @@ export default function App() {
   return (
     <ThemeProvider>
       <div className="min-h-screen overflow-x-clip flex flex-col bg-slate-50 text-slate-800 dark:bg-[#071324] dark:text-slate-100 transition-colors duration-200">
+        {backendError && (
+          <div role="status" className="bg-amber-100 border-b border-amber-300 px-4 py-2 text-center text-sm text-amber-950">
+            {backendError}
+          </div>
+        )}
         <>
           <Header
             currentPage={currentPage}
             onNavigate={(page) => {
               setCurrentPage(page);
-              window.scrollTo({ top: 0, behavior: 'smooth' });
+              window.scrollTo({ top: 0 });
             }}
             onOpenApplyModal={() => handleOpenApplyModal()}
           />
 
           <main className="flex-1 pb-20">
-            {currentPage === 'home' && (
+            <div key={currentPage} className="page-transition">
+              {currentPage === 'home' && (
               <HomeView
                 onNavigate={(page) => {
                   setCurrentPage(page);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                  window.scrollTo({ top: 0 });
                 }}
                 onOpenApplyModal={handleOpenApplyModal}
                 onSelectProgram={(prog) => setSelectedProgramModal(prog)}
@@ -377,52 +532,54 @@ export default function App() {
                 events={events}
                 announcements={announcements}
                 council={council}
+                services={services.filter((service) => service.isActive)}
               />
-            )}
+              )}
 
-            {currentPage === 'about' && (
+              {currentPage === 'about' && (
               <AboutView council={council} />
-            )}
+              )}
 
-            {currentPage === 'programs' && (
+              {currentPage === 'programs' && (
               <ProgramsView
                 programs={programs}
                 onSelectProgram={(prog) => setSelectedProgramModal(prog)}
                 onOpenApply={handleOpenApplyModal}
               />
-            )}
+              )}
 
-            {currentPage === 'events' && (
+              {currentPage === 'events' && (
               <EventsView
                 events={events}
                 onSelectEvent={(evt) => setSelectedEventModal(evt)}
               />
-            )}
+              )}
 
-            {currentPage === 'announcements' && (
+              {currentPage === 'announcements' && (
               <AnnouncementsView announcements={announcements} />
-            )}
+              )}
 
-            {currentPage === 'services' && (
-              <YouthServicesView onOpenApplyModal={handleOpenApplyModal} />
-            )}
+              {currentPage === 'services' && (
+              <YouthServicesView services={services} onOpenApplyModal={handleOpenApplyModal} />
+              )}
 
-            {currentPage === 'transparency' && (
+              {currentPage === 'transparency' && (
               <TransparencyView
                 documents={transparencyDocs}
                 onPreviewDoc={(doc) => setSelectedDocModal(doc)}
               />
-            )}
+              )}
 
-            {currentPage === 'contact' && (
+              {currentPage === 'contact' && (
               <ContactView onSubmitFeedback={handleSubmitFeedback} />
-            )}
+              )}
+            </div>
           </main>
 
           <Footer
             onNavigate={(page) => {
               setCurrentPage(page);
-              window.scrollTo({ top: 0, behavior: 'smooth' });
+              window.scrollTo({ top: 0 });
             }}
           />
         </>
@@ -432,6 +589,7 @@ export default function App() {
         isOpen={isApplyModalOpen}
         onClose={() => setIsApplyModalOpen(false)}
         defaultService={applyDefaultService}
+        services={services}
         onSubmitApplication={handleSubmitApplication}
       />
 

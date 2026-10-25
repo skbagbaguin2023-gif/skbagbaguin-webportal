@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ServiceType, YouthApplication } from '../../types/index.ts';
+import React, { useEffect, useState } from 'react';
+import { ServiceType, YouthApplication, YouthService } from '../../types/index.ts';
 import { validateYouthApplication, generateApplicationRef } from '../../utils/portalLogic.ts';
 import { 
   X, 
@@ -12,18 +12,23 @@ import {
   Copy,
   Check
 } from 'lucide-react';
+import { uploadApplicationDocument } from '../../services/supabaseData.ts';
+import { ConfirmationModal } from './ConfirmationModal.tsx';
+import { generateUuid } from '../../utils/uuid.ts';
 
 interface ApplicationModalProps {
   isOpen: boolean;
   onClose: () => void;
   defaultService?: ServiceType;
-  onSubmitApplication: (app: YouthApplication) => void;
+  services: YouthService[];
+  onSubmitApplication: (app: YouthApplication) => Promise<void>;
 }
 
 export const ApplicationModal: React.FC<ApplicationModalProps> = ({
   isOpen,
   onClose,
-  defaultService = 'Educational Assistance',
+  defaultService = '',
+  services,
   onSubmitApplication,
 }) => {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
@@ -40,10 +45,23 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
   const [yearLevel, setYearLevel] = useState('');
   const [details, setDetails] = useState('');
   const [dataPrivacyConsent, setDataPrivacyConsent] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submittedRef, setSubmittedRef] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitConfirmOpen, setIsSubmitConfirmOpen] = useState(false);
+  const [isDraggingFiles, setIsDraggingFiles] = useState(false);
+
+  useEffect(() => {
+    const activeServices = services.filter((service) => service.isActive);
+    const preferredService = activeServices.find((service) => service.name === defaultService);
+    if (preferredService) {
+      setServiceType(preferredService.name);
+    } else if (!activeServices.some((service) => service.name === serviceType)) {
+      setServiceType(activeServices[0]?.name ?? '');
+    }
+  }, [defaultService, services, serviceType]);
 
   if (!isOpen) return null;
 
@@ -74,8 +92,47 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
     }
   };
 
+  const addSelectedFiles = (files: FileList | File[]) => {
+    const accepted: File[] = [];
+    const nextErrors: Record<string, string> = {};
+    const currentFiles = [...uploadedFiles];
+
+    for (const file of Array.from(files)) {
+      if (!['application/pdf', 'image/jpeg', 'image/png'].includes(file.type)) {
+        nextErrors.files = 'Choose PDF, JPG, or PNG files only.';
+        continue;
+      }
+      if (file.size === 0) {
+        nextErrors.files = 'Empty files cannot be attached.';
+        continue;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        nextErrors.files = 'Each document must be 10 MB or smaller.';
+        continue;
+      }
+      if ([...currentFiles, ...accepted].some((current) => current.name === file.name && current.size === file.size && current.lastModified === file.lastModified)) {
+        continue;
+      }
+      if (currentFiles.length + accepted.length >= 10) {
+        nextErrors.files = 'You can attach up to 10 documents.';
+        break;
+      }
+      accepted.push(file);
+    }
+
+    setUploadedFiles((current) => [...current, ...accepted]);
+    setErrors((current) => ({
+      ...current,
+      files: nextErrors.files ?? (accepted.length ? '' : current.files),
+    }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!services.some((service) => service.isActive && service.name === serviceType)) {
+      setErrors({ submit: 'This service is no longer available. Please choose an active service.' });
+      return;
+    }
     const val = validateYouthApplication({
       applicantName,
       age,
@@ -91,38 +148,91 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
       return;
     }
 
-    const newRef = generateApplicationRef(serviceType, Math.floor(100 + Math.random() * 900));
-    const now = new Date();
-    const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    setErrors({});
+    setIsSubmitConfirmOpen(true);
+  };
 
-    const newApp: YouthApplication = {
-      id: `app-${Date.now()}`,
-      refNumber: newRef,
-      applicantName,
-      age: Number(age),
-      birthday,
-      gender,
-      sitio,
-      address: address || `${sitio}, Barangay Bagbaguin`,
-      contactNumber,
-      email,
-      serviceType,
-      schoolOrOrg: schoolOrOrg || 'Pamantasan ng Lungsod ng Valenzuela (PLV)',
-      yearLevel: yearLevel || 'College Student',
-      details: details || 'Official online grant application via SK Bagbaguin Youth Portal.',
-      status: 'Pending',
-      submittedAt: formattedDate,
-      adminNotes: 'New online portal submission. Verification required.',
-      documentsAttached: uploadedFiles.map((name) => ({
-        name,
-        size: '1.1 MB',
-        status: 'Pending Review',
-      })),
-    };
+  const submitApplication = async () => {
+    setIsSubmitting(true);
+    try {
+      const documentsAttached: YouthApplication['documentsAttached'] = [];
+      for (const file of uploadedFiles) {
+        const storagePath = await uploadApplicationDocument(file);
+        documentsAttached.push({
+          name: file.name,
+          size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
+          status: 'Pending Review',
+          storagePath,
+        });
+      }
 
-    onSubmitApplication(newApp);
-    setSubmittedRef(newRef);
-    setStep(4);
+      const newRef = generateApplicationRef(serviceType, Math.floor(100 + Math.random() * 900));
+      const now = new Date();
+      const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      const newApp: YouthApplication = {
+        id: `app-${generateUuid()}`,
+        refNumber: newRef,
+        applicantName: applicantName.trim(),
+        age: Number(age),
+        birthday,
+        gender,
+        sitio,
+        address: address || `${sitio}, Barangay Bagbaguin`,
+        contactNumber,
+        email,
+        serviceType,
+        schoolOrOrg: schoolOrOrg || 'Pamantasan ng Lungsod ng Valenzuela (PLV)',
+        yearLevel: yearLevel || 'College Student',
+        details: details || 'Official online application via SK Bagbaguin Youth Portal.',
+        status: 'Pending',
+        submittedAt: formattedDate,
+        adminNotes: 'New online portal submission. Verification required.',
+        documentsAttached,
+      };
+
+      await onSubmitApplication(newApp);
+      setSubmittedRef(newRef);
+      setStep(4);
+      setIsSubmitConfirmOpen(false);
+    } catch (error) {
+      const message = error instanceof Error
+        ? error.message
+        : typeof error === 'object' && error !== null && 'message' in error
+          ? String(error.message)
+          : 'Your application could not be submitted. Please try again.';
+      setErrors({
+        submit: message,
+      });
+      setIsSubmitConfirmOpen(false);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const formatFileSize = (size: number) => size < 1024 * 1024
+    ? `${Math.max(1, Math.round(size / 1024))} KB`
+    : `${(size / (1024 * 1024)).toFixed(1)} MB`;
+
+  const handleClose = () => {
+    if (isSubmitting) return;
+    onClose();
+    setStep(1);
+    setApplicantName('');
+    setAge('');
+    setBirthday('');
+    setGender('');
+    setSitio('');
+    setAddress('');
+    setContactNumber('');
+    setEmail('');
+    setSchoolOrOrg('');
+    setYearLevel('');
+    setDetails('');
+    setDataPrivacyConsent(false);
+    setUploadedFiles([]);
+    setErrors({});
+    setSubmittedRef(null);
+    setIsSubmitConfirmOpen(false);
   };
 
   const handleCopyRef = () => {
@@ -146,7 +256,7 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
             <h2 className="text-lg font-bold">Online Youth Application Wizard</h2>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="text-slate-300 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
@@ -186,14 +296,18 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
                 <select
                   value={serviceType}
                   onChange={(e) => setServiceType(e.target.value as ServiceType)}
+                  disabled={services.filter((service) => service.isActive).length === 0}
                   className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0F2C59] dark:focus:ring-amber-400"
                 >
-                  <option value="Educational Assistance">Educational Assistance</option>
-                  <option value="Youth Profiling & Katipunan ng Kabataan Registration">Youth Profiling & Katipunan ng Kabataan Registration</option>
-                  <option value="SK Facility / Equipment Booking">SK Facility / Equipment Booking (Covered Court, Tents, Sound System)</option>
-                  <option value="Youth Concern & Suggestion">Youth Concern / Suggestion Box</option>
-                  <option value="SK Barangay Endorsement">Request Official SK Endorsement / Recommendation</option>
+                  {services.filter((service) => service.isActive).map((service) => (
+                    <option key={service.id} value={service.name}>{service.name}</option>
+                  ))}
                 </select>
+                {services.filter((service) => service.isActive).length === 0 && (
+                  <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
+                    There are currently no active services available.
+                  </p>
+                )}
               </div>
 
               <div>
@@ -406,45 +520,65 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
                   Document Attachments (Certificate of Registration, ID, Barangay Residency)
                 </label>
                 
-                {/* Drag and drop simulation area */}
-                <div className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-4 text-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                <label
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    setIsDraggingFiles(true);
+                  }}
+                  onDragLeave={(event) => {
+                    const nextTarget = event.relatedTarget;
+                    if (!(nextTarget instanceof Node) || !event.currentTarget.contains(nextTarget)) {
+                      setIsDraggingFiles(false);
+                    }
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    setIsDraggingFiles(false);
+                    addSelectedFiles(event.dataTransfer.files);
+                  }}
+                  className={`block cursor-pointer rounded-xl border-2 border-dashed p-5 text-center transition-colors ${
+                    isDraggingFiles
+                      ? 'border-amber-400 bg-amber-50 dark:bg-amber-950/30'
+                      : 'border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800/50'
+                  }`}
+                >
                   <Upload className="w-8 h-8 mx-auto text-slate-400 mb-2" />
                   <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
-                    Upload scanned PDF or JPG copies of requirements
+                    Drag and drop files here, or click to choose
                   </p>
                   <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
-                    Accepted: COR, Valid School/Gov ID, Certificate of Indigency (Max 10MB)
+                    PDF, JPG, or PNG; up to 10 MB each and 10 documents total
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setUploadedFiles((prev) => [
-                        ...prev,
-                        `Doc_Indigency_Certificate_${Date.now().toString().slice(-4)}.pdf`,
-                      ]);
+                  <input
+                    type="file"
+                    multiple
+                    accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                    onChange={(event) => {
+                      if (event.target.files) addSelectedFiles(event.target.files);
+                      event.target.value = '';
                     }}
-                    className="mt-3 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded text-xs font-semibold inline-flex items-center gap-1.5 border border-slate-300 dark:border-slate-700 cursor-pointer"
-                  >
-                    <span>+ Attach Sample Document</span>
-                  </button>
-                </div>
+                    className="sr-only"
+                  />
+                </label>
+                {errors.files && <p role="alert" className="mt-2 text-xs font-medium text-rose-600">{errors.files}</p>}
 
                 {/* File list */}
                 <div className="mt-3 space-y-1.5">
-                  {uploadedFiles.map((f, idx) => (
+                  {uploadedFiles.map((file, idx) => (
                     <div
-                      key={idx}
+                      key={`${file.name}-${file.size}-${file.lastModified}`}
                       className="flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
                     >
                       <div className="flex items-center gap-2">
                         <FileCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span className="font-medium text-slate-700 dark:text-slate-200 truncate max-w-[280px]">{f}</span>
-                        <span className="text-slate-400 dark:text-slate-500 text-[10px]">Ready</span>
+                        <span className="font-medium text-slate-700 dark:text-slate-200 truncate max-w-[280px]">{file.name}</span>
+                        <span className="text-slate-400 dark:text-slate-500 text-[10px]">{formatFileSize(file.size)}</span>
                       </div>
                       <button
                         type="button"
-                        onClick={() => setUploadedFiles(uploadedFiles.filter((_, i) => i !== idx))}
+                        onClick={() => setUploadedFiles((current) => current.filter((_, i) => i !== idx))}
                         className="text-slate-400 hover:text-rose-500 font-bold cursor-pointer"
+                        aria-label={`Remove ${file.name}`}
                       >
                         ×
                       </button>
@@ -477,6 +611,9 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
               {errors.dataPrivacyConsent && (
                 <p className="text-xs text-rose-600 font-medium">{errors.dataPrivacyConsent}</p>
               )}
+              {errors.submit && (
+                <p role="alert" className="text-xs text-rose-600 font-medium">{errors.submit}</p>
+              )}
 
               <div className="flex justify-between pt-3">
                 <button
@@ -489,10 +626,11 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="bg-[#F5A623] hover:bg-[#D98E16] text-[#081830] px-6 py-2 rounded-lg text-sm font-bold flex items-center gap-2 shadow-md cursor-pointer"
+                  disabled={isSubmitting}
+                  className="bg-[#F5A623] hover:bg-[#D98E16] disabled:opacity-60 text-[#081830] px-6 py-2 rounded-lg text-sm font-bold flex items-center gap-2 shadow-md cursor-pointer"
                 >
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>Submit Official Application</span>
+                  <span>{isSubmitting ? 'Submitting...' : 'Submit Official Application'}</span>
                 </button>
               </div>
             </form>
@@ -541,7 +679,7 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
               <div className="pt-2">
                 <button
                   type="button"
-                  onClick={onClose}
+                  onClick={handleClose}
                   className="bg-[#0F2C59] hover:bg-navy-800 text-white px-6 py-2 rounded-lg text-sm font-semibold cursor-pointer"
                 >
                   Close & Return to Portal
@@ -552,6 +690,17 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
         </div>
 
       </div>
+      <ConfirmationModal
+        isOpen={isSubmitConfirmOpen}
+        title={isSubmitting ? 'Submitting your application' : 'Confirm application submission'}
+        message={isSubmitting
+          ? 'Uploading your documents and securely saving your application. Please keep this window open.'
+          : `Submit your application for ${serviceType}${uploadedFiles.length ? ` with ${uploadedFiles.length} attached document${uploadedFiles.length === 1 ? '' : 's'}` : ''}?`}
+        confirmLabel="Submit Application"
+        isLoading={isSubmitting}
+        onConfirm={submitApplication}
+        onCancel={() => setIsSubmitConfirmOpen(false)}
+      />
     </div>
   );
 };

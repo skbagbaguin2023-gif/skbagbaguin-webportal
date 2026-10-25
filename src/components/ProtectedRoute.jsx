@@ -1,12 +1,21 @@
-import { useEffect } from 'react';
-import { isLoggedIn } from '../utils/auth.js';
+import { useEffect, useState } from 'react';
+import { isAdminUser, observeAuthState, supabase } from '../services/supabase.ts';
 
 export default function ProtectedRoute({ children }) {
-  const authenticated = isLoggedIn();
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(supabase !== null);
 
   useEffect(() => {
-    if (!authenticated) window.location.replace('/admin/login');
-  }, [authenticated]);
+    return observeAuthState((currentUser) => {
+      setUser(currentUser);
+      setIsLoading(false);
+    });
+  }, []);
 
-  return authenticated ? children : null;
+  useEffect(() => {
+    if (!isLoading && !isAdminUser(user)) window.location.replace('/admin/login');
+  }, [isLoading, user]);
+
+  if (isLoading || !isAdminUser(user)) return null;
+  return children;
 }

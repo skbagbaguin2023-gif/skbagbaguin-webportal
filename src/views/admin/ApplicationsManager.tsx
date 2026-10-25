@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { YouthApplication, ApplicationStatus } from '../../types/index.ts';
+import { YouthApplication, ApplicationStatus, YouthService } from '../../types/index.ts';
 import { 
   Search, 
   Filter, 
@@ -16,15 +16,18 @@ import {
   Check
 } from 'lucide-react';
 import Reveal from '../../components/Reveal.jsx';
+import { getApplicationDocumentSignedUrl } from '../../services/supabaseData.ts';
 
 interface ApplicationsManagerProps {
   applications: YouthApplication[];
+  services: YouthService[];
   onUpdateStatus: (id: string, status: ApplicationStatus, notes?: string) => void;
   selectedApplicationId?: string | null;
 }
 
 export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
   applications,
+  services,
   onUpdateStatus,
   selectedApplicationId,
 }) => {
@@ -41,6 +44,9 @@ export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
   const [selectedDocPreview, setSelectedDocPreview] = useState<string | null>(
     activeApp?.documentsAttached[0]?.name || null
   );
+  const [selectedDocUrl, setSelectedDocUrl] = useState('');
+  const [documentError, setDocumentError] = useState('');
+  const [isLoadingDocument, setIsLoadingDocument] = useState(false);
 
   const filtered = applications.filter((app) => {
     const q = search.toLowerCase();
@@ -60,7 +66,27 @@ export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
     setActiveApp(app);
     setAdminNotes(app.adminNotes || '');
     setSelectedDocPreview(app.documentsAttached[0]?.name || null);
+    setSelectedDocUrl('');
+    setDocumentError('');
     setSavedSuccess(false);
+  };
+
+  const handleLoadDocument = async () => {
+    const document = activeApp?.documentsAttached.find((item) => item.name === selectedDocPreview);
+    if (!document?.storagePath) {
+      setDocumentError('This record has no stored document. Applicants who submitted before file uploads were enabled have filename-only records.');
+      return;
+    }
+
+    setIsLoadingDocument(true);
+    setDocumentError('');
+    try {
+      setSelectedDocUrl(await getApplicationDocumentSignedUrl(document.storagePath));
+    } catch (error) {
+      setDocumentError(error instanceof Error ? error.message : 'Could not create a secure document link.');
+    } finally {
+      setIsLoadingDocument(false);
+    }
   };
 
   const handleStatusChange = (newStatus: ApplicationStatus) => {
@@ -144,9 +170,9 @@ export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
                 className="w-1/2 px-2 py-1 border border-slate-300 dark:border-slate-700 rounded bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-[11px]"
               >
                 <option value="All">All Services</option>
-                <option value="Educational Assistance">Educational</option>
-                <option value="Youth Profiling & Katipunan ng Kabataan Registration">Profiling (KK)</option>
-                <option value="SK Facility / Equipment Booking">Facility Booking</option>
+                {[...new Set([...services.map((service) => service.name), ...applications.map((app) => app.serviceType)])]
+                  .filter(Boolean)
+                  .map((name) => <option key={name} value={name}>{name}</option>)}
               </select>
             </div>
           </div>
@@ -293,7 +319,11 @@ export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
                 {activeApp.documentsAttached.map((doc, idx) => (
                   <button
                     key={idx}
-                    onClick={() => setSelectedDocPreview(doc.name)}
+                    onClick={() => {
+                      setSelectedDocPreview(doc.name);
+                      setSelectedDocUrl('');
+                      setDocumentError('');
+                    }}
                     className={`px-3 py-1.5 rounded-lg font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
                       selectedDocPreview === doc.name
                         ? 'bg-[#0F2C59] dark:bg-amber-500 text-white dark:text-slate-950 shadow-xs'
@@ -317,10 +347,28 @@ export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
                     Scanned electronic document submitted via Katipunan ng Kabataan Portal
                   </p>
                 </div>
-                <div className="inline-flex items-center gap-1.5 text-xs text-[#0F2C59] dark:text-amber-400 font-semibold bg-white dark:bg-slate-800 px-3 py-1 rounded-md border border-slate-200 dark:border-slate-700">
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  <span>Inspect High-Resolution Scanned Document</span>
-                </div>
+                {selectedDocPreview && (
+                  <button
+                    type="button"
+                    onClick={() => void handleLoadDocument()}
+                    disabled={isLoadingDocument}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-[#0F2C59] disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-amber-400"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    <span>{isLoadingDocument ? 'Preparing secure link...' : 'Open secure document'}</span>
+                  </button>
+                )}
+                {selectedDocUrl && (
+                  <a
+                    href={selectedDocUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ml-2 text-xs font-semibold text-emerald-700 underline dark:text-emerald-400"
+                  >
+                    Open document
+                  </a>
+                )}
+                {documentError && <p role="alert" className="text-xs text-rose-600">{documentError}</p>}
               </div>
             </div>
 

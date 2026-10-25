@@ -47,11 +47,7 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
 
   // Category distribution for applications
   const categoryCounts = applications.reduce((acc, app) => {
-    let key = 'Education';
-    if (app.serviceType.includes('Profiling')) key = 'Profiling';
-    else if (app.serviceType.includes('Facility')) key = 'Facility';
-    else if (app.serviceType.includes('Concern')) key = 'Concerns';
-    else if (app.serviceType.includes('Endorsement')) key = 'Endorse';
+    const key = app.serviceType;
     acc[key] = (acc[key] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);

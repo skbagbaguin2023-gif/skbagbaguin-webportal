@@ -13,7 +13,8 @@ interface EventRegistrationModalProps {
     contactNumber: string;
     email: string;
     emergencyContact: string;
-  }) => void;
+    registrationCode: string;
+  }) => Promise<void>;
 }
 
 export const EventRegistrationModal: React.FC<EventRegistrationModalProps> = ({
@@ -31,10 +32,11 @@ export const EventRegistrationModal: React.FC<EventRegistrationModalProps> = ({
   const [isSuccess, setIsSuccess] = useState(false);
   const [ticketCode, setTicketCode] = useState('');
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen || !event) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName.trim() || !contactNumber.trim()) {
       setError('Please provide your complete name and active mobile number.');
@@ -42,18 +44,25 @@ export const EventRegistrationModal: React.FC<EventRegistrationModalProps> = ({
     }
 
     const generatedCode = `SKB-EVT-${Math.floor(1000 + Math.random() * 9000)}`;
-    setTicketCode(generatedCode);
-
-    onConfirmRegistration(event.id, {
-      fullName,
-      age: Number(age),
-      sitio,
-      contactNumber,
-      email,
-      emergencyContact,
-    });
-
-    setIsSuccess(true);
+    setIsSubmitting(true);
+    setError('');
+    try {
+      await onConfirmRegistration(event.id, {
+        fullName,
+        age: Number(age),
+        sitio,
+        contactNumber,
+        email,
+        emergencyContact,
+        registrationCode: generatedCode,
+      });
+      setTicketCode(generatedCode);
+      setIsSuccess(true);
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : 'Registration failed. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -198,9 +207,10 @@ export const EventRegistrationModal: React.FC<EventRegistrationModalProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="bg-[#F5A623] hover:bg-[#D98E16] text-[#081830] font-bold px-5 py-2 rounded-lg text-xs sm:text-sm shadow-md cursor-pointer"
+                  disabled={isSubmitting}
+                  className="bg-[#F5A623] hover:bg-[#D98E16] disabled:opacity-60 text-[#081830] font-bold px-5 py-2 rounded-lg text-xs sm:text-sm shadow-md cursor-pointer"
                 >
-                  Confirm Registration
+                  {isSubmitting ? 'Registering...' : 'Confirm Registration'}
                 </button>
               </div>
             </form>

@@ -5,15 +5,13 @@ import {
   Announcement, 
   PublicPage, 
   CouncilMember,
-  ServiceType 
+  ServiceType,
+  YouthService,
 } from '../../types/index.ts';
 import { 
-  GraduationCap, 
-  UserPlus, 
-  Trophy, 
-  HeartHandshake, 
-  MessageSquare, 
-  FileCheck2, 
+  FileText,
+  Printer,
+  UserCheck,
   ArrowRight, 
   Calendar, 
   MapPin, 
@@ -39,6 +37,7 @@ interface HomeViewProps {
   events: EventItem[];
   announcements: Announcement[];
   council: CouncilMember[];
+  services: YouthService[];
 }
 
 const getInitials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
@@ -52,6 +51,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   events,
   announcements,
   council,
+  services,
 }) => {
   const featuredPrograms = programs.slice(0, 3);
   const upcomingEvents = events.slice(0, 3);
@@ -136,105 +136,37 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-          
-          {/* Service 1 */}
-          <button
-            onClick={() => onOpenApplyModal('Educational Assistance')}
-            className="group p-4 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-800 hover:border-amber-400 rounded-xl shadow-xs hover:shadow-md transition-all text-left flex flex-col justify-between cursor-pointer"
-          >
-            <div className="w-10 h-10 rounded-lg bg-amber-50 dark:bg-amber-950/50 group-hover:bg-amber-100 dark:group-hover:bg-amber-900/60 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-3 transition-colors">
-              <GraduationCap className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white group-hover:text-[#0F2C59] dark:group-hover:text-amber-300 transition-colors leading-tight">
-                Educational Assistance
-              </h3>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Cash grant for students</p>
-            </div>
-          </button>
-
-          {/* Service 2 */}
-          <button
-            onClick={() => onOpenApplyModal('Youth Profiling & Katipunan ng Kabataan Registration')}
-            className="group p-4 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-800 hover:border-amber-400 rounded-xl shadow-xs hover:shadow-md transition-all text-left flex flex-col justify-between cursor-pointer"
-          >
-            <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-950/50 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/60 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-3 transition-colors">
-              <UserPlus className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white group-hover:text-[#0F2C59] dark:group-hover:text-amber-300 transition-colors leading-tight">
-                KK Youth Profiling
-              </h3>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Census & Registration</p>
-            </div>
-          </button>
-
-          {/* Service 3 */}
-          <button
-            onClick={() => onNavigate('events')}
-            className="group p-4 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-800 hover:border-amber-400 rounded-xl shadow-xs hover:shadow-md transition-all text-left flex flex-col justify-between cursor-pointer"
-          >
-            <div className="w-10 h-10 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-3 transition-colors">
-              <Trophy className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white group-hover:text-[#0F2C59] dark:group-hover:text-amber-300 transition-colors leading-tight">
-                Event Registration
-              </h3>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Sports & Workshops</p>
-            </div>
-          </button>
-
-          {/* Service 4 */}
-          <button
-            onClick={() => onOpenApplyModal('Youth Profiling & Katipunan ng Kabataan Registration')}
-            className="group p-4 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-800 hover:border-amber-400 rounded-xl shadow-xs hover:shadow-md transition-all text-left flex flex-col justify-between cursor-pointer"
-          >
-            <div className="w-10 h-10 rounded-lg bg-purple-50 dark:bg-purple-950/50 group-hover:bg-purple-100 dark:group-hover:bg-purple-900/60 text-purple-600 dark:text-purple-400 flex items-center justify-center mb-3 transition-colors">
-              <HeartHandshake className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white group-hover:text-[#0F2C59] dark:group-hover:text-amber-300 transition-colors leading-tight">
-                Volunteer Network
-              </h3>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Creek clean-up & drives</p>
-            </div>
-          </button>
-
-          {/* Service 5 */}
-          <button
-            onClick={() => onNavigate('contact')}
-            className="group p-4 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-800 hover:border-amber-400 rounded-xl shadow-xs hover:shadow-md transition-all text-left flex flex-col justify-between cursor-pointer"
-          >
-            <div className="w-10 h-10 rounded-lg bg-rose-50 dark:bg-rose-950/50 group-hover:bg-rose-100 dark:group-hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 flex items-center justify-center mb-3 transition-colors">
-              <MessageSquare className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white group-hover:text-[#0F2C59] dark:group-hover:text-amber-300 transition-colors leading-tight">
-                Youth Concerns Box
-              </h3>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Anonymous suggestions</p>
-            </div>
-          </button>
-
-          {/* Service 6 */}
-          <button
-            onClick={() => onOpenApplyModal('SK Barangay Endorsement')}
-            className="group p-4 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-800 hover:border-amber-400 rounded-xl shadow-xs hover:shadow-md transition-all text-left flex flex-col justify-between cursor-pointer"
-          >
-            <div className="w-10 h-10 rounded-lg bg-sky-50 dark:bg-sky-950/50 group-hover:bg-sky-100 dark:group-hover:bg-sky-900/60 text-sky-600 dark:text-sky-400 flex items-center justify-center mb-3 transition-colors">
-              <FileCheck2 className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white group-hover:text-[#0F2C59] dark:group-hover:text-amber-300 transition-colors leading-tight">
-                SK Endorsement
-              </h3>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Youth recommendations</p>
-            </div>
-          </button>
-
-        </div>
+        {services.length > 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+            {services.map((service) => {
+              const Icon = service.name.toLowerCase().includes('print') ? Printer
+                : service.name.toLowerCase().includes('profil') ? UserCheck : FileText;
+              return (
+                <button
+                  key={service.id}
+                  onClick={() => onOpenApplyModal(service.name)}
+                  className="group p-4 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-800 hover:border-amber-400 rounded-xl shadow-xs hover:shadow-md transition-all text-left flex flex-col justify-between cursor-pointer"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-amber-50 dark:bg-amber-950/50 group-hover:bg-amber-100 dark:group-hover:bg-amber-900/60 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-3 transition-colors">
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white group-hover:text-[#0F2C59] dark:group-hover:text-amber-300 transition-colors leading-tight">
+                      {service.name}
+                    </h3>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                      {service.tagline || service.description || 'View service details'}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-center text-sm text-slate-500 dark:text-slate-400">
+            No services are currently available.
+          </p>
+        )}
       </Reveal>
 
       {/* 4. FEATURED PROGRAMS & PROJECTS */}

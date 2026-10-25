@@ -1,17 +1,22 @@
-const SESSION_KEY = 'sk-admin-authenticated';
+import { isAdminUser, supabase } from '../services/supabase.ts';
 
-// TEMPORARY: hardcoded client-side check. Replace with a real backend/auth service before production.
-export async function login(username, password) {
-  if (username !== 'admin' || password !== 'admin123') return false;
+export async function login(email, password) {
+  if (!supabase) {
+    throw new Error('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY to .env.local.');
+  }
 
-  sessionStorage.setItem(SESSION_KEY, 'true');
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+  if (!isAdminUser(data.user)) {
+    await supabase.auth.signOut();
+    return false;
+  }
   return true;
 }
 
-export function isLoggedIn() {
-  return sessionStorage.getItem(SESSION_KEY) === 'true';
-}
-
-export function logout() {
-  sessionStorage.removeItem(SESSION_KEY);
+export async function logout() {
+  if (supabase) {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+  }
 }

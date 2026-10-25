@@ -72,6 +72,7 @@ export function generateApplicationRef(serviceType: string, sequenceNum: number)
   let prefix = 'GEN';
   if (serviceType.includes('Educational')) prefix = 'EDU';
   else if (serviceType.includes('Profiling')) prefix = 'KKP';
+  else if (serviceType.toLowerCase().includes('print')) prefix = 'PRT';
   else if (serviceType.includes('Facility')) prefix = 'FAC';
   else if (serviceType.includes('Concern')) prefix = 'CON';
   else if (serviceType.includes('Endorsement')) prefix = 'END';
