@@ -303,7 +303,7 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
                 <tr key={app.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
                   <td className="py-3 px-4 font-mono font-bold text-[#0F2C59] dark:text-amber-400">{app.refNumber}</td>
                   <td className="py-3 px-4 font-semibold text-slate-900 dark:text-white">{app.applicantName}</td>
-                  <td className="py-3 px-4 text-slate-600 dark:text-slate-300">{app.sitio}</td>
+                  <td className="py-3 px-4 text-slate-600 dark:text-slate-300">{app.sitio || app.address}</td>
                   <td className="py-3 px-4 text-slate-700 dark:text-slate-300 truncate max-w-[200px]">{app.serviceType}</td>
                   <td className="py-3 px-4 font-mono text-slate-500 dark:text-slate-400 text-[11px]">{app.submittedAt}</td>
                   <td className="py-3 px-4">

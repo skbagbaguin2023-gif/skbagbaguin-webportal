@@ -51,6 +51,7 @@ import { logout } from './utils/auth.js';
 import { isAdminUser, observeAuthState, supabaseConfigured } from './services/supabase.ts';
 import {
   createPortalRecord,
+  deleteApplicationDocument,
   deleteTransparencyDocument,
   deletePortalRecord,
   initializePortalDefaults,
@@ -355,6 +356,26 @@ export default function App() {
     });
   };
 
+  const handleDeleteApplication = async (id: string): Promise<void> => {
+    const application = applications.find((item) => item.id === id);
+    try {
+      await deletePortalRecord('applications', id);
+      setApplications((previous) => previous.filter((item) => item.id !== id));
+    } catch (error) {
+      reportWriteError(error);
+      throw error;
+    }
+
+    for (const document of application?.documentsAttached ?? []) {
+      if (!document.storagePath) continue;
+      try {
+        await deleteApplicationDocument(document.storagePath);
+      } catch (error) {
+        reportWriteError(error);
+      }
+    }
+  };
+
   const handleAddTransparencyDoc = async (doc: TransparencyDoc, file: File): Promise<void> => {
     const storagePath = await uploadTransparencyDocument(file, doc.id);
     const savedDoc = { ...doc, storagePath };
@@ -480,6 +501,7 @@ export default function App() {
             onDeleteEvent={handleDeleteEvent}
             onUpdateRegistrationStatus={handleUpdateRegistrationStatus}
             onUpdateApplicationStatus={handleUpdateApplicationStatus}
+            onDeleteApplication={handleDeleteApplication}
             onAddTransparencyDoc={handleAddTransparencyDoc}
             onUpdateTransparencyDoc={handleUpdateTransparencyDoc}
             onDeleteTransparencyDoc={handleDeleteTransparencyDoc}

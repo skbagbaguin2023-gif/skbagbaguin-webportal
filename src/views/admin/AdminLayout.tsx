@@ -67,6 +67,7 @@ interface AdminLayoutProps {
   onDeleteEvent: (id: string) => void;
   onUpdateRegistrationStatus: (regId: string, status: 'Confirmed' | 'Waitlisted' | 'Checked-In') => void;
   onUpdateApplicationStatus: (id: string, status: ApplicationStatus, notes?: string) => void;
+  onDeleteApplication: (id: string) => Promise<void>;
   onAddTransparencyDoc: (doc: TransparencyDoc, file: File) => Promise<void>;
   onUpdateTransparencyDoc: (doc: TransparencyDoc) => void;
   onDeleteTransparencyDoc: (id: string) => Promise<void>;
@@ -107,6 +108,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   onDeleteEvent,
   onUpdateRegistrationStatus,
   onUpdateApplicationStatus,
+  onDeleteApplication,
   onAddTransparencyDoc,
   onUpdateTransparencyDoc,
   onDeleteTransparencyDoc,
@@ -490,6 +492,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
               applications={applications}
               services={services}
               onUpdateStatus={onUpdateApplicationStatus}
+              onDeleteApplication={onDeleteApplication}
               selectedApplicationId={selectedAppForReview?.id}
             />
           )}

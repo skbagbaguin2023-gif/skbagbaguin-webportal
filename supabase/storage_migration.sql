@@ -69,9 +69,19 @@ create policy "Visitors can upload application documents"
   on storage.objects for insert to anon, authenticated
   with check (
     bucket_id = 'application-documents'
-    and (storage.foldername(name))[1] = 'submissions'
-    and (storage.foldername(name))[2] ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-    and lower(coalesce(metadata ->> 'mimetype', '')) in ('application/pdf', 'image/jpeg', 'image/png')
+    and (
+      (
+        (storage.foldername(name))[1] = 'submissions'
+        and (storage.foldername(name))[2] ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+        and lower(coalesce(metadata ->> 'mimetype', '')) in ('application/pdf', 'image/jpeg', 'image/png')
+      )
+      or (
+        (storage.foldername(name))[1] = 'printing-requests'
+        and (storage.foldername(name))[2] ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+        and name ~* '\.pdf$'
+        and lower(coalesce(metadata ->> 'mimetype', '')) = 'application/pdf'
+      )
+    )
   );
 
 drop policy if exists "Admins can read application documents" on storage.objects;

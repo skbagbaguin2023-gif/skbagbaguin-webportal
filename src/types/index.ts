@@ -112,17 +112,22 @@ export interface YouthApplication {
   id: string;
   refNumber: string;
   applicantName: string;
-  age: number;
-  birthday: string;
-  gender: string;
-  sitio: string;
+  age?: number;
+  birthday?: string;
+  gender?: string;
+  sitio?: string;
   address: string;
   contactNumber: string;
-  email: string;
+  email?: string;
   serviceType: ServiceType;
   schoolOrOrg?: string;
   yearLevel?: string;
   details?: string;
+  requestedDate?: string;
+  copiesNeeded?: number;
+  kkProfile?: KkProfilingData;
+  googleSyncStatus?: 'Pending' | 'Synced' | 'Failed';
+  googleSyncError?: string;
   status: ApplicationStatus;
   submittedAt: string;
   adminNotes?: string;
@@ -132,6 +137,31 @@ export interface YouthApplication {
     status: 'Verified' | 'Pending Review';
     storagePath?: string;
   }[];
+}
+
+export interface KkProfilingData {
+  email: string;
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  genderIdentity: string;
+  age: number;
+  birthday: string;
+  birthplace: string;
+  contactNumber: string;
+  civilStatus: string;
+  sitioAddress: string;
+  sitioOther: string;
+  completeAddress: string;
+  voterStatus: string;
+  votedLastSkElection: string;
+  skElectionVoteCount: string;
+  skElectionVoteCountOther: string;
+  nationalVoter: string;
+  precinctNumber: string;
+  youthClassifications: string[];
+  workStatus: string;
+  educationalBackground: string;
 }
 
 export type DocCategory = 'Annual Investment Plan (AIP)' | 'CBYDP' | 'Financial & Liquidation' | 'Accomplishment Report' | 'SK Resolution';

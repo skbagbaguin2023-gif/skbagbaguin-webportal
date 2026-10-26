@@ -39,8 +39,10 @@ Supabase secret/service-role key in `.env.local` or client code.
    you have not already added the services, then run
    [`supabase/storage_migration.sql`](./supabase/storage_migration.sql) to
    enable image uploads, private application document uploads, and the private
-   transparency PDF bucket. If you previously ran an earlier version, run it
-   again; it safely adds the missing buckets and policies.
+   transparency PDF bucket. Run
+   [`supabase/printing_services_migration.sql`](./supabase/printing_services_migration.sql)
+   to enable the dedicated 10 MB PDF-only printing request upload and its
+   validation policy.
 4. In **Authentication > Users**, create an admin user with email and password.
    Copy that user's UUID. In **SQL Editor**, add them to the admin allowlist:
 
@@ -116,6 +118,41 @@ the authorized Gmail account. The email includes a formatted SK Bagbaguin
 header, the original subject, the official council response, and a council
 signature. The inbox warns the admin if the reply was saved but email delivery
 failed, so it can be retried after setup is corrected.
+
+#### Synchronizing KK profiles with Google Forms
+
+The KK profiling form stores each response in Supabase and can submit the same
+answers to the existing Google Form and its linked response spreadsheet. Google
+sync failures do not discard the portal record; an administrator can retry
+sync from the Applications view.
+
+1. Open the existing Google Form in edit mode and copy its form ID from the URL
+   (`docs.google.com/forms/d/<FORM_ID>/edit`). Do not use the responder URL's
+   `/d/e/` identifier.
+2. Update the existing Google Apps Script project with
+   [`google-apps-script/Code.gs`](./google-apps-script/Code.gs). In
+   **Project Settings > Script Properties**, keep `GMAIL_MAILER_SECRET` and add
+   `KK_FORM_ID` (the form ID from the edit URL) and `KK_FORM_SYNC_SECRET` (a
+   newly generated long random value).
+3. In the Apps Script editor, save the code, choose `authorizeKkFormAccess` in
+   the function selector, and click **Run**. Review and grant the requested
+   Google Forms and Sheets permissions. This setup function checks access but
+   does not submit a response. Run it as the same account that will execute the
+   web app and that can edit the form and linked spreadsheet.
+4. Deploy or update the script as a **Web app**, executing as that same account,
+   with access set to **Anyone**. Copy the deployed
+   `https://script.google.com/macros/s/.../exec` URL.
+5. In Supabase **Edge Functions > Secrets**, add `KK_FORM_WEB_APP_URL` with the
+   deployed web app URL and `KK_FORM_SYNC_SECRET` with the exact same value as
+   the Apps Script property. Do not add the secret to frontend environment
+   variables.
+6. Deploy the function from the repository root with the Supabase CLI:
+   `supabase functions deploy sync-kk-profile`
+
+The script checks for a linked response spreadsheet, matches the existing
+question titles, and writes a portal-sync ledger tab to avoid duplicate
+responses on retries. Test with a non-sensitive sample profile after
+deployment.
 
 The admin dashboard's **Youth Services** section lets an administrator add,
 edit, hide/show, and delete services. Active services automatically appear on

@@ -16,7 +16,7 @@ import {
   Check
 } from 'lucide-react';
 import Reveal from '../../components/Reveal.jsx';
-import { getApplicationDocumentSignedUrl } from '../../services/supabaseData.ts';
+import { getApplicationDocumentSignedUrl, syncKkProfileToGoogle } from '../../services/supabaseData.ts';
 
 interface ApplicationsManagerProps {
   applications: YouthApplication[];
@@ -47,6 +47,8 @@ export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
   const [selectedDocUrl, setSelectedDocUrl] = useState('');
   const [documentError, setDocumentError] = useState('');
   const [isLoadingDocument, setIsLoadingDocument] = useState(false);
+  const [isSyncingKkProfile, setIsSyncingKkProfile] = useState(false);
+  const [kkSyncMessage, setKkSyncMessage] = useState('');
 
   const filtered = applications.filter((app) => {
     const q = search.toLowerCase();
@@ -54,7 +56,7 @@ export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
       !q ||
       app.applicantName.toLowerCase().includes(q) ||
       app.refNumber.toLowerCase().includes(q) ||
-      app.sitio.toLowerCase().includes(q);
+      (app.sitio || app.address).toLowerCase().includes(q);
 
     const matchStatus = filterStatus === 'All' || app.status === filterStatus;
     const matchService = filterService === 'All' || app.serviceType === filterService;
@@ -69,6 +71,24 @@ export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
     setSelectedDocUrl('');
     setDocumentError('');
     setSavedSuccess(false);
+    setKkSyncMessage('');
+  };
+
+  const handleKkSync = async () => {
+    if (!activeApp) return;
+    setIsSyncingKkProfile(true);
+    setKkSyncMessage('');
+    try {
+      await syncKkProfileToGoogle(activeApp.id);
+      setActiveApp({ ...activeApp, googleSyncStatus: 'Synced', googleSyncError: '' });
+      setKkSyncMessage('This KK profile is synchronized with the Google Form.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Could not synchronize the KK profile.';
+      setActiveApp({ ...activeApp, googleSyncStatus: 'Failed', googleSyncError: message });
+      setKkSyncMessage(message);
+    } finally {
+      setIsSyncingKkProfile(false);
+    }
   };
 
   const handleLoadDocument = async () => {
@@ -209,7 +229,7 @@ export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
                   <div className="font-bold text-slate-900 dark:text-white">{app.applicantName}</div>
                   <div className="text-slate-500 dark:text-slate-400 text-[11px] truncate">{app.serviceType}</div>
                   <div className="flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500 mt-1">
-                    <span>{app.sitio}</span>
+                    <span>{app.sitio || app.address}</span>
                     <span className="font-mono">{app.submittedAt.split(' ')[0]}</span>
                   </div>
                 </div>
@@ -266,32 +286,109 @@ export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
               </div>
             )}
 
+            {activeApp.kkProfile && (
+              <section className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/50">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-white">Katipunan ng Kabataan Profile</h4>
+                  <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${
+                    activeApp.googleSyncStatus === 'Synced'
+                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
+                      : activeApp.googleSyncStatus === 'Failed'
+                        ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300'
+                        : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
+                  }`}>
+                    Google sync: {activeApp.googleSyncStatus || 'Pending'}
+                  </span>
+                </div>
+                <div className="grid gap-2 text-xs sm:grid-cols-2">
+                  {Object.entries({
+                    'Email': activeApp.kkProfile.email,
+                    'Name': `${activeApp.kkProfile.firstName} ${activeApp.kkProfile.middleName} ${activeApp.kkProfile.lastName}`.replace(/\s+/g, ' ').trim(),
+                    'Sex / gender identity': activeApp.kkProfile.genderIdentity,
+                    'Age / birthday': `${activeApp.kkProfile.age} · ${activeApp.kkProfile.birthday}`,
+                    'Birthplace': activeApp.kkProfile.birthplace,
+                    'Civil status': activeApp.kkProfile.civilStatus,
+                    'Street / sitio': activeApp.kkProfile.sitioAddress === 'Iba pa:'
+                      ? activeApp.kkProfile.sitioOther
+                      : activeApp.kkProfile.sitioAddress,
+                    'Complete address': activeApp.kkProfile.completeAddress,
+                    'Voter status': activeApp.kkProfile.voterStatus,
+                    'Voted in last SK election': activeApp.kkProfile.votedLastSkElection,
+                    'SK election vote count': activeApp.kkProfile.skElectionVoteCount,
+                    'National voter': activeApp.kkProfile.nationalVoter,
+                    'Precinct number': activeApp.kkProfile.precinctNumber || 'Not provided',
+                    'Youth classifications': activeApp.kkProfile.youthClassifications.join(', '),
+                    'Work status': activeApp.kkProfile.workStatus,
+                    'Educational background': activeApp.kkProfile.educationalBackground,
+                  }).map(([label, value]) => (
+                    <p key={label} className="break-words text-slate-600 dark:text-slate-300">
+                      <strong className="text-slate-800 dark:text-slate-100">{label}:</strong> {value}
+                    </p>
+                  ))}
+                </div>
+                {kkSyncMessage && <p role="status" className="text-xs text-amber-800 dark:text-amber-300">{kkSyncMessage}</p>}
+                {activeApp.googleSyncStatus !== 'Synced' && (
+                  <button
+                    type="button"
+                    disabled={isSyncingKkProfile}
+                    onClick={() => void handleKkSync()}
+                    className="rounded-lg bg-[#0F2C59] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
+                  >
+                    {isSyncingKkProfile ? 'Synchronizing...' : 'Retry Google Sync'}
+                  </button>
+                )}
+              </section>
+            )}
+
             {/* Applicant Profile Data Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
-              <div>
-                <span className="text-slate-400 dark:text-slate-400 block text-[11px]">Age & Gender</span>
-                <strong className="text-slate-800 dark:text-slate-200">{activeApp.age} yrs · {activeApp.gender}</strong>
-              </div>
-              <div>
-                <span className="text-slate-400 dark:text-slate-400 block text-[11px]">Date of Birth</span>
-                <strong className="text-slate-800 dark:text-slate-200 font-mono">{activeApp.birthday}</strong>
-              </div>
-              <div>
-                <span className="text-slate-400 dark:text-slate-400 block text-[11px]">Resident Sitio</span>
-                <strong className="text-slate-800 dark:text-slate-200">{activeApp.sitio}</strong>
-              </div>
+              {activeApp.serviceType === 'Printing Services' ? (
+                <>
+                  <div>
+                    <span className="text-slate-400 dark:text-slate-400 block text-[11px]">Requested Date</span>
+                    <strong className="text-slate-800 dark:text-slate-200 font-mono">{activeApp.requestedDate}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 dark:text-slate-400 block text-[11px]">Copies Needed</span>
+                    <strong className="text-slate-800 dark:text-slate-200">{activeApp.copiesNeeded}</strong>
+                  </div>
+                  <div className="col-span-2 sm:col-span-3">
+                    <span className="text-slate-400 dark:text-slate-400 block text-[11px]">Full Address</span>
+                    <strong className="text-slate-800 dark:text-slate-200">{activeApp.address}</strong>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <span className="text-slate-400 dark:text-slate-400 block text-[11px]">Age & Gender</span>
+                    <strong className="text-slate-800 dark:text-slate-200">{activeApp.age} yrs · {activeApp.gender}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 dark:text-slate-400 block text-[11px]">Date of Birth</span>
+                    <strong className="text-slate-800 dark:text-slate-200 font-mono">{activeApp.birthday}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 dark:text-slate-400 block text-[11px]">Resident Sitio</span>
+                    <strong className="text-slate-800 dark:text-slate-200">{activeApp.sitio}</strong>
+                  </div>
+                </>
+              )}
               <div>
                 <span className="text-slate-400 dark:text-slate-400 block text-[11px]">Contact Mobile</span>
                 <strong className="text-slate-800 dark:text-slate-200 font-mono">{activeApp.contactNumber}</strong>
               </div>
-              <div>
-                <span className="text-slate-400 dark:text-slate-400 block text-[11px]">Email Address</span>
-                <strong className="text-slate-800 dark:text-slate-200 truncate block">{activeApp.email}</strong>
-              </div>
-              <div>
-                <span className="text-slate-400 dark:text-slate-400 block text-[11px]">School / Affiliation</span>
-                <strong className="text-slate-800 dark:text-slate-200 truncate block">{activeApp.schoolOrOrg || 'N/A'}</strong>
-              </div>
+              {activeApp.serviceType !== 'Printing Services' && (
+                <>
+                  <div>
+                    <span className="text-slate-400 dark:text-slate-400 block text-[11px]">Email Address</span>
+                    <strong className="text-slate-800 dark:text-slate-200 truncate block">{activeApp.email}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 dark:text-slate-400 block text-[11px]">School / Affiliation</span>
+                    <strong className="text-slate-800 dark:text-slate-200 truncate block">{activeApp.schoolOrOrg || 'N/A'}</strong>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Purpose or notes */}

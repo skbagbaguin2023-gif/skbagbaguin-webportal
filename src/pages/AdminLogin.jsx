@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { login } from '../utils/auth.js';
 import { supabaseConfigured } from '../services/supabase.ts';
+import skLogo from '../assets/images/skLogo.png';
 
 export default function AdminLogin() {
   const [email, setEmail] = useState('');
@@ -34,7 +35,11 @@ export default function AdminLogin() {
       <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl p-7 sm:p-9">
         <div className="flex flex-col items-center text-center mb-8">
           <div className="w-12 h-12 rounded-xl bg-[#0F2C59] text-amber-400 flex items-center justify-center mb-4">
-            <ShieldCheck className="w-6 h-6" />
+            <img
+              src={skLogo}
+              alt="SK Bagbaguin Youth Assembly"
+              className="h-full w-full rounded-full object-contain pointer-events-none"
+            />
           </div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Admin Login</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Sign in to access the admin dashboard.</p>

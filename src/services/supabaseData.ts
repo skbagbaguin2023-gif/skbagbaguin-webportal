@@ -91,6 +91,28 @@ export async function uploadApplicationDocument(file: File): Promise<string> {
   return path;
 }
 
+export async function uploadPrintingRequestPdf(file: File): Promise<string> {
+  if (file.type !== 'application/pdf' || !file.name.toLowerCase().endsWith('.pdf')) {
+    throw new Error('Choose a PDF file.');
+  }
+  if (file.size === 0) throw new Error('The selected PDF file is empty.');
+  if (file.size > MAX_APPLICATION_DOCUMENT_SIZE) {
+    throw new Error('The PDF must be 10 MB or smaller.');
+  }
+
+  const path = `printing-requests/${generateUuid()}/${generateUuid()}.pdf`;
+  const { error } = await getClient().storage
+    .from(APPLICATION_DOCUMENTS_BUCKET)
+    .upload(path, file, {
+      cacheControl: '3600',
+      contentType: 'application/pdf',
+      upsert: false,
+    });
+
+  if (error) throw error;
+  return path;
+}
+
 export async function getApplicationDocumentSignedUrl(path: string): Promise<string> {
   const { data, error } = await getClient().storage
     .from(APPLICATION_DOCUMENTS_BUCKET)
@@ -156,6 +178,29 @@ export async function sendFeedbackReplyEmail(feedbackId: string, reply: string):
       if (responseMessage) throw new Error(`Reply saved, but the email could not be sent. ${responseMessage}`);
     }
     throw new Error(`Reply saved, but the email could not be sent. ${error.message}`);
+  }
+}
+
+export async function syncKkProfileToGoogle(applicationId: string): Promise<void> {
+  const { data, error } = await getClient().functions.invoke('sync-kk-profile', {
+    body: { applicationId },
+  });
+
+  if (error) {
+    const context = error.context;
+    if (context instanceof Response) {
+      let response: { error?: unknown } | undefined;
+      try {
+        response = await context.clone().json() as { error?: unknown };
+      } catch {
+        response = undefined;
+      }
+      if (typeof response?.error === 'string') throw new Error(response.error);
+    }
+    throw new Error(`KK profile saved in the portal, but Google sync failed: ${error.message}`);
+  }
+  if (!data?.synced || data.statusSaved === false) {
+    throw new Error('Google form sync could not be confirmed. The portal profile remains saved and can be retried.');
   }
 }
 
