@@ -56,6 +56,10 @@ Supabase secret/service-role key in `.env.local` or client code.
    admin UI access.
 5. Restart the Vite server and sign in at `/admin/login`.
 
+The app uses client-side routes such as `/admin/login`. `vercel.json` rewrites
+direct route requests to the app entry point so those paths also work when
+opened or refreshed on Vercel.
+
 For Vercel, add these variables under **Project Settings > Environment
 Variables**, select the environments you deploy to, and redeploy:
 `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, and

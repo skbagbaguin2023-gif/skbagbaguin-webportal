@@ -3,6 +3,7 @@ import { Program, ProgramCategory, ProgramStatus } from '../../types/index.ts';
 import { filterPrograms, formatCurrencyPHP } from '../../utils/portalLogic.ts';
 import { Search, Filter, Sparkles, ArrowRight, CheckCircle2, SlidersHorizontal } from 'lucide-react';
 import Reveal from '../../components/Reveal.jsx';
+import { PortalImage } from '../../components/PortalImage.tsx';
 
 interface ProgramsViewProps {
   programs: Program[];
@@ -115,11 +116,10 @@ export const ProgramsView: React.FC<ProgramsViewProps> = ({
               <div>
                 {/* Image Cover */}
                 <div className="relative h-44 bg-slate-200 dark:bg-slate-800 overflow-hidden">
-                  <img
+                  <PortalImage
                     src={prog.imageUrl}
                     alt={prog.title}
-                    className="w-full h-full object-cover"
-                    referrerPolicy="no-referrer"
+                    className="h-full w-full object-cover"
                   />
                   <div className="absolute top-3 left-3 bg-[#0F2C59] text-white text-[11px] font-bold px-2.5 py-1 rounded shadow-xs">
                     {prog.category}

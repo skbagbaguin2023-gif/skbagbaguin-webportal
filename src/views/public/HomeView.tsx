@@ -28,6 +28,7 @@ import HeroCarousel from '../../components/HeroCarousel.jsx';
 import Announcements from '../../components/Announcements.jsx';
 import LocationMap from '../../components/LocationMap.jsx';
 import { CouncilMemberAvatar } from '../../components/CouncilMemberAvatar.tsx';
+import { PortalImage } from '../../components/PortalImage.tsx';
 
 interface HomeViewProps {
   onNavigate: (page: PublicPage) => void;
@@ -197,11 +198,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-xs hover:shadow-md transition-shadow flex flex-col"
               >
                 <div className="relative h-44 bg-slate-200 dark:bg-slate-800 overflow-hidden">
-                  <img
+                  <PortalImage
                     src={prog.imageUrl}
                     alt={prog.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    referrerPolicy="no-referrer"
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                   <div className="absolute top-3 left-3 bg-[#0F2C59] text-white text-[11px] font-bold px-2.5 py-1 rounded shadow-xs">
                     {prog.category}

@@ -78,3 +78,6 @@ Ang lahat ng impormasyong ibibigay ay mananatiling kumpidensyal alinsunod sa Dat
     sourcePostUrl: KK_PROFILING_SOURCE_POST_URL,
   },
 ];
+
+export const getDefaultAnnouncementCoverImage = (announcementId: string): string | undefined =>
+  DEFAULT_ANNOUNCEMENTS.find((announcement) => announcement.id === announcementId)?.coverImage;

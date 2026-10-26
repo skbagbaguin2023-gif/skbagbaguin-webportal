@@ -2,6 +2,7 @@ import React from 'react';
 import { Program } from '../../types/index.ts';
 import { formatCurrencyPHP } from '../../utils/portalLogic.ts';
 import { X, Target, Calendar, User, FileText, CheckCircle2, ArrowRight } from 'lucide-react';
+import { PortalImage } from '../PortalImage.tsx';
 
 interface ProgramDetailModalProps {
   program: Program | null;
@@ -24,11 +25,10 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
         
         {/* Header Cover */}
         <div className="relative h-48 bg-[#0F2C59] overflow-hidden">
-          <img
+          <PortalImage
             src={program.imageUrl}
             alt={program.title}
             className="w-full h-full object-cover opacity-60"
-            referrerPolicy="no-referrer"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#081830] via-navy-950/40 to-transparent" />
           

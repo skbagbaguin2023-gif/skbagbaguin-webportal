@@ -13,6 +13,8 @@ import {
 import Reveal from '../../components/Reveal.jsx';
 import { deletePortalImage, uploadPortalImage } from '../../services/supabaseData.ts';
 import { ConfirmationModal } from '../../components/modals/ConfirmationModal.tsx';
+import { PortalImage } from '../../components/PortalImage.tsx';
+import { getDefaultAnnouncementCoverImage } from '../../data/defaultAnnouncements.ts';
 
 interface AnnouncementsManagerProps {
   announcements: Announcement[];
@@ -414,7 +416,14 @@ export const AnnouncementsManager: React.FC<AnnouncementsManagerProps> = ({
                 <p className="mt-1 text-[11px] text-slate-500">JPG, PNG, or WebP up to 5 MB. Existing image URLs remain supported.</p>
                 {imageError && <p role="alert" className="mt-1 text-xs text-rose-600">{imageError}</p>}
                 {(coverPreviewUrl || formCoverImage) && (
-                  <img src={coverPreviewUrl || formCoverImage} alt="Announcement cover preview" className="mt-2 max-h-40 rounded-lg object-cover" />
+                  <PortalImage
+                    src={coverPreviewUrl || formCoverImage}
+                    fallbackSrc={!coverPreviewUrl
+                      ? editingId ? getDefaultAnnouncementCoverImage(editingId) : undefined
+                      : undefined}
+                    alt="Announcement cover preview"
+                    className="mt-2 min-h-24 max-h-40 rounded-lg object-cover"
+                  />
                 )}
               </div>
 

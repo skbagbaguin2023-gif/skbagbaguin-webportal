@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import Reveal from './Reveal.jsx';
 import FacebookPostCard from './FacebookPostCard.jsx';
+import { getDefaultAnnouncementCoverImage } from '../data/defaultAnnouncements.ts';
+import { PortalImage } from './PortalImage.tsx';
 
 export default function Announcements({ announcements }) {
   const publishedAnnouncements = announcements;
@@ -77,16 +79,18 @@ export default function Announcements({ announcements }) {
               key={activeAnnouncement.id}
               className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900"
             >
-              {activeAnnouncement.coverImage && (
+              {(activeAnnouncement.coverImage || getDefaultAnnouncementCoverImage(activeAnnouncement.id)) && (
                 <div className="relative isolate h-48 w-full overflow-hidden bg-slate-200 sm:h-56 dark:bg-slate-800">
-                  <img
+                  <PortalImage
                     src={activeAnnouncement.coverImage}
+                    fallbackSrc={getDefaultAnnouncementCoverImage(activeAnnouncement.id)}
                     alt=""
-                    aria-hidden="true"
+                    ariaHidden
                     className="absolute inset-0 h-full w-full scale-110 object-cover opacity-60 blur-xl"
                   />
-                  <img
+                  <PortalImage
                     src={activeAnnouncement.coverImage}
+                    fallbackSrc={getDefaultAnnouncementCoverImage(activeAnnouncement.id)}
                     alt=""
                     className="relative z-10 h-full w-full object-contain"
                   />

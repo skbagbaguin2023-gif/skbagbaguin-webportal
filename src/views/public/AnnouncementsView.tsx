@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Announcement, AnnouncementCategory } from '../../types/index.ts';
 import { Bell, Search, Pin, Calendar, User, ArrowRight, X } from 'lucide-react';
 import Reveal from '../../components/Reveal.jsx';
+import { PortalImage } from '../../components/PortalImage.tsx';
+import { getDefaultAnnouncementCoverImage } from '../../data/defaultAnnouncements.ts';
 
 interface AnnouncementsViewProps {
   announcements: Announcement[];
@@ -85,8 +87,13 @@ export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ announceme
       {/* Featured Main Announcement */}
       {featured && (
         <Reveal className="bg-white dark:bg-slate-900 rounded-2xl border-2 border-amber-400/60 dark:border-amber-500/50 p-6 sm:p-8 shadow-md relative overflow-hidden">
-          {featured.coverImage && (
-            <img src={featured.coverImage} alt="" className="w-full max-h-[28rem] object-cover rounded-xl mb-5" />
+          {(featured.coverImage || getDefaultAnnouncementCoverImage(featured.id)) && (
+            <PortalImage
+              src={featured.coverImage}
+              fallbackSrc={getDefaultAnnouncementCoverImage(featured.id)}
+              alt=""
+              className="mb-5 min-h-48 max-h-[28rem] w-full rounded-xl object-cover"
+            />
           )}
           <div className="flex items-center gap-2 text-xs font-bold text-amber-700 dark:text-amber-400 mb-2">
             <Pin className="w-4 h-4 fill-amber-500 text-amber-600 dark:text-amber-400" />
@@ -184,6 +191,15 @@ export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ announceme
                 <span className="font-medium text-slate-700 dark:text-slate-300">{activeModalAnnouncement.author}</span>
                 <span className="font-mono">{activeModalAnnouncement.date}</span>
               </div>
+
+              {(activeModalAnnouncement.coverImage || getDefaultAnnouncementCoverImage(activeModalAnnouncement.id)) && (
+                <PortalImage
+                  src={activeModalAnnouncement.coverImage}
+                  fallbackSrc={getDefaultAnnouncementCoverImage(activeModalAnnouncement.id)}
+                  alt=""
+                  className="min-h-48 max-h-[28rem] w-full rounded-xl object-contain"
+                />
+              )}
 
               <div className="text-xs sm:text-sm text-slate-700 dark:text-slate-200 leading-relaxed whitespace-pre-line space-y-3 font-sans">
                 {activeModalAnnouncement.content}
