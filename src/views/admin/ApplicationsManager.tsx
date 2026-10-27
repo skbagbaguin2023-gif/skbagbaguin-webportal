@@ -13,15 +13,18 @@ import {
   MessageSquare, 
   ExternalLink,
   Save,
-  Check
+  Check,
+  Trash2
 } from 'lucide-react';
 import Reveal from '../../components/Reveal.jsx';
 import { getApplicationDocumentSignedUrl, syncKkProfileToGoogle } from '../../services/supabaseData.ts';
+import { ConfirmationModal } from '../../components/modals/ConfirmationModal.tsx';
 
 interface ApplicationsManagerProps {
   applications: YouthApplication[];
   services: YouthService[];
   onUpdateStatus: (id: string, status: ApplicationStatus, notes?: string) => void;
+  onDeleteApplication: (id: string) => Promise<void>;
   selectedApplicationId?: string | null;
 }
 
@@ -29,13 +32,14 @@ export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
   applications,
   services,
   onUpdateStatus,
+  onDeleteApplication,
   selectedApplicationId,
 }) => {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('All');
   const [filterService, setFilterService] = useState<string>('All');
 
-  const [activeApp, setActiveApp] = useState<YouthApplication>(
+  const [activeApp, setActiveApp] = useState<YouthApplication | undefined>(
     applications.find((a) => a.id === selectedApplicationId) || applications[0]
   );
 
@@ -49,6 +53,9 @@ export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
   const [isLoadingDocument, setIsLoadingDocument] = useState(false);
   const [isSyncingKkProfile, setIsSyncingKkProfile] = useState(false);
   const [kkSyncMessage, setKkSyncMessage] = useState('');
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isDeletingApplication, setIsDeletingApplication] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   const filtered = applications.filter((app) => {
     const q = search.toLowerCase();
@@ -110,6 +117,7 @@ export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
   };
 
   const handleStatusChange = (newStatus: ApplicationStatus) => {
+    if (!activeApp) return;
     onUpdateStatus(activeApp.id, newStatus, adminNotes);
     setActiveApp({
       ...activeApp,
@@ -121,6 +129,7 @@ export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
   };
 
   const handleSaveNotes = () => {
+    if (!activeApp) return;
     onUpdateStatus(activeApp.id, activeApp.status, adminNotes);
     setActiveApp({
       ...activeApp,
@@ -128,6 +137,28 @@ export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
     });
     setSavedSuccess(true);
     setTimeout(() => setSavedSuccess(false), 2500);
+  };
+
+  const handleDeleteApplication = async () => {
+    if (!activeApp) return;
+    setIsDeletingApplication(true);
+    setDeleteError('');
+    try {
+      await onDeleteApplication(activeApp.id);
+      const nextApplication = applications.find((application) => application.id !== activeApp.id);
+      setActiveApp(nextApplication);
+      setAdminNotes(nextApplication?.adminNotes || '');
+      setSelectedDocPreview(nextApplication?.documentsAttached[0]?.name || null);
+      setSelectedDocUrl('');
+      setDocumentError('');
+      setSavedSuccess(false);
+      setKkSyncMessage('');
+      setIsDeleteConfirmOpen(false);
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : 'Could not delete this application.');
+    } finally {
+      setIsDeletingApplication(false);
+    }
   };
 
   return (
@@ -254,7 +285,18 @@ export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
               </div>
 
               {/* Status Action Buttons */}
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDeleteError('');
+                    setIsDeleteConfirmOpen(true);
+                  }}
+                  className="bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-xs cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Delete</span>
+                </button>
                 <button
                   onClick={() => handleStatusChange('Approved')}
                   className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-xs cursor-pointer"
@@ -278,6 +320,12 @@ export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
                 </button>
               </div>
             </div>
+
+            {deleteError && (
+              <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 p-2.5 text-xs text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">
+                {deleteError}
+              </p>
+            )}
 
             {savedSuccess && (
               <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-300 font-semibold flex items-center gap-2 animate-in fade-in">
@@ -500,6 +548,21 @@ export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
         )}
 
       </Reveal>
+
+      <ConfirmationModal
+        isOpen={isDeleteConfirmOpen}
+        title="Delete application record?"
+        message={activeApp
+          ? `Permanently delete ${activeApp.refNumber} for ${activeApp.applicantName}? Any stored uploaded documents will also be removed. This action cannot be undone.`
+          : 'Permanently delete this application record? This action cannot be undone.'}
+        confirmLabel="Delete Application"
+        isLoading={isDeletingApplication}
+        onConfirm={handleDeleteApplication}
+        onCancel={() => {
+          setIsDeleteConfirmOpen(false);
+          setDeleteError('');
+        }}
+      />
 
     </div>
   );

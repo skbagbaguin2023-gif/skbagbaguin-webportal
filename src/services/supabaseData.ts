@@ -122,6 +122,18 @@ export async function getApplicationDocumentSignedUrl(path: string): Promise<str
   return data.signedUrl;
 }
 
+export async function deleteApplicationDocument(path: string): Promise<void> {
+  if (!/^(submissions|printing-requests)\/[0-9a-f-]{36}\/[0-9a-f-]{36}\.(pdf|jpg|png)$/i.test(path)) {
+    throw new Error('Invalid application document storage path.');
+  }
+
+  const { error } = await getClient().storage
+    .from(APPLICATION_DOCUMENTS_BUCKET)
+    .remove([path]);
+
+  if (error) throw error;
+}
+
 export async function uploadTransparencyDocument(file: File, documentId: string): Promise<string> {
   if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
     throw new Error('Choose a PDF file.');
