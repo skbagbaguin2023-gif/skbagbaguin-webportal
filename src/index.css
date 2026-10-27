@@ -68,3 +68,40 @@ html.dark {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
+
+/* Consistent interaction feedback for content cards across public and admin pages. */
+div[class*="rounded-xl"][class*="border"],
+div[class*="rounded-2xl"][class*="border"],
+article[class*="rounded-xl"][class*="border"],
+article[class*="rounded-2xl"][class*="border"],
+button[class*="rounded-xl"][class*="border"],
+button[class*="rounded-2xl"][class*="border"] {
+  transition:
+    translate 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  div[class*="rounded-xl"][class*="border"]:hover,
+  div[class*="rounded-2xl"][class*="border"]:hover,
+  article[class*="rounded-xl"][class*="border"]:hover,
+  article[class*="rounded-2xl"][class*="border"]:hover,
+  button[class*="rounded-xl"][class*="border"]:hover,
+  button[class*="rounded-2xl"][class*="border"]:hover {
+    translate: 0 -3px;
+    box-shadow: 0 12px 26px -16px rgb(15 44 89 / 0.55);
+    border-color: rgb(245 166 35 / 0.55);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  div[class*="rounded-xl"][class*="border"],
+  div[class*="rounded-2xl"][class*="border"],
+  article[class*="rounded-xl"][class*="border"],
+  article[class*="rounded-2xl"][class*="border"],
+  button[class*="rounded-xl"][class*="border"],
+  button[class*="rounded-2xl"][class*="border"] {
+    transition: none;
+  }
+}

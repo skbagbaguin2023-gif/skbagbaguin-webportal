@@ -1,21 +1,19 @@
 import React from 'react';
 import { Program } from '../../types/index.ts';
 import { formatCurrencyPHP } from '../../utils/portalLogic.ts';
-import { X, Target, Calendar, User, FileText, CheckCircle2, ArrowRight } from 'lucide-react';
+import { X, Target, User, FileText, CheckCircle2 } from 'lucide-react';
 import { PortalImage } from '../PortalImage.tsx';
 
 interface ProgramDetailModalProps {
   program: Program | null;
   isOpen: boolean;
   onClose: () => void;
-  onApply: (programTitle: string) => void;
 }
 
 export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
   program,
   isOpen,
   onClose,
-  onApply,
 }) => {
   if (!isOpen || !program) return null;
 
@@ -121,27 +119,17 @@ export const ProgramDetailModal: React.FC<ProgramDetailModalProps> = ({
               <span>Lead Councilor: <strong className="text-slate-800 dark:text-slate-200">{program.leadCouncilor}</strong></span>
             </span>
             <span className="text-slate-400 dark:text-slate-500 font-mono text-[11px]">
-              Valenzuela Youth Ordinance No. 2026
+              Public program transparency record
             </span>
           </div>
 
           {/* Action */}
-          <div className="pt-3 flex justify-end gap-3">
+          <div className="pt-3 flex justify-end">
             <button
               onClick={onClose}
               className="px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
             >
               Close
-            </button>
-            <button
-              onClick={() => {
-                onClose();
-                onApply(program.title);
-              }}
-              className="bg-[#F5A623] hover:bg-[#D98E16] text-[#081830] font-bold px-5 py-2 rounded-lg text-xs sm:text-sm flex items-center gap-1.5 shadow-md cursor-pointer"
-            >
-              <span>Apply for this Program</span>
-              <ArrowRight className="w-4 h-4" />
             </button>
           </div>
 

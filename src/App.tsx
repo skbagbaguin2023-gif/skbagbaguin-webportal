@@ -9,7 +9,7 @@ import {
   PublicPage, 
   Program, 
   EventItem, 
-  Announcement, 
+  Announcement, FacebookPost,
   YouthApplication, 
   TransparencyDoc, 
   CouncilMember, 
@@ -18,6 +18,7 @@ import {
   ServiceType,
   ApplicationStatus,
   YouthService,
+  ProgramFiscalYear,
 } from './types/index.ts';
 import { ThemeProvider } from './context/ThemeContext.tsx';
 import { DEFAULT_COUNCIL_MEMBERS } from './data/councilMembers.ts';
@@ -63,12 +64,19 @@ import {
   uploadTransparencyDocument,
   type PortalCollection,
 } from './services/supabaseData.ts';
+import { ToastNotifications } from './components/ToastNotifications.tsx';
+import type { ToastKind, ToastMessage } from './components/ToastNotifications.tsx';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<PublicPage>('home');
   const [pathname, setPathname] = useState(window.location.pathname);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [backendError, setBackendError] = useState('');
+  const [toast, setToast] = useState<ToastMessage | null>(null);
+
+  const notify = (kind: ToastKind, message: string) => {
+    setToast({ id: Date.now(), kind, message });
+  };
 
   useEffect(() => {
     const updatePathname = () => setPathname(window.location.pathname);
@@ -82,8 +90,10 @@ export default function App() {
 
   // Core Data Collections
   const [programs, setPrograms] = useState<Program[]>([]);
+  const [programFiscalYears, setProgramFiscalYears] = useState<ProgramFiscalYear[]>([]);
   const [events, setEvents] = useState<EventItem[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>(DEFAULT_ANNOUNCEMENTS);
+  const [facebookPosts, setFacebookPosts] = useState<FacebookPost[]>([]);
   const [applications, setApplications] = useState<YouthApplication[]>([]);
   const [transparencyDocs, setTransparencyDocs] = useState<TransparencyDoc[]>([]);
   const [council, setCouncil] = useState<CouncilMember[]>(DEFAULT_COUNCIL_MEMBERS);
@@ -109,6 +119,7 @@ export default function App() {
       if (!isActive) return;
       subscriptions.push(
         subscribeToPortalCollection<Program>('programs', setPrograms, reportListenerError),
+        subscribeToPortalCollection<ProgramFiscalYear>('programSettings', setProgramFiscalYears, reportListenerError),
         subscribeToPortalCollection<EventItem>('events', setEvents, reportListenerError),
         subscribeToPortalCollection<Announcement>(
           'announcements',
@@ -117,6 +128,7 @@ export default function App() {
           ),
           reportListenerError
         ),
+        subscribeToPortalCollection<FacebookPost>('facebookPosts', setFacebookPosts, reportListenerError),
         subscribeToPortalCollection<YouthApplication>('applications', setApplications, reportListenerError),
         subscribeToPortalCollection<TransparencyDoc>('transparencyDocs', setTransparencyDocs, reportListenerError),
         subscribeToPortalCollection<CouncilMember>(
@@ -148,19 +160,25 @@ export default function App() {
 
   const reportWriteError = (error: unknown) => {
     console.error('Supabase data write failed.', error);
+    const message = error instanceof Error ? error.message : 'Supabase could not save this change. Please try again.';
     setBackendError(
       error instanceof Error
         ? `Supabase could not save this change: ${error.message}`
         : 'Supabase could not save this change. Please try again.'
     );
+    notify('error', message);
   };
 
   const saveRecord = <T extends { id: string }>(collection: PortalCollection, record: T) => {
-    void savePortalRecord(collection, record).catch(reportWriteError);
+    void savePortalRecord(collection, record)
+      .then(() => notify('success', 'Changes saved successfully.'))
+      .catch(reportWriteError);
   };
 
   const deleteRecord = (collection: PortalCollection, id: string) => {
-    void deletePortalRecord(collection, id).catch(reportWriteError);
+    void deletePortalRecord(collection, id)
+      .then(() => notify('success', 'Item deleted successfully.'))
+      .catch(reportWriteError);
   };
 
   // Modal State Controls
@@ -184,6 +202,7 @@ export default function App() {
 
   const handleSubmitApplication = async (newApp: YouthApplication) => {
     await createPortalRecord('applications', newApp);
+    notify('success', 'Your application was submitted successfully.');
   };
 
   const handleConfirmEventRegistration = async (
@@ -215,10 +234,12 @@ export default function App() {
     };
 
     await registerForEvent(eventId, newReg);
+    notify('success', 'Your event registration was submitted successfully.');
   };
 
   const handleSubmitFeedback = async (item: FeedbackSuggestion) => {
     await createPortalRecord('feedbacks', item);
+    notify('success', 'Your feedback was submitted successfully.');
   };
 
   const handleAddService = (service: YouthService) => {
@@ -241,6 +262,7 @@ export default function App() {
     try {
       await savePortalRecord('announcements', ann);
       setAnnouncements((prev) => [ann, ...prev]);
+      notify('success', 'Announcement added successfully.');
     } catch (error) {
       reportWriteError(error);
       throw error;
@@ -251,6 +273,7 @@ export default function App() {
     try {
       await savePortalRecord('announcements', ann);
       setAnnouncements((prev) => prev.map((a) => (a.id === ann.id ? ann : a)));
+      notify('success', 'Announcement updated successfully.');
     } catch (error) {
       reportWriteError(error);
       throw error;
@@ -262,9 +285,37 @@ export default function App() {
     deleteRecord('announcements', id);
   };
 
+  const handleAddFacebookPost = async (post: FacebookPost): Promise<void> => {
+    await savePortalRecord('facebookPosts', post);
+    setFacebookPosts((previous) => [post, ...previous]);
+    notify('success', 'Facebook post added successfully.');
+  };
+
+  const handleUpdateFacebookPost = async (post: FacebookPost): Promise<void> => {
+    await savePortalRecord('facebookPosts', post);
+    setFacebookPosts((previous) => previous.map((item) => item.id === post.id ? post : item));
+    notify('success', 'Facebook post updated successfully.');
+  };
+
+  const handleDeleteFacebookPost = async (id: string): Promise<void> => {
+    await deletePortalRecord('facebookPosts', id);
+    setFacebookPosts((previous) => previous.filter((item) => item.id !== id));
+    notify('success', 'Facebook post deleted successfully.');
+  };
+
   const handleAddProgram = (prog: Program) => {
     setPrograms((prev) => [prog, ...prev]);
     saveRecord('programs', prog);
+  };
+
+  const handleSaveProgramFiscalYear = (settings: ProgramFiscalYear) => {
+    setProgramFiscalYears((previous) => [
+      ...previous
+        .filter((item) => item.id !== settings.id && item.year !== settings.year)
+        .map((item) => settings.isCurrent ? { ...item, isCurrent: false } : item),
+      settings,
+    ]);
+    saveRecord('programSettings', settings);
   };
 
   const handleUpdateProgram = (prog: Program) => {
@@ -297,6 +348,7 @@ export default function App() {
     try {
       await savePortalRecord('council', orderedMember);
       setCouncil((prev) => [orderedMember, ...prev]);
+      notify('success', 'Council member added successfully.');
     } catch (error) {
       reportWriteError(error);
       throw error;
@@ -307,6 +359,7 @@ export default function App() {
     try {
       await savePortalRecord('council', member);
       setCouncil((prev) => prev.map((current) => current.id === member.id ? member : current));
+      notify('success', 'Council member updated successfully.');
     } catch (error) {
       reportWriteError(error);
       throw error;
@@ -322,6 +375,7 @@ export default function App() {
     try {
       const savedCouncil = await saveCouncilOrder(orderedCouncil);
       setCouncil(savedCouncil);
+      notify('success', 'Council member order saved successfully.');
     } catch (error) {
       reportWriteError(error);
       throw error;
@@ -361,6 +415,7 @@ export default function App() {
     try {
       await deletePortalRecord('applications', id);
       setApplications((previous) => previous.filter((item) => item.id !== id));
+      notify('success', 'Application deleted successfully.');
     } catch (error) {
       reportWriteError(error);
       throw error;
@@ -467,6 +522,7 @@ export default function App() {
     return (
       <ThemeProvider>
         <>
+          <ToastNotifications toast={toast} onDismiss={() => setToast(null)} />
           {backendError && (
             <div role="alert" className="fixed inset-x-0 top-0 z-[100] bg-amber-100 border-b border-amber-300 px-4 py-2 text-center text-sm text-amber-950">
               {backendError}
@@ -482,8 +538,10 @@ export default function App() {
               setBackendError('');
             }}
             programs={programs}
+            programFiscalYears={programFiscalYears}
             events={events}
             announcements={announcements}
+            facebookPosts={facebookPosts}
             applications={applications}
             transparencyDocs={transparencyDocs}
             council={council}
@@ -493,9 +551,13 @@ export default function App() {
             onAddAnnouncement={handleAddAnnouncement}
             onUpdateAnnouncement={handleUpdateAnnouncement}
             onDeleteAnnouncement={handleDeleteAnnouncement}
+            onAddFacebookPost={handleAddFacebookPost}
+            onUpdateFacebookPost={handleUpdateFacebookPost}
+            onDeleteFacebookPost={handleDeleteFacebookPost}
             onAddProgram={handleAddProgram}
             onUpdateProgram={handleUpdateProgram}
             onDeleteProgram={handleDeleteProgram}
+            onSaveProgramFiscalYear={handleSaveProgramFiscalYear}
             onAddEvent={handleAddEvent}
             onUpdateEvent={handleUpdateEvent}
             onDeleteEvent={handleDeleteEvent}
@@ -524,6 +586,7 @@ export default function App() {
   return (
     <ThemeProvider>
       <div className="min-h-screen overflow-x-clip flex flex-col bg-slate-50 text-slate-800 dark:bg-[#071324] dark:text-slate-100 transition-colors duration-200">
+        <ToastNotifications toast={toast} onDismiss={() => setToast(null)} />
         {backendError && (
           <div role="status" className="bg-amber-100 border-b border-amber-300 px-4 py-2 text-center text-sm text-amber-950">
             {backendError}
@@ -553,6 +616,7 @@ export default function App() {
                 programs={programs}
                 events={events}
                 announcements={announcements}
+                facebookPosts={facebookPosts}
                 council={council}
                 services={services.filter((service) => service.isActive)}
               />
@@ -565,8 +629,8 @@ export default function App() {
               {currentPage === 'programs' && (
               <ProgramsView
                 programs={programs}
+                fiscalYears={programFiscalYears}
                 onSelectProgram={(prog) => setSelectedProgramModal(prog)}
-                onOpenApply={handleOpenApplyModal}
               />
               )}
 
@@ -626,7 +690,6 @@ export default function App() {
         isOpen={!!selectedProgramModal}
         program={selectedProgramModal}
         onClose={() => setSelectedProgramModal(null)}
-        onApply={(title) => handleOpenApplyModal(title)}
       />
 
       <DocumentPreviewModal

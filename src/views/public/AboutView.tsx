@@ -6,8 +6,6 @@ import {
   Leaf, 
   HeartPulse, 
   Compass, 
-  Mail,
-  Phone,
   Award,
   CheckCircle,
   FileCheck
@@ -145,13 +143,6 @@ export const AboutView: React.FC<AboutViewProps> = ({ council }) => {
                 {chairperson.bio && <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl">{chairperson.bio}</p>}
                 {chairperson.motto && <p className="text-xs font-medium text-amber-700 dark:text-amber-400 italic">{chairperson.motto}</p>}
               </div>
-              {(chairperson.email || chairperson.contact) && (
-                <div className="text-xs text-slate-500 dark:text-slate-400 space-y-1.5 border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-800 pt-4 md:pt-0 md:pl-6 text-left shrink-0 max-w-full">
-                  <div className="font-semibold text-slate-800 dark:text-slate-200">Official Contact</div>
-                  {chairperson.email && <div className="flex items-center gap-1.5"><Mail className="w-3.5 h-3.5 shrink-0" /><span className="font-mono text-[11px] break-all">{chairperson.email}</span></div>}
-                  {chairperson.contact && <div className="flex items-center gap-1.5"><Phone className="w-3.5 h-3.5 shrink-0" /><span className="font-mono text-[11px]">{chairperson.contact}</span></div>}
-                </div>
-              )}
             </div>
           </div>
         )}
@@ -170,10 +161,6 @@ export const AboutView: React.FC<AboutViewProps> = ({ council }) => {
                   <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-1">{c.committee}</p>
                   {c.bio && <p className="text-xs text-slate-600 dark:text-slate-300 mt-3 line-clamp-3 leading-relaxed">{c.bio}</p>}
                 </div>
-                {(c.email || c.contact) && <div className="w-full pt-3 mt-4 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-400 dark:text-slate-500 space-y-1 text-left">
-                  {c.email && <div className="truncate">Email: {c.email}</div>}
-                  {c.contact && <div>Contact: {c.contact}</div>}
-                </div>}
               </Reveal>
             ))}
           </div>

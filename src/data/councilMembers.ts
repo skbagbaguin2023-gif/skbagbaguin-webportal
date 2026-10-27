@@ -19,8 +19,6 @@ export const DEFAULT_COUNCIL_MEMBERS: CouncilMember[] = [
     term: '2023-2028',
     bio: 'A dedicated public servant committed to empowering the youth and fostering positive change in the community. As the Sangguniang Kabataan (SK) Chairperson, she believes that the youth play an essential role in building a progressive, inclusive, and united society.',
     imageUrl: skcJean,
-    email: 'jeanmarierose@gmail.com',
-    contact: '09214587652',
     motto: 'Serbisyo bago chismis, pero dapat updated sa both!',
   },
   {
@@ -31,8 +29,6 @@ export const DEFAULT_COUNCIL_MEMBERS: CouncilMember[] = [
     term: '2023-2028',
     bio: 'Dedicated to promoting youth wellness through health education and accessible health services.',
     imageUrl: skmMelanie,
-    email: 'melaniearias@test.com',
-    contact: '09654123657',
     motto: '',
   },
   {
@@ -43,8 +39,6 @@ export const DEFAULT_COUNCIL_MEMBERS: CouncilMember[] = [
     term: '2023-2028',
     bio: 'Dedicated to promoting quality education and preserving cultural heritage.',
     imageUrl: skmLovely,
-    email: 'lovelycastillo@test.com',
-    contact: '09654823651',
     motto: '',
   },
   {
@@ -55,8 +49,6 @@ export const DEFAULT_COUNCIL_MEMBERS: CouncilMember[] = [
     term: '2023-2028',
     bio: 'Committed to building a cleaner, greener, and safer community through environmental conservation.',
     imageUrl: skmTyra,
-    email: 'tyradico@test.com',
-    contact: '09215487963',
     motto: '',
   },
   {
@@ -67,8 +59,6 @@ export const DEFAULT_COUNCIL_MEMBERS: CouncilMember[] = [
     term: '2023-2028',
     bio: 'Committed to protecting and guiding the youth through drug prevention and social awareness.',
     imageUrl: skmRikki,
-    email: 'rikkilou@test.com',
-    contact: '09654878535',
     motto: '',
   },
   {
@@ -79,8 +69,6 @@ export const DEFAULT_COUNCIL_MEMBERS: CouncilMember[] = [
     term: '2023-2028',
     bio: 'Passionate about sports and youth engagement, supporting athletic competitions and recreational activities.',
     imageUrl: skmStanley,
-    email: 'stanley@test.com',
-    contact: '09456876214',
     motto: '',
   },
   {
@@ -91,8 +79,6 @@ export const DEFAULT_COUNCIL_MEMBERS: CouncilMember[] = [
     term: '2023-2028',
     bio: 'Passionate about empowering young people and promoting opportunities for skills development.',
     imageUrl: skmPaula,
-    email: 'kathrinapaula@test.com',
-    contact: '09321745632',
     motto: '',
   },
   {
@@ -103,8 +89,6 @@ export const DEFAULT_COUNCIL_MEMBERS: CouncilMember[] = [
     term: '2023-2028',
     bio: 'An advocate for equality and inclusivity, promoting equal opportunities and gender awareness.',
     imageUrl: skmHazel,
-    email: 'hazel@test.com',
-    contact: '09635412578',
     motto: '',
   },
   {
@@ -115,8 +99,6 @@ export const DEFAULT_COUNCIL_MEMBERS: CouncilMember[] = [
     term: '2023-2028',
     bio: 'Committed to transparency and accountability, the SK Treasurer oversees the proper management and documentation of council funds to ensure that resources are responsibly used for youth and community programs.',
     imageUrl: skTreasurer,
-    email: '',
-    contact: '',
     motto: '',
   },
   {
@@ -127,8 +109,6 @@ export const DEFAULT_COUNCIL_MEMBERS: CouncilMember[] = [
     term: '2023-2028',
     bio: 'Serving as the administrative backbone of the Sangguniang Kabataan, the SK Secretary maintains accurate records, prepares meeting minutes, and ensures that council activities are properly documented.',
     imageUrl: skSecretary,
-    email: '',
-    contact: '',
     motto: '',
   },
 ];

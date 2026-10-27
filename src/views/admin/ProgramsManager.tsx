@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Program, ProgramCategory, ProgramStatus } from '../../types/index.ts';
+import { Program, ProgramCategory, ProgramFiscalYear, ProgramStatus } from '../../types/index.ts';
 import { formatCurrencyPHP } from '../../utils/portalLogic.ts';
 import { 
   Plus, 
@@ -10,24 +10,36 @@ import {
   FolderKanban, 
   X, 
   Save,
-  CheckCircle2,
-  DollarSign
+  CheckCircle2
 } from 'lucide-react';
 import Reveal from '../../components/Reveal.jsx';
 import { ConfirmationModal } from '../../components/modals/ConfirmationModal.tsx';
+import { deletePortalImage, uploadPortalImage } from '../../services/supabaseData.ts';
+import { ImageCropper } from '../../components/ImageCropper.tsx';
+
+const parseMoney = (value: string): number => {
+  const parsed = Number(value.replace(/,/g, '').trim());
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const isMoneyInput = (value: string): boolean => /^\d*(,\d{0,3})*(\.\d*)?$/.test(value);
 
 interface ProgramsManagerProps {
   programs: Program[];
+  fiscalYears: ProgramFiscalYear[];
   onAddProgram: (prog: Program) => void;
   onUpdateProgram: (prog: Program) => void;
   onDeleteProgram: (id: string) => void;
+  onSaveFiscalYear: (settings: ProgramFiscalYear) => void;
 }
 
 export const ProgramsManager: React.FC<ProgramsManagerProps> = ({
   programs,
+  fiscalYears,
   onAddProgram,
   onUpdateProgram,
   onDeleteProgram,
+  onSaveFiscalYear,
 }) => {
   const [search, setSearch] = useState('');
   const [editingProgram, setEditingProgram] = useState<Program | null>(null);
@@ -38,15 +50,65 @@ export const ProgramsManager: React.FC<ProgramsManagerProps> = ({
   const [formTitle, setFormTitle] = useState('');
   const [formCategory, setFormCategory] = useState<ProgramCategory>('Education');
   const [formSummary, setFormSummary] = useState('');
-  const [formBudget, setFormBudget] = useState<number | ''>('');
+  const [formBudget, setFormBudget] = useState('');
   const [formBeneficiaries, setFormBeneficiaries] = useState('');
   const [formLead, setFormLead] = useState('');
   const [formStatus, setFormStatus] = useState<ProgramStatus>('Upcoming');
   const [formProgress, setFormProgress] = useState(0);
   const [formTimeline, setFormTimeline] = useState('');
+  const [formImageUrl, setFormImageUrl] = useState('');
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState('');
+  const [imageError, setImageError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [pendingImage, setPendingImage] = useState<File | null>(null);
+  const defaultFiscalYear = new Date().getFullYear();
+  const [selectedFiscalYear, setSelectedFiscalYear] = useState(defaultFiscalYear);
+  const [fiscalYearForm, setFiscalYearForm] = useState(defaultFiscalYear);
+  const [totalFundsForm, setTotalFundsForm] = useState('');
+  const [totalDisbursedForm, setTotalDisbursedForm] = useState('');
+  const [formFiscalYear, setFormFiscalYear] = useState(defaultFiscalYear);
+  const [fiscalYearDrafts, setFiscalYearDrafts] = useState<Record<number, { totalFunds: string; totalDisbursed: string }>>({});
 
   const categories: ProgramCategory[] = ['Education', 'Sports', 'Livelihood', 'Environment', 'Health', 'Leadership'];
   const statuses: ProgramStatus[] = ['Upcoming', 'Ongoing', 'Completed'];
+  const activeFiscalYear = fiscalYears.find((item) => item.year === selectedFiscalYear);
+
+  React.useEffect(() => {
+    setFiscalYearDrafts((drafts) => {
+      const next = { ...drafts };
+      fiscalYears.forEach((settings) => {
+        if (!next[settings.year]) {
+          next[settings.year] = {
+            totalFunds: String(settings.totalFunds),
+            totalDisbursed: String(settings.totalDisbursed),
+          };
+        }
+      });
+      return next;
+    });
+  }, [fiscalYears]);
+
+  React.useEffect(() => {
+    const settings = fiscalYears.find((item) => item.year === selectedFiscalYear);
+    if (!settings || totalFundsForm || totalDisbursedForm) return;
+    setFiscalYearForm(selectedFiscalYear);
+    setTotalFundsForm(String(settings.totalFunds));
+    setTotalDisbursedForm(String(settings.totalDisbursed));
+  }, [fiscalYears, selectedFiscalYear, totalFundsForm, totalDisbursedForm]);
+
+  const handleFiscalYearSelect = (year: number) => {
+    setFiscalYearDrafts((drafts) => ({
+      ...drafts,
+      [selectedFiscalYear]: { totalFunds: totalFundsForm, totalDisbursed: totalDisbursedForm },
+    }));
+    const targetDraft = fiscalYearDrafts[year];
+    const targetSettings = fiscalYears.find((item) => item.year === year);
+    setSelectedFiscalYear(year);
+    setFiscalYearForm(year);
+    setTotalFundsForm(targetDraft?.totalFunds ?? (targetSettings ? String(targetSettings.totalFunds) : ''));
+    setTotalDisbursedForm(targetDraft?.totalDisbursed ?? (targetSettings ? String(targetSettings.totalDisbursed) : ''));
+  };
 
   const filtered = programs.filter(
     (p) => !search || p.title.toLowerCase().includes(search.toLowerCase()) || p.leadCouncilor.toLowerCase().includes(search.toLowerCase())
@@ -65,6 +127,11 @@ export const ProgramsManager: React.FC<ProgramsManagerProps> = ({
     setFormStatus('Upcoming');
     setFormProgress(0);
     setFormTimeline('');
+    setFormFiscalYear(selectedFiscalYear);
+    setFormImageUrl('');
+    setSelectedImage(null);
+    setImagePreviewUrl('');
+    setImageError('');
     setIsModalOpen(true);
   };
 
@@ -73,48 +140,127 @@ export const ProgramsManager: React.FC<ProgramsManagerProps> = ({
     setFormTitle(p.title);
     setFormCategory(p.category);
     setFormSummary(p.summary);
-    setFormBudget(p.allocatedBudget);
+    setFormBudget(String(p.allocatedBudget));
     setFormBeneficiaries(p.targetBeneficiaries);
     setFormLead(p.leadCouncilor);
     setFormStatus(p.status);
     setFormProgress(p.progressPercent);
     setFormTimeline(p.timeline);
+    setFormFiscalYear(p.fiscalYear ?? selectedFiscalYear);
+    setFormImageUrl(p.imageUrl || '');
+    setSelectedImage(null);
+    setImagePreviewUrl('');
+    setImageError('');
     setIsModalOpen(true);
   };
 
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (editingProgram) {
-      onUpdateProgram({
-        ...editingProgram,
-        title: formTitle,
-        category: formCategory,
-        summary: formSummary,
-        allocatedBudget: Number(formBudget),
-        targetBeneficiaries: formBeneficiaries,
-        leadCouncilor: formLead,
-        status: formStatus,
-        progressPercent: Number(formProgress),
-        timeline: formTimeline,
-      });
-    } else {
-      const newProg: Program = {
-        id: `prog-${Date.now()}`,
-        title: formTitle,
-        category: formCategory,
-        summary: formSummary,
-        allocatedBudget: Number(formBudget),
-        targetBeneficiaries: formBeneficiaries,
-        leadCouncilor: formLead,
-        status: formStatus,
-        progressPercent: Number(formProgress),
-        timeline: formTimeline,
-        imageUrl: '',
-        objectives: [],
-      };
-      onAddProgram(newProg);
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setImageError('Choose a JPG, PNG, or WebP image.');
+      e.target.value = '';
+      return;
     }
-    setIsModalOpen(false);
+    if (file.size > 5 * 1024 * 1024) {
+      setImageError('Image must be 5 MB or smaller.');
+      e.target.value = '';
+      return;
+    }
+    setPendingImage(file);
+    setImageError('');
+    e.target.value = '';
+  };
+
+  const handleCropComplete = (file: File) => {
+    setSelectedImage(file);
+    setImagePreviewUrl(URL.createObjectURL(file));
+    setPendingImage(null);
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    setImageError('');
+    let uploadedImageUrl: string | undefined;
+    try {
+      const imageUrl = selectedImage
+        ? await uploadPortalImage(selectedImage, 'programs').then((url) => {
+            uploadedImageUrl = url;
+            return url;
+          })
+        : formImageUrl.trim();
+
+      if (editingProgram) {
+        onUpdateProgram({
+          ...editingProgram,
+          title: formTitle,
+          category: formCategory,
+          summary: formSummary,
+          allocatedBudget: parseMoney(formBudget),
+          targetBeneficiaries: formBeneficiaries,
+          leadCouncilor: formLead,
+          status: formStatus,
+          progressPercent: Number(formProgress),
+          timeline: formTimeline,
+          imageUrl,
+          fiscalYear: formFiscalYear,
+        });
+        if (uploadedImageUrl && editingProgram.imageUrl) {
+          try {
+            await deletePortalImage(editingProgram.imageUrl);
+          } catch (error) {
+            console.error('Unable to remove the replaced program image.', error);
+          }
+        }
+      } else {
+        onAddProgram({
+          id: `prog-${Date.now()}`,
+          title: formTitle,
+          category: formCategory,
+          summary: formSummary,
+          allocatedBudget: parseMoney(formBudget),
+          targetBeneficiaries: formBeneficiaries,
+          leadCouncilor: formLead,
+          status: formStatus,
+          progressPercent: Number(formProgress),
+          timeline: formTimeline,
+          imageUrl,
+          fiscalYear: formFiscalYear,
+          objectives: [],
+        });
+      }
+      setIsModalOpen(false);
+    } catch (error) {
+      if (uploadedImageUrl) {
+        try {
+          await deletePortalImage(uploadedImageUrl);
+        } catch (cleanupError) {
+          console.error('Unable to remove an unlinked program image.', cleanupError);
+        }
+      }
+      setImageError(error instanceof Error ? error.message : 'Could not save this program.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveFiscalYear = (event: React.FormEvent) => {
+    event.preventDefault();
+    const settings: ProgramFiscalYear = {
+      id: `fiscal-${fiscalYearForm}`,
+      year: fiscalYearForm,
+      totalFunds: parseMoney(totalFundsForm),
+      totalDisbursed: parseMoney(totalDisbursedForm),
+      isCurrent: fiscalYearForm === selectedFiscalYear,
+    };
+
+    onSaveFiscalYear(settings);
+    setFiscalYearDrafts((drafts) => ({
+      ...drafts,
+      [settings.year]: { totalFunds: totalFundsForm, totalDisbursed: totalDisbursedForm },
+    }));
+    setSelectedFiscalYear(fiscalYearForm);
   };
 
   const handleQuickProgressUpdate = (prog: Program, newPct: number) => {
@@ -133,7 +279,7 @@ export const ProgramsManager: React.FC<ProgramsManagerProps> = ({
         <div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-white">Programs & Projects Manager</h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Total Fund Allocated: <strong className="font-mono text-slate-800 dark:text-slate-200">{formatCurrencyPHP(totalAllocated)}</strong> under ABYIP 2026
+            Total Fund Allocated: <strong className="font-mono text-slate-800 dark:text-slate-200">{formatCurrencyPHP(totalAllocated)}</strong> under ABYIP {selectedFiscalYear}
           </p>
         </div>
 
@@ -144,6 +290,31 @@ export const ProgramsManager: React.FC<ProgramsManagerProps> = ({
           <Plus className="w-4 h-4 text-amber-400" />
           <span>New Project</span>
         </button>
+      </Reveal>
+
+      <Reveal className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+        <h3 className="font-bold text-slate-900 dark:text-white">Fiscal Year Settings</h3>
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">These values are shown on the public Programs page.</p>
+        <form onSubmit={handleSaveFiscalYear} className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-4">
+          <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Fiscal Year
+            <input type="number" min="2000" max="2100" required value={fiscalYearForm} onChange={(e) => setFiscalYearForm(Number(e.target.value))} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
+          </label>
+          <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">SK Total Funds (PHP)
+            <input type="text" inputMode="decimal" required value={totalFundsForm} onChange={(e) => { if (isMoneyInput(e.target.value)) setTotalFundsForm(e.target.value); }} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
+          </label>
+          <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Total Disbursed (PHP)
+            <input type="text" inputMode="decimal" value={totalDisbursedForm} onChange={(e) => { if (isMoneyInput(e.target.value)) setTotalDisbursedForm(e.target.value); }} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
+          </label>
+          <button type="submit" className="self-end rounded-lg bg-[#0F2C59] px-4 py-2 text-xs font-bold text-white hover:bg-[#0b2348]">Save Fiscal Year</button>
+        </form>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {fiscalYears.slice().sort((a, b) => b.year - a.year).map((item) => (
+            <button key={item.id} type="button" onClick={() => handleFiscalYearSelect(item.year)} className={`rounded-full px-3 py-1 text-xs font-semibold ${selectedFiscalYear === item.year ? 'bg-[#0F2C59] text-white' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'}`}>
+              {item.year} · {formatCurrencyPHP(item.totalFunds)}
+            </button>
+          ))}
+        </div>
+        {activeFiscalYear && <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">Utilization: {activeFiscalYear.totalFunds ? Math.round((activeFiscalYear.totalDisbursed / activeFiscalYear.totalFunds) * 100) : 0}%</p>}
       </Reveal>
 
       {/* Search */}
@@ -271,6 +442,34 @@ export const ProgramsManager: React.FC<ProgramsManagerProps> = ({
               </div>
 
               <div className="grid grid-cols-2 gap-3">
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  Fiscal Year *
+                  <input type="number" min="2000" max="2100" required value={formFiscalYear} onChange={(e) => setFormFiscalYear(Number(e.target.value))} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
+                </label>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                  Program Photo
+                </label>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleImageChange}
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-700 file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-2 file:py-1 file:text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:file:bg-slate-700"
+                />
+                <p className="mt-1 text-[11px] text-slate-500">JPG, PNG, or WebP, up to 5 MB. This photo will appear on the public home and programs pages.</p>
+                {imageError && <p role="alert" className="mt-1 text-xs text-rose-600">{imageError}</p>}
+                {(imagePreviewUrl || formImageUrl) && (
+                  <img
+                    src={imagePreviewUrl || formImageUrl}
+                    alt="Program preview"
+                    className="mt-2 h-28 w-full rounded-lg border border-slate-200 object-cover dark:border-slate-700"
+                  />
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
                     Category *
@@ -308,10 +507,11 @@ export const ProgramsManager: React.FC<ProgramsManagerProps> = ({
                     Allocated Budget (PHP) *
                   </label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
                     required
                     value={formBudget}
-                    onChange={(e) => setFormBudget(e.target.value ? Number(e.target.value) : '')}
+                    onChange={(e) => { if (isMoneyInput(e.target.value)) setFormBudget(e.target.value); }}
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-mono bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
                   />
                 </div>
@@ -391,9 +591,10 @@ export const ProgramsManager: React.FC<ProgramsManagerProps> = ({
                 </button>
                 <button
                   type="submit"
+                  disabled={isSaving}
                   className="bg-[#0F2C59] hover:bg-navy-800 text-white font-bold px-5 py-2 rounded-lg text-xs cursor-pointer shadow-xs"
                 >
-                  Save Project
+                  {isSaving ? 'Uploading...' : 'Save Project'}
                 </button>
               </div>
             </form>
@@ -412,6 +613,15 @@ export const ProgramsManager: React.FC<ProgramsManagerProps> = ({
         }}
         onCancel={() => setProgramToDelete(null)}
       />
+
+      {pendingImage && (
+        <ImageCropper
+          file={pendingImage}
+          aspectRatio={16 / 9}
+          onCancel={() => setPendingImage(null)}
+          onComplete={handleCropComplete}
+        />
+      )}
     </div>
   );
 };

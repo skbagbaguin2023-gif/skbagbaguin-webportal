@@ -16,7 +16,7 @@ create policy "Public can view portal images"
   on storage.objects for select to anon, authenticated
   using (
     bucket_id = 'portal-images'
-    and (storage.foldername(name))[1] in ('announcements', 'council')
+    and (storage.foldername(name))[1] in ('announcements', 'council', 'programs')
   );
 
 drop policy if exists "Admins can upload portal images" on storage.objects;
@@ -25,7 +25,7 @@ create policy "Admins can upload portal images"
   with check (
     bucket_id = 'portal-images'
     and public.is_portal_admin()
-    and (storage.foldername(name))[1] in ('announcements', 'council')
+    and (storage.foldername(name))[1] in ('announcements', 'council', 'programs')
   );
 
 drop policy if exists "Admins can update portal images" on storage.objects;
@@ -34,12 +34,12 @@ create policy "Admins can update portal images"
   using (
     bucket_id = 'portal-images'
     and public.is_portal_admin()
-    and (storage.foldername(name))[1] in ('announcements', 'council')
+    and (storage.foldername(name))[1] in ('announcements', 'council', 'programs')
   )
   with check (
     bucket_id = 'portal-images'
     and public.is_portal_admin()
-    and (storage.foldername(name))[1] in ('announcements', 'council')
+    and (storage.foldername(name))[1] in ('announcements', 'council', 'programs')
   );
 
 drop policy if exists "Admins can delete portal images" on storage.objects;
@@ -48,7 +48,7 @@ create policy "Admins can delete portal images"
   using (
     bucket_id = 'portal-images'
     and public.is_portal_admin()
-    and (storage.foldername(name))[1] in ('announcements', 'council')
+    and (storage.foldername(name))[1] in ('announcements', 'council', 'programs')
   );
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)

@@ -43,6 +43,15 @@ Supabase secret/service-role key in `.env.local` or client code.
    [`supabase/printing_services_migration.sql`](./supabase/printing_services_migration.sql)
    to enable the dedicated 10 MB PDF-only printing request upload and its
    validation policy.
+   If this database was already installed, run
+   [`supabase/program_fiscal_years_migration.sql`](./supabase/program_fiscal_years_migration.sql)
+   to enable fiscal-year settings for the public Programs page. Run
+   [`supabase/council_contact_privacy_migration.sql`](./supabase/council_contact_privacy_migration.sql)
+   to remove any previously saved SK council email addresses and contact numbers. Run
+   [`supabase/program_disbursement_privacy_migration.sql`](./supabase/program_disbursement_privacy_migration.sql)
+   to remove previously saved program-level disbursed amounts and itemized breakdowns. Run
+   [`supabase/facebook_posts_migration.sql`](./supabase/facebook_posts_migration.sql)
+   to enable admin-managed Facebook posts on the Home page.
 4. In **Authentication > Users**, create an admin user with email and password.
    Copy that user's UUID. In **SQL Editor**, add them to the admin allowlist:
 
@@ -156,8 +165,9 @@ deployment.
 
 The admin dashboard's **Youth Services** section lets an administrator add,
 edit, hide/show, and delete services. Active services automatically appear on
-the public home page, service catalog, and application form. The **Council**
-and **Announcements** editors accept JPG, PNG, or WebP uploads up to 5 MB.
+the public home page, service catalog, and application form. The **Programs**,
+**Council**, and **Announcements** editors accept JPG, PNG, or WebP uploads up
+to 5 MB.
 Images are stored in the public `portal-images` bucket so site visitors can
 view them; only authenticated portal administrators can upload and replace
 objects through the app.

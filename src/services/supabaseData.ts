@@ -5,8 +5,10 @@ import { generateUuid } from '../utils/uuid.ts';
 
 export type PortalCollection =
   | 'programs'
+  | 'programSettings'
   | 'events'
   | 'announcements'
+  | 'facebookPosts'
   | 'applications'
   | 'transparencyDocs'
   | 'council'
@@ -45,7 +47,7 @@ function getClient() {
   return supabase;
 }
 
-export async function uploadPortalImage(file: File, folder: 'announcements' | 'council'): Promise<string> {
+export async function uploadPortalImage(file: File, folder: 'announcements' | 'council' | 'programs'): Promise<string> {
   const extension = IMAGE_EXTENSIONS[file.type];
   if (!extension) throw new Error('Choose a JPG, PNG, or WebP image.');
   if (file.size > MAX_PORTAL_IMAGE_SIZE) throw new Error('Image must be 5 MB or smaller.');
@@ -173,9 +175,50 @@ export async function getTransparencyDocumentSignedUrl(path: string): Promise<st
 }
 
 export async function sendFeedbackReplyEmail(feedbackId: string, reply: string): Promise<void> {
-  const { error } = await getClient().functions.invoke('send-feedback-reply', {
+  const client = getClient();
+  const getValidSession = async () => {
+    const { data: sessionData, error: sessionError } = await client.auth.getSession();
+    if (sessionError) {
+      throw new Error(`Reply saved, but the administrator session could not be checked. ${sessionError.message}`);
+    }
+
+    let session = sessionData.session;
+    const sessionExpiresSoon = !session?.expires_at
+      || session.expires_at * 1000 <= Date.now() + 60_000;
+    if (sessionExpiresSoon) {
+      const { data: refreshedSessionData, error: refreshError } = await client.auth.refreshSession();
+      if (refreshError || !refreshedSessionData.session) return null;
+      session = refreshedSessionData.session;
+    }
+    if (!session) return null;
+
+    const { data: userData, error: userError } = await client.auth.getUser(session.access_token);
+    if (!userError && userData.user) return session;
+
+    const { data: refreshedSessionData, error: refreshError } = await client.auth.refreshSession();
+    if (refreshError || !refreshedSessionData.session) return null;
+    return refreshedSessionData.session;
+  };
+
+  let session = await getValidSession();
+  if (!session) {
+    throw new Error('Reply saved, but your administrator session is invalid or expired. Sign in again before sending the email.');
+  }
+
+  let { error } = await client.functions.invoke('send-feedback-reply', {
     body: { feedbackId, reply },
+    headers: { Authorization: `Bearer ${session.access_token}` },
   });
+  if (error?.context instanceof Response && error.context.status === 401) {
+    session = await getValidSession();
+    if (!session) {
+      throw new Error('Reply saved, but your administrator session is invalid or expired. Sign in again before sending the email.');
+    }
+    ({ error } = await client.functions.invoke('send-feedback-reply', {
+      body: { feedbackId, reply },
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    }));
+  }
 
   if (error) {
     const context = error.context;

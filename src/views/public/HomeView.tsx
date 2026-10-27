@@ -3,6 +3,7 @@ import {
   Program, 
   EventItem, 
   Announcement, 
+  FacebookPost,
   PublicPage, 
   CouncilMember,
   ServiceType,
@@ -38,6 +39,7 @@ interface HomeViewProps {
   programs: Program[];
   events: EventItem[];
   announcements: Announcement[];
+  facebookPosts: FacebookPost[];
   council: CouncilMember[];
   services: YouthService[];
 }
@@ -50,6 +52,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   programs,
   events,
   announcements,
+  facebookPosts,
   council,
   services,
 }) => {
@@ -123,7 +126,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </Reveal>
       </section>
 
-      <Announcements announcements={announcements} />
+      <Announcements announcements={announcements} facebookPosts={facebookPosts} />
 
       {/* 2. QUICK ACCESS SERVICES GRID */}
       <Reveal as="section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

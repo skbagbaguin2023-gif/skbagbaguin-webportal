@@ -1,27 +1,35 @@
 import React, { useState } from 'react';
-import { Program, ProgramCategory, ProgramStatus } from '../../types/index.ts';
+import { Program, ProgramCategory, ProgramFiscalYear, ProgramStatus } from '../../types/index.ts';
 import { filterPrograms, formatCurrencyPHP } from '../../utils/portalLogic.ts';
-import { Search, Filter, Sparkles, ArrowRight, CheckCircle2, SlidersHorizontal } from 'lucide-react';
+import { Search, Filter, Sparkles, ArrowLeft, SlidersHorizontal } from 'lucide-react';
 import Reveal from '../../components/Reveal.jsx';
 import { PortalImage } from '../../components/PortalImage.tsx';
 
 interface ProgramsViewProps {
   programs: Program[];
+  fiscalYears: ProgramFiscalYear[];
   onSelectProgram: (prog: Program) => void;
-  onOpenApply: (service?: string) => void;
 }
 
 export const ProgramsView: React.FC<ProgramsViewProps> = ({
   programs,
+  fiscalYears,
   onSelectProgram,
-  onOpenApply,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<ProgramCategory>('All');
   const [selectedStatus, setSelectedStatus] = useState<'All' | ProgramStatus>('All');
+  const defaultYear = new Date().getFullYear();
+  const availableYears = Array.from(new Set([
+    ...fiscalYears.map((item) => item.year),
+    ...programs.map((program) => program.fiscalYear ?? defaultYear),
+    defaultYear,
+  ])).sort((a, b) => b - a);
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const yearSettings = fiscalYears.find((item) => item.year === selectedYear);
+  const yearPrograms = programs.filter((program) => (program.fiscalYear ?? defaultYear) === selectedYear);
 
-  const filtered = filterPrograms(programs, searchQuery, selectedCategory, selectedStatus);
-
+  const filtered = filterPrograms(yearPrograms, searchQuery, selectedCategory, selectedStatus);
   const categories: ProgramCategory[] = ['All', 'Education', 'Sports', 'Livelihood', 'Environment', 'Health', 'Leadership'];
   const statuses: ('All' | ProgramStatus)[] = ['All', 'Ongoing', 'Upcoming', 'Completed'];
 
@@ -36,13 +44,62 @@ export const ProgramsView: React.FC<ProgramsViewProps> = ({
             <span>Official SK Bagbaguin Youth Programs</span>
           </div>
           <h1 className="text-2xl sm:text-4xl font-extrabold text-white">
-            Programs, Projects & Civic Initiatives
+            Projects, Programs and Activities
           </h1>
           <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
-            Discover community initiatives designed to support the education, livelihood, wellness, and empowerment of young Bagbaguenos.
+            Complete overview of SK Barangay Bagbaguin projects, programs, activities, and budget utilization by fiscal year.
           </p>
         </div>
       </Reveal>
+
+      <section className="space-y-4">
+        <h2 className="text-sm font-bold text-slate-800 dark:text-white">Select a Fiscal Year</h2>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          {availableYears.map((year) => {
+            const settings = fiscalYears.find((item) => item.year === year);
+            const count = programs.filter((program) => (program.fiscalYear ?? defaultYear) === year).length;
+            const funds = settings?.totalFunds ?? programs.filter((program) => (program.fiscalYear ?? defaultYear) === year).reduce((sum, program) => sum + program.allocatedBudget, 0);
+            const disbursed = settings?.totalDisbursed ?? 0;
+            const utilization = funds ? Math.min(100, Math.round((disbursed / funds) * 100)) : 0;
+            return (
+              <button key={year} type="button" onClick={() => setSelectedYear(year)} className={`rounded-2xl border p-5 text-left shadow-xs transition ${selectedYear === year ? 'border-[#1d4ed8] ring-2 ring-blue-100 dark:ring-blue-950' : 'border-slate-200 dark:border-slate-800'} bg-white dark:bg-slate-900`}>
+                <div className="flex items-center justify-between">
+                  <span className="text-2xl font-extrabold text-[#1d4ed8]">{year}</span>
+                  {year === (fiscalYears.find((item) => item.isCurrent)?.year ?? defaultYear) && <span className="rounded-full bg-blue-100 px-2 py-1 text-[10px] font-bold text-blue-700">Current</span>}
+                </div>
+                <div className="mt-4 space-y-2 text-xs text-slate-500 dark:text-slate-400">
+                  <div className="flex justify-between"><span>SK Total Funds</span><strong className="text-slate-800 dark:text-slate-200">{formatCurrencyPHP(funds)}</strong></div>
+                  <div className="flex justify-between"><span>Total Disbursed</span><strong className="text-slate-800 dark:text-slate-200">{formatCurrencyPHP(disbursed)}</strong></div>
+                  <div className="flex justify-between"><span>Projects, Programs and Activities</span><strong className="text-slate-800 dark:text-slate-200">{count}</strong></div>
+                </div>
+                <div className="mt-4">
+                  <div className="mb-1 flex justify-between text-[11px]"><span>Utilization</span><strong className="text-blue-600">{utilization}%</strong></div>
+                  <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-700"><div className="h-2 rounded-full bg-blue-600" style={{ width: `${utilization}%` }} /></div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {selectedYear !== null && <section className="space-y-6">
+        <button type="button" onClick={() => setSelectedYear(null)} className="inline-flex items-center gap-1 text-xs font-semibold text-[#1d4ed8] hover:underline">
+          <ArrowLeft className="h-3.5 w-3.5" /> All Fiscal Years
+        </button>
+        <div className="rounded-2xl bg-gradient-to-r from-[#1d4ed8] to-[#2445b8] p-6 text-white shadow-md sm:p-8">
+          <span className="inline-flex rounded-full bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-amber-300">Transparency</span>
+          <div className="mt-4 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+            <div><h2 className="text-3xl font-extrabold">Fiscal Year {selectedYear}</h2><p className="mt-1 text-sm text-blue-100">Projects, programs, activities, and budget utilization for SK Barangay Bagbaguin.</p></div>
+            <select value={selectedYear} onChange={(event) => setSelectedYear(Number(event.target.value))} className="rounded-lg border border-white/20 bg-blue-700 px-4 py-2 text-xs font-bold text-white">
+              {availableYears.map((year) => <option key={year} value={year}>{year}</option>)}
+            </select>
+          </div>
+        </div>
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="rounded-2xl bg-[#1d4ed8] p-6 text-white"><span className="text-xs font-bold uppercase opacity-80">SK Total Funds</span><p className="mt-3 text-2xl font-extrabold">{formatCurrencyPHP(yearSettings?.totalFunds ?? yearPrograms.reduce((sum, program) => sum + program.allocatedBudget, 0))}</p></div>
+        <div className="rounded-2xl bg-emerald-600 p-6 text-white"><span className="text-xs font-bold uppercase opacity-80">Total Disbursed</span><p className="mt-3 text-2xl font-extrabold">{formatCurrencyPHP(yearSettings?.totalDisbursed ?? 0)}</p></div>
+        <div className="rounded-2xl bg-white p-6 shadow-xs border border-slate-200 dark:border-slate-800 dark:bg-slate-900"><span className="text-xs font-bold uppercase text-slate-500">Remaining Balance</span><p className="mt-3 text-2xl font-extrabold text-[#1d4ed8]">{formatCurrencyPHP((yearSettings?.totalFunds ?? 0) - (yearSettings?.totalDisbursed ?? 0))}</p></div>
+      </section>
 
       {/* Filter & Search Bar */}
       <Reveal className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
@@ -139,7 +196,7 @@ export const ProgramsView: React.FC<ProgramsViewProps> = ({
                     {prog.summary}
                   </p>
 
-                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800 grid grid-cols-3 gap-2 text-[11px] text-slate-500 dark:text-slate-400">
                     <div>
                       <span className="block text-slate-400 dark:text-slate-500">Budget Allocated</span>
                       <strong className="text-slate-800 dark:text-slate-200 font-mono text-xs">{formatCurrencyPHP(prog.allocatedBudget)}</strong>
@@ -167,18 +224,12 @@ export const ProgramsView: React.FC<ProgramsViewProps> = ({
               </div>
 
               {/* Action buttons */}
-              <div className="p-5 pt-0 flex items-center justify-between gap-2 border-t border-slate-100 dark:border-slate-800 mt-2">
+              <div className="p-5 pt-0 flex items-center justify-end gap-2 border-t border-slate-100 dark:border-slate-800 mt-2">
                 <button
                   onClick={() => onSelectProgram(prog)}
                   className="text-xs font-semibold text-[#0F2C59] dark:text-amber-400 hover:underline py-2"
                 >
                   View Details & Goals
-                </button>
-                <button
-                  onClick={() => onOpenApply(prog.title)}
-                  className="bg-[#F5A623] hover:bg-[#D98E16] text-[#081830] font-bold text-xs px-3.5 py-1.5 rounded-md shadow-xs transition-colors cursor-pointer"
-                >
-                  Apply Now
                 </button>
               </div>
 
@@ -204,6 +255,7 @@ export const ProgramsView: React.FC<ProgramsViewProps> = ({
           </button>
         </div>
       )}
+      </section>}
 
     </div>
   );

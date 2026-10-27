@@ -6,6 +6,7 @@ export type PublicPage =
   | 'programs' 
   | 'events' 
   | 'announcements' 
+  | 'facebookPosts'
   | 'services' 
   | 'transparency' 
   | 'contact';
@@ -13,6 +14,7 @@ export type PublicPage =
 export type AdminSection = 
   | 'dashboard' 
   | 'announcements' 
+  | 'facebookPosts'
   | 'programs' 
   | 'events' 
   | 'applications' 
@@ -39,6 +41,15 @@ export interface Program {
   objectives: string[];
   requirements?: string[];
   keyOutputs?: string[];
+  fiscalYear?: number;
+}
+
+export interface ProgramFiscalYear {
+  id: string;
+  year: number;
+  totalFunds: number;
+  totalDisbursed: number;
+  isCurrent?: boolean;
 }
 
 export type EventStatus = 'Registration Open' | 'Limited Slots' | 'Full' | 'Completed';
@@ -91,6 +102,15 @@ export interface Announcement {
   isPinned?: boolean;
   coverImage?: string;
   sourcePostUrl?: string;
+}
+
+export interface FacebookPost {
+  id: string;
+  title: string;
+  excerpt: string;
+  date: string;
+  imageUrl: string;
+  postUrl: string;
 }
 
 export type ServiceType = string;
@@ -190,8 +210,6 @@ export interface CouncilMember {
   term: string;
   bio: string;
   imageUrl: string;
-  email: string;
-  contact: string;
   motto: string;
 }
 

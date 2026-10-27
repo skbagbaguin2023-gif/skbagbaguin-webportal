@@ -99,13 +99,13 @@ export const ContactView: React.FC<ContactViewProps> = ({ onSubmitFeedback }) =>
           <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center">
             <MapPin className="w-5 h-5" />
           </div>
-          <h3 className="font-bold text-base text-slate-900 dark:text-white">Barangay Hall Desk</h3>
+          <h3 className="font-bold text-base text-slate-900 dark:text-white">SK Bagbaguin Office</h3>
           <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-            1625 P. Jacinto, Valenzuela, 1448 Metro Manila
+            4th Floor, SK Bagbaguin Office Sitio Malinis Multi-Purpose Building, Bagbaguin, Valenzuela City, Metro Manila 1440
           </p>
           <div className="text-xs text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-            <span>Office hours have not been added yet.</span>
+            <span>8:00 AM - 5:00 PM</span>
           </div>
         </Reveal>
 
@@ -116,7 +116,11 @@ export const ContactView: React.FC<ContactViewProps> = ({ onSubmitFeedback }) =>
           </div>
           <h3 className="font-bold text-base text-slate-900 dark:text-white">Emergency & Hotlines</h3>
           <ul className="text-xs text-slate-600 dark:text-slate-300 space-y-1.5">
-            <li>Official emergency contact details have not been added yet.</li>
+            <li>Office of the Punong Barangay: <strong>(02) 7002 0364</strong></li>
+            <li>Barangay Health Station: <strong>(02) 8376 1097</strong></li>
+            <li>Bagbaguin Police Sub-Station: <strong>(02) 7975 7478</strong></li>
+            <li>Ambulance Hotline / Tanod Headquarters: <strong>0939 859 9854</strong></li>
+            <li>Bagbaguin Sub-Fire Station: <strong>0991 824 5034</strong></li>
           </ul>
         </Reveal>
 
@@ -127,7 +131,10 @@ export const ContactView: React.FC<ContactViewProps> = ({ onSubmitFeedback }) =>
           </div>
           <h3 className="font-bold text-base text-slate-900 dark:text-white">Online Correspondence</h3>
           <div className="text-xs text-slate-600 dark:text-slate-300 space-y-1">
-            <p>Official email and social media links have not been added yet.</p>
+            <ul className="text-xs text-slate-600 dark:text-slate-300 space-y-1.5">
+            <li>Official email address: <strong className="text-slate-700 dark:text-slate-200">skbagbaguin.2023@gmail.com</strong></li>
+            <li>SK Facebook Page: <strong className="text-slate-700 dark:text-slate-200">SK Bagbaguin Valenzuela</strong></li>
+            </ul>
           </div>
         </Reveal>
 

@@ -106,10 +106,10 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               </li>
               <li className="flex items-center gap-2.5">
                 <Phone className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>SK Bagbaguin Number: <strong className="text-white font-mono">8352-5000</strong></span>
+                <span>SK Bagbaguin Number: <strong className="text-white font-mono">+639481832110</strong></span>
               </li>
               <li className="text-xs text-slate-400 pl-6">
-                <span>Bagbaguin Police Sub-Station: <strong className="text-white font-mono">(02) 7975-7478 | 09686837129</strong></span>
+                <span>Bagbaguin Police Sub-Station: <strong className="text-white font-mono">(02) 7975-7478 | +639686837129</strong></span>
               </li>
             </ul>
           </div>

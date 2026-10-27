@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { 
   AdminSection, 
   Program, 
+  ProgramFiscalYear,
   EventItem, 
   Announcement, 
+  FacebookPost,
   YouthApplication, 
   TransparencyDoc, 
   CouncilMember, 
@@ -31,9 +33,11 @@ import {
   Sparkles,
   ExternalLink,
   Settings,
+  Facebook,
 } from 'lucide-react';
 import { AdminOverview } from './AdminOverview.tsx';
 import { AnnouncementsManager } from './AnnouncementsManager.tsx';
+import { FacebookPostsManager } from './FacebookPostsManager.tsx';
 import { ProgramsManager } from './ProgramsManager.tsx';
 import { EventsManager } from './EventsManager.tsx';
 import { ApplicationsManager } from './ApplicationsManager.tsx';
@@ -48,8 +52,10 @@ import { ConfirmationModal } from '../../components/modals/ConfirmationModal.tsx
 interface AdminLayoutProps {
   onReturnToPublic: () => Promise<void>;
   programs: Program[];
+  programFiscalYears: ProgramFiscalYear[];
   events: EventItem[];
   announcements: Announcement[];
+  facebookPosts: FacebookPost[];
   applications: YouthApplication[];
   transparencyDocs: TransparencyDoc[];
   council: CouncilMember[];
@@ -59,9 +65,13 @@ interface AdminLayoutProps {
   onAddAnnouncement: (ann: Announcement) => Promise<void>;
   onUpdateAnnouncement: (ann: Announcement) => Promise<void>;
   onDeleteAnnouncement: (id: string) => void;
+  onAddFacebookPost: (post: FacebookPost) => Promise<void>;
+  onUpdateFacebookPost: (post: FacebookPost) => Promise<void>;
+  onDeleteFacebookPost: (id: string) => Promise<void>;
   onAddProgram: (prog: Program) => void;
   onUpdateProgram: (prog: Program) => void;
   onDeleteProgram: (id: string) => void;
+  onSaveProgramFiscalYear: (settings: ProgramFiscalYear) => void;
   onAddEvent: (evt: EventItem) => void;
   onUpdateEvent: (evt: EventItem) => void;
   onDeleteEvent: (id: string) => void;
@@ -89,8 +99,10 @@ interface AdminLayoutProps {
 export const AdminLayout: React.FC<AdminLayoutProps> = ({
   onReturnToPublic,
   programs,
+  programFiscalYears,
   events,
   announcements,
+  facebookPosts,
   applications,
   transparencyDocs,
   council,
@@ -100,9 +112,13 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   onAddAnnouncement,
   onUpdateAnnouncement,
   onDeleteAnnouncement,
+  onAddFacebookPost,
+  onUpdateFacebookPost,
+  onDeleteFacebookPost,
   onAddProgram,
   onUpdateProgram,
   onDeleteProgram,
+  onSaveProgramFiscalYear,
   onAddEvent,
   onUpdateEvent,
   onDeleteEvent,
@@ -141,6 +157,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   const navItems: { id: AdminSection; label: string; icon: React.ReactNode; badge?: number }[] = [
     { id: 'dashboard', label: 'Overview Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
     { id: 'announcements', label: 'Announcements CMS', icon: <Bell className="w-4 h-4" /> },
+    { id: 'facebookPosts', label: 'Latest from Facebook', icon: <Facebook className="w-4 h-4" /> },
     { id: 'programs', label: 'Programs & Projects', icon: <FolderKanban className="w-4 h-4" /> },
     { id: 'events', label: 'Events & Attendees', icon: <Calendar className="w-4 h-4" /> },
     { 
@@ -182,7 +199,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
     <div className="min-h-screen bg-slate-100 dark:bg-[#071324] flex flex-col md:flex-row font-sans text-slate-800 dark:text-slate-100">
       
       {/* SIDEBAR NAVIGATION (Desktop: 260px fixed width, Mobile: slideout) */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#081830] text-slate-300 flex flex-col justify-between transition-transform duration-200 md:static md:translate-x-0 ${
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#081830] text-slate-300 flex flex-col justify-between transition-transform duration-200 md:sticky md:top-0 md:h-screen md:self-start md:translate-x-0 ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         
@@ -464,13 +481,23 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
               onCloseCreateModal={() => setTriggerNewAnn(false)}
             />
           )}
+          {activeSection === 'facebookPosts' && (
+            <FacebookPostsManager
+              posts={facebookPosts}
+              onAdd={onAddFacebookPost}
+              onUpdate={onUpdateFacebookPost}
+              onDelete={onDeleteFacebookPost}
+            />
+          )}
 
           {activeSection === 'programs' && (
             <ProgramsManager
               programs={programs}
+              fiscalYears={programFiscalYears}
               onAddProgram={onAddProgram}
               onUpdateProgram={onUpdateProgram}
               onDeleteProgram={onDeleteProgram}
+              onSaveFiscalYear={onSaveProgramFiscalYear}
             />
           )}
 

@@ -1,16 +1,21 @@
 import { useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ExternalLink, Facebook } from 'lucide-react';
 import Reveal from './Reveal.jsx';
 import FacebookPostCard from './FacebookPostCard.jsx';
 import { getDefaultAnnouncementCoverImage } from '../data/defaultAnnouncements.ts';
 import { PortalImage } from './PortalImage.tsx';
+/** @typedef {import('../types/index.ts').FacebookPost} FacebookPost */
 
-export default function Announcements({ announcements }) {
+/** @param {{ announcements: import('../types/index.ts').Announcement[], facebookPosts?: FacebookPost[] }} props */
+export default function Announcements({ announcements, facebookPosts = [] }) {
   const publishedAnnouncements = announcements;
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const hasMultipleAnnouncements = publishedAnnouncements.length > 1;
   const activeAnnouncement = publishedAnnouncements[activeIndex % Math.max(publishedAnnouncements.length, 1)];
+  const latestFacebookPosts = facebookPosts.length > 0
+    ? facebookPosts.slice(0, 2)
+    : publishedAnnouncements.filter((announcement) => announcement.sourcePostUrl?.trim()).slice(0, 2);
 
   useEffect(() => {
     setActiveIndex(0);
@@ -129,6 +134,67 @@ export default function Announcements({ announcements }) {
           <FacebookPostCard />
         </div>
       </div>
+
+      {latestFacebookPosts.length > 0 && (
+        <div className="mt-12 border-t border-slate-200 pt-10 dark:border-slate-800">
+          <div className="mb-5 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Latest from Facebook</h2>
+              <span className="mt-2 block h-1 w-9 rounded-full bg-amber-400" />
+            </div>
+            <a
+              href="https://web.facebook.com/sk.bagbaguin.valenzuela"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#1877F2] transition-colors hover:text-[#166FE5] hover:underline"
+            >
+              <Facebook className="h-3.5 w-3.5 fill-current" />
+              <span>Follow us</span>
+              <ExternalLink className="h-3 w-3" />
+            </a>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {latestFacebookPosts.map((announcement) => (
+              <article
+                key={announcement.id}
+                className="group overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs transition-all duration-200 hover:-translate-y-1 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+              >
+                {(announcement.coverImage || getDefaultAnnouncementCoverImage(announcement.id)) && (
+                  <div className="h-44 overflow-hidden bg-slate-200 dark:bg-slate-800">
+                    <PortalImage
+                      src={announcement.imageUrl || announcement.coverImage}
+                      fallbackSrc={getDefaultAnnouncementCoverImage(announcement.id)}
+                      alt=""
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  </div>
+                )}
+                <div className="flex min-h-36 flex-col p-4">
+                  <p className="line-clamp-3 text-xs font-semibold uppercase leading-relaxed tracking-wide text-slate-600 dark:text-slate-300">
+                    {announcement.title}
+                  </p>
+                  <p className="mt-3 line-clamp-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                    {announcement.excerpt}
+                  </p>
+                  <div className="mt-auto flex items-center justify-between gap-3 pt-4 text-[11px] text-slate-400 dark:text-slate-500">
+                    <span>{announcement.date}</span>
+                    <a
+                      href={announcement.postUrl || announcement.sourcePostUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 font-semibold text-[#1877F2] hover:underline"
+                    >
+                      <span>View Post</span>
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      )}
     </Reveal>
   );
 }

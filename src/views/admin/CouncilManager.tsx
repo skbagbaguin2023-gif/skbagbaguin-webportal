@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { CouncilMember } from '../../types/index.ts';
-import { Mail, Phone, Edit, Trash2, Plus, Save, X, Upload, GripVertical, ArrowUp, ArrowDown } from 'lucide-react';
+import { Edit, Trash2, Plus, Save, X, Upload, GripVertical, ArrowUp, ArrowDown } from 'lucide-react';
 import Reveal from '../../components/Reveal.jsx';
 import { deletePortalImage, uploadPortalImage } from '../../services/supabaseData.ts';
 import { ConfirmationModal } from '../../components/modals/ConfirmationModal.tsx';
@@ -23,8 +23,6 @@ const emptyForm: CouncilMemberForm = {
   term: '',
   bio: '',
   imageUrl: '',
-  email: '',
-  contact: '',
   motto: '',
 };
 
@@ -94,9 +92,16 @@ export const CouncilManager: React.FC<CouncilManagerProps> = ({
   };
 
   const openEditForm = (member: CouncilMember) => {
-    const { id: memberId, ...memberForm } = member;
-    setEditingId(memberId);
-    setForm(memberForm);
+    setEditingId(member.id);
+    setForm({
+      name: member.name,
+      position: member.position,
+      committee: member.committee,
+      term: member.term,
+      bio: member.bio,
+      imageUrl: member.imageUrl,
+      motto: member.motto,
+    });
     setSelectedPhoto(null);
     setPhotoPreviewUrl('');
     const isStandardPosition = councilPositions.includes(member.position);
@@ -133,10 +138,6 @@ export const CouncilManager: React.FC<CouncilManagerProps> = ({
     if (!form.committee.trim()) nextErrors.committee = 'Enter a committee assignment.';
     if (!form.term.trim()) nextErrors.term = 'Enter the term of office.';
     if (!form.imageUrl && !editingId) nextErrors.imageUrl = 'Upload an official photo.';
-    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      nextErrors.email = 'Enter a valid email address.';
-    }
-
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
@@ -158,8 +159,6 @@ export const CouncilManager: React.FC<CouncilManagerProps> = ({
         committee: form.committee.trim(),
         term: form.term.trim(),
         bio: form.bio.trim(),
-        email: form.email.trim(),
-        contact: form.contact.trim(),
         motto: form.motto.trim(),
       };
 
@@ -265,15 +264,6 @@ export const CouncilManager: React.FC<CouncilManagerProps> = ({
               Term *
               <input value={form.term} onChange={(e) => setForm({ ...form, term: e.target.value })} className="mt-1 w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800" />
               {errors.term && <span className="block mt-1 text-rose-600">{errors.term}</span>}
-            </label>
-            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-              Email
-              <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="mt-1 w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800" />
-              {errors.email && <span className="block mt-1 text-rose-600">{errors.email}</span>}
-            </label>
-            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-              Contact Number
-              <input value={form.contact} onChange={(e) => setForm({ ...form, contact: e.target.value })} className="mt-1 w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800" />
             </label>
             <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 md:col-span-2">
               Biography
@@ -384,8 +374,6 @@ export const CouncilManager: React.FC<CouncilManagerProps> = ({
               </div>
 
               <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 space-y-1">
-                {member.email && <div className="flex items-center gap-1.5"><Mail className="w-3.5 h-3.5" /><span className="truncate">{member.email}</span></div>}
-                {member.contact && <div className="flex items-center gap-1.5"><Phone className="w-3.5 h-3.5" /><span>{member.contact}</span></div>}
                 <div className="flex items-center justify-between gap-2 pt-2">
                   <div className="flex items-center gap-1">
                     <button
