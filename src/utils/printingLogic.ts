@@ -1,6 +1,7 @@
 interface PrintingRequestInput {
   applicantName: string;
   requestedDate: string;
+  dateNeeded: string;
   copiesNeeded: number | '';
   purpose: string;
   address: string;
@@ -21,6 +22,11 @@ export function validatePrintingRequest(input: PrintingRequestInput): Record<str
     errors.requestedDate = 'Choose the requested date.';
   } else if (input.requestedDate < input.today) {
     errors.requestedDate = 'Choose today or a future date.';
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.dateNeeded)) {
+    errors.dateNeeded = 'Choose the date needed.';
+  } else if (input.dateNeeded < input.today) {
+    errors.dateNeeded = 'Choose today or a future date.';
   }
   if (!Number.isInteger(Number(input.copiesNeeded)) || Number(input.copiesNeeded) < 1 || Number(input.copiesNeeded) > 999999) {
     errors.copiesNeeded = 'Enter a whole number of copies from 1 to 999,999.';

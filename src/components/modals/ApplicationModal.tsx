@@ -52,6 +52,7 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
   const [yearLevel, setYearLevel] = useState('');
   const [details, setDetails] = useState('');
   const [requestedDate, setRequestedDate] = useState('');
+  const [dateNeeded, setDateNeeded] = useState('');
   const [copiesNeeded, setCopiesNeeded] = useState<number | ''>('');
   const [printingPdf, setPrintingPdf] = useState<File | null>(null);
   const [dataPrivacyConsent, setDataPrivacyConsent] = useState(false);
@@ -158,6 +159,7 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
       const nextErrors = validatePrintingRequest({
         applicantName,
         requestedDate,
+        dateNeeded,
         copiesNeeded,
         purpose: details,
         address,
@@ -236,6 +238,7 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
         ...(isPrintingService
           ? {
               requestedDate,
+              dateNeeded,
               copiesNeeded: Number(copiesNeeded),
               details: details.trim(),
             }
@@ -289,6 +292,7 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
     setYearLevel('');
     setDetails('');
     setRequestedDate('');
+    setDateNeeded('');
     setCopiesNeeded('');
     setPrintingPdf(null);
     setDataPrivacyConsent(false);
@@ -416,6 +420,20 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
                     className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                   />
                   {errors.copiesNeeded && <p role="alert" className="mt-1 text-xs text-rose-600">{errors.copiesNeeded}</p>}
+                </div>
+                <div>
+                  <label htmlFor="printing-date-needed" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                    Date Needed *
+                  </label>
+                  <input
+                    id="printing-date-needed"
+                    type="date"
+                    min={getLocalDateString()}
+                    value={dateNeeded}
+                    onChange={(event) => setDateNeeded(event.target.value)}
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  />
+                  {errors.dateNeeded && <p role="alert" className="mt-1 text-xs text-rose-600">{errors.dateNeeded}</p>}
                 </div>
               </div>
 
@@ -897,6 +915,7 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
                   {isPrintingService ? (
                     <>
                       <div><strong>Requested date:</strong> {requestedDate}</div>
+                      <div><strong>Date needed:</strong> {dateNeeded}</div>
                       <div><strong>Copies:</strong> {copiesNeeded}</div>
                     </>
                   ) : (
@@ -935,7 +954,7 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
         message={isSubmitting
           ? 'Uploading your documents and securely saving your application. Please keep this window open.'
           : isPrintingService
-            ? `Submit your printing request for ${copiesNeeded} copies on ${requestedDate}?`
+            ? `Submit your printing request for ${copiesNeeded} copies, requested on ${requestedDate}, needed by ${dateNeeded}?`
             : `Submit your application for ${serviceType}${uploadedFiles.length ? ` with ${uploadedFiles.length} attached document${uploadedFiles.length === 1 ? '' : 's'}` : ''}?`}
         confirmLabel={isPrintingService ? 'Submit Printing Request' : 'Submit Application'}
         isLoading={isSubmitting}

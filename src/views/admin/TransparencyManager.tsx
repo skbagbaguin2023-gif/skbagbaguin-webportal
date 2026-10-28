@@ -320,13 +320,34 @@ export const TransparencyManager: React.FC<TransparencyManagerProps> = ({
                     if (file) validateSelectedFile(file);
                     event.target.value = '';
                   }}
-                  className="block w-full rounded-lg border border-slate-300 p-2 text-xs text-slate-700 dark:border-slate-700 dark:text-slate-300"
+                  className="sr-only"
                 />
-                <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-                  {selectedFile
-                    ? `Selected: ${selectedFile.name} (${(selectedFile.size / (1024 * 1024)).toFixed(2)} MB)`
-                    : 'Select a PDF file above, or drag and drop it into the upload area. Maximum size: 25 MB.'}
-                </p>
+                <label
+                  htmlFor="transparency-pdf"
+                  className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed px-3 py-3 text-xs font-semibold transition-colors ${
+                    isUploading
+                      ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500'
+                      : 'border-slate-300 bg-slate-50 text-[#0F2C59] hover:border-[#0F2C59] hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-amber-400 dark:hover:border-amber-400'
+                  }`}
+                >
+                  <Upload className="h-4 w-4" />
+                  {selectedFile ? 'Replace PDF' : 'Choose PDF'}
+                </label>
+                {selectedFile ? (
+                  <div className="mt-2 flex min-w-0 items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 dark:border-emerald-900/70 dark:bg-emerald-950/30">
+                    <FileText className="h-4 w-4 shrink-0 text-emerald-700 dark:text-emerald-400" />
+                    <span className="min-w-0 flex-1 truncate text-[11px] font-medium text-emerald-800 dark:text-emerald-300" title={selectedFile.name}>
+                      {selectedFile.name}
+                    </span>
+                    <span className="shrink-0 text-[11px] text-emerald-700 dark:text-emerald-400">
+                      {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+                    </span>
+                  </div>
+                ) : (
+                  <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                    Select a PDF or drag and drop it here. Maximum size: 25 MB.
+                  </p>
+                )}
                 {uploadError && <p role="alert" className="mt-1 text-xs font-medium text-rose-600">{uploadError}</p>}
               </div>
               <div>

@@ -76,7 +76,7 @@ create policy "visitors can submit applications"
     and case
       when data ->> 'serviceType' = 'Printing Services' then
         data ?& array[
-          'requestedDate', 'copiesNeeded', 'details', 'address', 'contactNumber'
+          'requestedDate', 'dateNeeded', 'copiesNeeded', 'details', 'address', 'contactNumber'
         ]
         and length(data ->> 'applicantName') between 3 and 120
         and (data ->> 'requestedDate') ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'

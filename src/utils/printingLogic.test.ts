@@ -5,6 +5,7 @@ import { validatePrintingRequest } from './printingLogic.ts';
 const validRequest = {
   applicantName: 'Juan Dela Cruz',
   requestedDate: '2026-10-27',
+  dateNeeded: '2026-10-30',
   copiesNeeded: 3,
   purpose: 'School handouts',
   address: '123 Sampaguita St., Bagbaguin',

@@ -397,6 +397,10 @@ export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
                     <strong className="text-slate-800 dark:text-slate-200 font-mono">{activeApp.requestedDate}</strong>
                   </div>
                   <div>
+                    <span className="text-slate-400 dark:text-slate-400 block text-[11px]">Date Needed</span>
+                    <strong className="text-slate-800 dark:text-slate-200 font-mono">{activeApp.dateNeeded}</strong>
+                  </div>
+                  <div>
                     <span className="text-slate-400 dark:text-slate-400 block text-[11px]">Copies Needed</span>
                     <strong className="text-slate-800 dark:text-slate-200">{activeApp.copiesNeeded}</strong>
                   </div>

@@ -144,6 +144,7 @@ export interface YouthApplication {
   yearLevel?: string;
   details?: string;
   requestedDate?: string;
+  dateNeeded?: string;
   copiesNeeded?: number;
   kkProfile?: KkProfilingData;
   googleSyncStatus?: 'Pending' | 'Synced' | 'Failed';
