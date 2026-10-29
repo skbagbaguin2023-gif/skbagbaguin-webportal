@@ -73,9 +73,9 @@ export const TransparencyManager: React.FC<TransparencyManagerProps> = ({
       setUploadError('Choose a PDF file.');
       return false;
     }
-    if (file.size === 0 || file.size > 25 * 1024 * 1024) {
+    if (file.size === 0 || file.size > 35 * 1024 * 1024) {
       setSelectedFile(null);
-      setUploadError('Choose a non-empty PDF file up to 25 MB.');
+      setUploadError('Choose a non-empty PDF file up to 35 MB.');
       return false;
     }
     setSelectedFile(file);
@@ -181,7 +181,7 @@ export const TransparencyManager: React.FC<TransparencyManagerProps> = ({
         <Upload className="w-10 h-10 text-slate-400 dark:text-slate-500 mx-auto" />
         <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200">Drag & Drop Audited Financial Reports</h3>
         <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-          Upload PDF scans of COA audited disbursements, SK resolutions, or youth development plans (Up to 25MB)
+          Upload PDF scans of COA audited disbursements, SK resolutions, or youth development plans (Up to 35MB)
         </p>
         <input
           ref={dropzoneFileInputRef}
@@ -345,7 +345,7 @@ export const TransparencyManager: React.FC<TransparencyManagerProps> = ({
                   </div>
                 ) : (
                   <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-                    Select a PDF or drag and drop it here. Maximum size: 25 MB.
+                    Select a PDF or drag and drop it here. Maximum size: 35 MB.
                   </p>
                 )}
                 {uploadError && <p role="alert" className="mt-1 text-xs font-medium text-rose-600">{uploadError}</p>}
