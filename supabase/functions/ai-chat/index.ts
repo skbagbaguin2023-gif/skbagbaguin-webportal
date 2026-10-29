@@ -28,8 +28,9 @@ function corsHeaders(origin: string | null): HeadersInit {
   const allowed = configuredOrigins();
   return {
     'Access-Control-Allow-Origin': origin && allowed.includes(normalizeOrigin(origin)) ? origin : 'null',
-    'Access-Control-Allow-Headers': 'content-type, apikey, x-client-info, x-session-id',
+    'Access-Control-Allow-Headers': 'authorization, content-type, apikey, x-client-info, x-session-id',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Max-Age': '600',
     'Cache-Control': 'no-store',
     'Content-Type': 'application/json',
     Vary: 'Origin',
@@ -195,7 +196,7 @@ function stripUnsafeUrls(answer: string): string {
 
 Deno.serve(async (request) => {
   const origin = request.headers.get('Origin');
-  if (request.method === 'OPTIONS') return new Response('ok', { status: 204, headers: corsHeaders(origin) });
+  if (request.method === 'OPTIONS') return new Response(JSON.stringify({ ok: true }), { status: 200, headers: corsHeaders(origin) });
   if (request.method !== 'POST' || !allowedOrigin(origin)) return jsonResponse(origin, 403, { error: 'Request not allowed.' });
   if (Number(request.headers.get('Content-Length') ?? 0) > MAX_BODY_BYTES) return jsonResponse(origin, 413, { error: 'Request is too large.' });
   let raw = '';
