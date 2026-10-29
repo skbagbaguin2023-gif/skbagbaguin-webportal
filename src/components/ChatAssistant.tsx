@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Bot, ChevronDown, LoaderCircle, Send, X } from 'lucide-react';
-import { sendAiChat, type AiAnswer, type ChatMessage } from '../services/aiChat.ts';
+import { sendLocalAiChat, type AiAnswer, type ChatMessage } from '../services/localAiChat.ts';
 
 interface ChatAssistantProps {
   onNavigate: (page: 'home' | 'about' | 'programs' | 'events' | 'announcements' | 'services' | 'transparency' | 'contact') => void;
@@ -68,7 +68,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ onNavigate }) => {
     const controller = new AbortController();
     abortRef.current = controller;
     try {
-      const answer: AiAnswer = await sendAiChat(nextMessages, { signal: controller.signal });
+      const answer: AiAnswer = await sendLocalAiChat(nextMessages);
       setMessages([...nextMessages, { role: 'assistant' as const, content: answer.answer }].slice(-10));
     } catch (caught) {
       if (!controller.signal.aborted) {

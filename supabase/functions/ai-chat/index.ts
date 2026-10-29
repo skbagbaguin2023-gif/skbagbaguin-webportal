@@ -168,7 +168,7 @@ async function callModel(messages: ChatMessage[], referenceData: string, signal:
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
       contents: messages.map((message) => ({ role: message.role === 'assistant' ? 'model' : 'user', parts: [{ text: `${message.content}\n\n${referenceData}` }] })),
-      generationConfig: { responseMimeType: 'application/json', responseSchema: outputSchema(), maxOutputTokens: 600, thinkingConfig: { thinkingLevel: 'minimal' } },
+      generationConfig: { responseMimeType: 'application/json', responseSchema: outputSchema(), maxOutputTokens: 600 },
     }),
   });
 }
