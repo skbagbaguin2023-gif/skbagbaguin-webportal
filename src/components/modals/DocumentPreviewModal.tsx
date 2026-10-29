@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { TransparencyDoc } from '../../types/index.ts';
-import { X, FileText, Download, ShieldCheck, Calendar, Hash, LoaderCircle } from 'lucide-react';
+import { X, FileText, ExternalLink, ShieldCheck, Calendar, Hash, LoaderCircle } from 'lucide-react';
 import { getTransparencyDocumentSignedUrl } from '../../services/supabaseData.ts';
 
 interface DocumentPreviewModalProps {
@@ -101,11 +101,24 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
           )}
 
           {doc.storagePath && signedUrl ? (
-            <iframe
-              title={`PDF preview: ${doc.title}`}
-              src={signedUrl}
-              className="h-[55vh] min-h-64 w-full rounded-xl border border-slate-300 dark:border-slate-700"
-            />
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-5 text-center dark:border-slate-700 dark:bg-slate-800/60">
+              <FileText className="mx-auto h-10 w-10 text-[#0F2C59] dark:text-amber-400" />
+              <p className="mt-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
+                Your PDF is ready to view
+              </p>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                Open it directly in your browser’s PDF viewer for the best layout.
+              </p>
+              <a
+                href={signedUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#0F2C59] px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-[#0b2348]"
+              >
+                <ExternalLink className="h-4 w-4 text-amber-400" />
+                View PDF directly
+              </a>
+            </div>
           ) : (
             <div className="border border-slate-300 dark:border-slate-700 rounded-xl p-6 text-center">
               {isLoading ? (
@@ -139,10 +152,10 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
                   href={signedUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="bg-[#0F2C59] hover:bg-navy-800 text-white font-semibold text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-sm"
+                  className="bg-[#0F2C59] hover:bg-[#0b2348] text-white font-semibold text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-sm"
                 >
-                  <Download className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Open / Download PDF ({doc.fileSize})</span>
+                  <ExternalLink className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Open PDF ({doc.fileSize})</span>
                 </a>
               )}
             </div>
