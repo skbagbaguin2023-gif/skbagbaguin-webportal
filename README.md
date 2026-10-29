@@ -111,8 +111,9 @@ The simplest secure deployment is:
    This is the only new database setup required for the assistant.
 2. In Supabase **Edge Functions > Secrets**, add these names:
    `AI_PROVIDER=gemini`, `AI_MODEL`, `AI_API_KEY`, `AI_DAILY_CAP`, and
-   `ALLOWED_ORIGINS`. Use the exact deployed site origin in
-   `ALLOWED_ORIGINS`, separated by commas for multiple environments. Never
+   `ALLOWED_ORIGINS`. For the current Vercel site, use
+   `ALLOWED_ORIGINS=https://skbagbaguin-webportal.vercel.app` with no path.
+   Use commas for multiple environments. Never
    place `AI_API_KEY` in `.env.local`, Vercel, or any `VITE_` variable.
 3. From the repository folder, deploy the function:
 

@@ -25,9 +25,9 @@ const STOP_WORDS = new Set('a an and ang are as at ay ba barangay be can could d
 let portalCache: { items: PortalItem[]; dataVersion: string; expiresAt: number } | null = null;
 
 function corsHeaders(origin: string | null): HeadersInit {
-  const allowed = (Deno.env.get('ALLOWED_ORIGINS') ?? '').split(',').map((item) => item.trim()).filter(Boolean);
+  const allowed = configuredOrigins();
   return {
-    'Access-Control-Allow-Origin': origin && allowed.includes(origin) ? origin : 'null',
+    'Access-Control-Allow-Origin': origin && allowed.includes(normalizeOrigin(origin)) ? origin : 'null',
     'Access-Control-Allow-Headers': 'content-type, apikey, x-client-info, x-session-id',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Cache-Control': 'no-store',
@@ -36,12 +36,23 @@ function corsHeaders(origin: string | null): HeadersInit {
   };
 }
 
+function normalizeOrigin(origin: string): string {
+  return origin.trim().replace(/\/+$/, '');
+}
+
+function configuredOrigins(): string[] {
+  return (Deno.env.get('ALLOWED_ORIGINS') ?? '')
+    .split(',')
+    .map(normalizeOrigin)
+    .filter(Boolean);
+}
+
 function jsonResponse(origin: string | null, status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), { status, headers: corsHeaders(origin) });
 }
 
 function allowedOrigin(origin: string | null): boolean {
-  return Boolean(origin && (Deno.env.get('ALLOWED_ORIGINS') ?? '').split(',').map((item) => item.trim()).includes(origin));
+  return Boolean(origin && configuredOrigins().includes(normalizeOrigin(origin)));
 }
 
 function normalize(value: string): string {
