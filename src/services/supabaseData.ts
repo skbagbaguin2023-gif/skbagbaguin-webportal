@@ -31,7 +31,7 @@ const DOCUMENT_EXTENSIONS: Record<string, string> = {
 const APPLICATION_DOCUMENTS_BUCKET = 'application-documents';
 const MAX_APPLICATION_DOCUMENT_SIZE = 10 * 1024 * 1024;
 const TRANSPARENCY_DOCUMENTS_BUCKET = 'transparency-documents';
-const MAX_TRANSPARENCY_DOCUMENT_SIZE = 25 * 1024 * 1024;
+const MAX_TRANSPARENCY_DOCUMENT_SIZE = 35 * 1024 * 1024;
 
 export interface PortalRecord {
   id: string;
@@ -141,7 +141,7 @@ export async function uploadTransparencyDocument(file: File, documentId: string)
     throw new Error('Choose a PDF file.');
   }
   if (file.size > MAX_TRANSPARENCY_DOCUMENT_SIZE) {
-    throw new Error('PDF files must be 25 MB or smaller.');
+    throw new Error('PDF files must be 35 MB or smaller.');
   }
   if (file.size === 0) throw new Error('The selected PDF file is empty.');
 

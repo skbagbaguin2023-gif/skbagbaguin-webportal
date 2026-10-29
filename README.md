@@ -93,7 +93,10 @@ signed links. Transparency PDFs are stored in a private bucket; only
 administrators and visitors viewing documents marked public can access them.
 In the admin Transparency section, select a PDF with **Select File to Upload**
 or drag it onto the dashed upload area, fill in its details, then confirm the
-upload. PDFs are limited to 25 MB and are saved in Supabase Storage.
+upload. PDFs are limited to 35 MB and are saved in Supabase Storage. If the
+database was already created, run
+[`supabase/transparency_35mb_migration.sql`](./supabase/transparency_35mb_migration.sql)
+once to update the existing Storage bucket.
 No Firebase project credentials are used by the app.
 
 #### AI assistant

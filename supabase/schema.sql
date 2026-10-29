@@ -327,7 +327,7 @@ values (
   'transparency-documents',
   'transparency-documents',
   false,
-  26214400,
+  36700160,
   array['application/pdf']
 )
 on conflict (id) do update
