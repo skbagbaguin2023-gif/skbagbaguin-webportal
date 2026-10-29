@@ -128,12 +128,16 @@ create policy "visitors can submit feedback"
 
 create policy "admins can insert portal records"
   on public.portal_records for insert to authenticated
-  with check ((select public.is_portal_admin()));
+  with check (
+    (select public.is_portal_admin())
+  );
 
 create policy "admins can update portal records"
   on public.portal_records for update to authenticated
   using ((select public.is_portal_admin()))
-  with check ((select public.is_portal_admin()));
+  with check (
+    (select public.is_portal_admin())
+  );
 
 create policy "admins can delete portal records"
   on public.portal_records for delete to authenticated

@@ -7,7 +7,7 @@ export type PublicPage =
   | 'events' 
   | 'announcements' 
   | 'facebookPosts'
-  | 'services' 
+  | 'services'
   | 'transparency' 
   | 'contact';
 
@@ -125,7 +125,6 @@ export interface YouthService {
   requirements: string[];
   isActive: boolean;
 }
-
 export type ApplicationStatus = 'Pending' | 'Under Review' | 'Approved' | 'Rejected';
 
 export interface YouthApplication {

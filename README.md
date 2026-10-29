@@ -96,6 +96,38 @@ or drag it onto the dashed upload area, fill in its details, then confirm the
 upload. PDFs are limited to 25 MB and are saved in Supabase Storage.
 No Firebase project credentials are used by the app.
 
+#### AI assistant
+
+The public Kabataan Assistant calls the `ai-chat` Supabase Edge Function. The
+browser receives only the public publishable key; the provider key stays in
+Supabase Edge Function secrets. The assistant context is built with the
+anonymous Supabase key and includes only public records. It never receives
+applications, registrations, feedback, admin notes, private documents, or
+visitor personal information.
+
+The simplest secure deployment is:
+
+1. In Supabase **SQL Editor**, run [`supabase/rate_limits.sql`](./supabase/rate_limits.sql).
+   This is the only new database setup required for the assistant.
+2. In Supabase **Edge Functions > Secrets**, add these names:
+   `AI_PROVIDER=gemini`, `AI_MODEL`, `AI_API_KEY`, `AI_DAILY_CAP`, and
+   `ALLOWED_ORIGINS`. Use the exact deployed site origin in
+   `ALLOWED_ORIGINS`, separated by commas for multiple environments. Never
+   place `AI_API_KEY` in `.env.local`, Vercel, or any `VITE_` variable.
+3. From the repository folder, deploy the function:
+
+   ```text
+   supabase functions deploy ai-chat
+   ```
+
+The endpoint intentionally has `verify_jwt = false` because visitors are not
+required to sign in. Strict input validation, anonymous-only data access,
+per-IP/session rate limits, a global daily cap, CORS allowlisting, PII
+filtering, validated JSON output, and timeouts provide the compensating
+controls. The assistant does not use Turnstile, answer caching, or admin FAQ
+management, so there are no extra AI tables or frontend AI secrets to
+configure. Set an AI-provider spending limit and usage alert.
+
 #### Emailing official feedback replies
 
 Replies saved in the admin Feedback Inbox are emailed to the address supplied

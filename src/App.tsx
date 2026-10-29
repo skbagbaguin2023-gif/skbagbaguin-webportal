@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { 
   PublicPage, 
@@ -37,6 +37,7 @@ import { AnnouncementsView } from './views/public/AnnouncementsView.tsx';
 import { YouthServicesView } from './views/public/YouthServicesView.tsx';
 import { TransparencyView } from './views/public/TransparencyView.tsx';
 import { ContactView } from './views/public/ContactView.tsx';
+const ChatAssistant = lazy(() => import('./components/ChatAssistant.tsx').then((module) => ({ default: module.ChatAssistant })));
 
 // Modals
 import { ApplicationModal } from './components/modals/ApplicationModal.tsx';
@@ -140,7 +141,7 @@ export default function App() {
         ),
         subscribeToPortalCollection<FeedbackSuggestion>('feedbacks', setFeedbacks, reportListenerError),
         subscribeToPortalCollection<EventRegistration>('registrations', setRegistrations, reportListenerError),
-        subscribeToPortalCollection<YouthService>('services', setServices, reportListenerError)
+        subscribeToPortalCollection<YouthService>('services', setServices, reportListenerError),
       );
     };
 
@@ -623,7 +624,11 @@ export default function App() {
               )}
 
               {currentPage === 'about' && (
-              <AboutView council={council} />
+              <AboutView
+                council={council}
+                transparencyDocs={transparencyDocs}
+                onPreviewDoc={(doc) => setSelectedDocModal(doc)}
+              />
               )}
 
               {currentPage === 'programs' && (
@@ -668,6 +673,11 @@ export default function App() {
               window.scrollTo({ top: 0 });
             }}
           />
+          {!currentUser && (
+            <Suspense fallback={null}>
+              <ChatAssistant onNavigate={(page) => { setCurrentPage(page); window.scrollTo({ top: 0 }); }} />
+            </Suspense>
+          )}
         </>
 
       {/* Global Modals for Public Portal */}

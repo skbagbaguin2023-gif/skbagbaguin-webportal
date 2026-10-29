@@ -152,6 +152,9 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             <p className="text-[11px] text-slate-400 mt-1">
               Data Privacy Notice: All submitted youth applications and information are safeguarded pursuant to Republic Act No. 10173 (Data Privacy Act of 2012).
             </p>
+            <p className="text-[11px] text-slate-400 mt-1">
+              AI assistant notice: The assistant uses public portal information only, may make mistakes, and should not receive personal information.
+            </p>
           </div>
 
         </div>

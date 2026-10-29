@@ -30,7 +30,6 @@ import {
   Menu, 
   X, 
   ChevronDown,
-  Sparkles,
   ExternalLink,
   Settings,
   Facebook,
