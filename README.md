@@ -15,7 +15,9 @@ View your app in AI Studio: https://ai.studio/apps/7a67ea24-0d5f-4480-8728-2cbe3
 
 1. Install dependencies:
    `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+2. Set only the public Supabase variables in [.env.local](.env.local). AI
+   provider secrets belong in Supabase Edge Function secrets, never in the
+   frontend or a `VITE_` variable.
 3. Run the app:
    `npm run dev`
 
@@ -99,38 +101,29 @@ database was already created, run
 once to update the existing Storage bucket.
 No Firebase project credentials are used by the app.
 
-#### AI assistant
+#### SK Bagbaguin Digital Assistant
 
-The public Kabataan Assistant calls the `ai-chat` Supabase Edge Function. The
-browser receives only the public publishable key; the provider key stays in
-Supabase Edge Function secrets. The assistant context is built with the
-anonymous Supabase key and includes only public records. It never receives
-applications, registrations, feedback, admin notes, private documents, or
-visitor personal information.
+The public SK Bagbaguin Digital Assistant calls `POST /api/chatbot`. It first
+answers approved FAQs locally, then optionally uses Groq for natural-language
+answers. If Groq is not configured, unavailable, or over quota, the assistant
+uses the safe FAQ/fallback behavior instead.
 
-The simplest secure deployment is:
+To use Groq, add these **server-only** environment variables in Vercel:
 
-1. In Supabase **SQL Editor**, run [`supabase/rate_limits.sql`](./supabase/rate_limits.sql).
-   This is the only new database setup required for the assistant.
-2. In Supabase **Edge Functions > Secrets**, add these names:
-   `AI_PROVIDER=gemini`, `AI_MODEL`, `AI_API_KEY`, `AI_DAILY_CAP`, and
-   `ALLOWED_ORIGINS`. For the current Vercel site, use
-   `ALLOWED_ORIGINS=https://skbagbaguin-webportal.vercel.app` with no path.
-   Use commas for multiple environments. Never
-   place `AI_API_KEY` in `.env.local`, Vercel, or any `VITE_` variable.
-3. From the repository folder, deploy the function:
+```text
+GROQ_API_KEY=your-groq-api-key
+GROQ_MODEL=llama-3.3-70b-versatile
+```
 
-   ```text
-   supabase functions deploy ai-chat
-   ```
+Never use `VITE_GROQ_API_KEY`, and never put the key in frontend code or
+`.env.local` if that file is committed or exposed. Groq uses the
+OpenAI-compatible endpoint `https://api.groq.com/openai/v1/chat/completions`.
 
-The endpoint intentionally has `verify_jwt = false` because visitors are not
-required to sign in. Strict input validation, anonymous-only data access,
-per-IP/session rate limits, a global daily cap, CORS allowlisting, PII
-filtering, validated JSON output, and timeouts provide the compensating
-controls. The assistant does not use Turnstile, answer caching, or admin FAQ
-management, so there are no extra AI tables or frontend AI secrets to
-configure. Set an AI-provider spending limit and usage alert.
+To add or change verified answers, update
+[`chatbotGuardrails.ts`](./src/services/chatbotGuardrails.ts) with verified
+public information only. Office details, certificate requirements, official
+contacts, and emergency numbers remain unavailable until verified information
+is supplied.
 
 #### Emailing official feedback replies
 

@@ -1,21 +1,23 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Bot, ChevronDown, LoaderCircle, Send, X } from 'lucide-react';
-import { sendLocalAiChat, type AiAnswer, type ChatMessage } from '../services/localAiChat.ts';
+import { sendAiChat, type ChatMessage } from '../services/aiChat.ts';
 
 interface ChatAssistantProps {
   onNavigate: (page: 'home' | 'about' | 'programs' | 'events' | 'announcements' | 'services' | 'transparency' | 'contact') => void;
 }
 
 const suggestions = [
-  'How do I apply for Printing Services?',
-  'What events are coming up?',
-  'Paano mag-register sa KK profiling?',
-  'How can I contact the council?',
+  'What services does SK Bagbaguin offer?',
+  'What are the requirements for a barangay certificate?',
+  'Where is the barangay office located?',
+  'What are the latest announcements?',
+  'How can I contact the SK officials?',
+  'How do I report a concern?',
 ];
 
 const initialMessage: ChatMessage = {
   role: 'assistant',
-  content: 'Hello po! I’m Kabataan Assistant. I can help you find public information about SK Bagbaguin.',
+  content: 'Hello po! I’m the SK Bagbaguin Digital Assistant. I can help you find verified information about programs, services, announcements, requirements, and official contact channels.',
 };
 
 export const ChatAssistant: React.FC<ChatAssistantProps> = ({ onNavigate }) => {
@@ -61,6 +63,10 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ onNavigate }) => {
   const send = async (value = input) => {
     const content = value.trim();
     if (!content || isLoading) return;
+    if (content.length > 500) {
+      setError('Please keep your message under 500 characters.');
+      return;
+    }
     const nextMessages: ChatMessage[] = [...messages, { role: 'user' as const, content }].slice(-10);
     setInput('');
     setError('');
@@ -68,8 +74,8 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ onNavigate }) => {
     const controller = new AbortController();
     abortRef.current = controller;
     try {
-      const answer: AiAnswer = await sendLocalAiChat(nextMessages);
-      setMessages([...nextMessages, { role: 'assistant' as const, content: answer.answer }].slice(-10));
+      const result = await sendAiChat(content, { userRole: 'guest', currentPage: window.location.pathname }, messages.slice(-9), { signal: controller.signal });
+      setMessages([...nextMessages, { role: 'assistant' as const, content: result.reply }].slice(-10));
     } catch (caught) {
       if (!controller.signal.aborted) {
         setError(caught instanceof Error ? caught.message : 'The assistant is temporarily unavailable.');
@@ -84,11 +90,11 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ onNavigate }) => {
   return (
     <div className="fixed bottom-4 right-4 z-40">
       {isOpen && (
-        <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="kabataan-assistant-title" className="fixed inset-0 flex flex-col bg-white dark:bg-slate-900 sm:absolute sm:inset-auto sm:bottom-16 sm:right-0 sm:h-[min(36rem,calc(100vh-7rem))] sm:w-[min(24rem,calc(100vw-2rem))] sm:rounded-2xl sm:border sm:border-slate-200 sm:shadow-2xl dark:sm:border-slate-700">
+        <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="sk-bagbaguin-assistant-title" className="fixed inset-0 flex flex-col bg-white dark:bg-slate-900 sm:absolute sm:inset-auto sm:bottom-16 sm:right-0 sm:h-[min(36rem,calc(100vh-7rem))] sm:w-[min(24rem,calc(100vw-2rem))] sm:rounded-2xl sm:border sm:border-slate-200 sm:shadow-2xl dark:sm:border-slate-700">
           <div className="flex items-center justify-between bg-[#0F2C59] px-4 py-3 text-white">
-            <div className="flex items-center gap-2"><Bot className="h-5 w-5 text-amber-400" /><div><p id="kabataan-assistant-title" className="text-sm font-bold">Kabataan Assistant</p><p className="text-[10px] text-slate-200">Public portal information only</p></div></div>
+          <div className="flex items-center gap-2"><Bot className="h-5 w-5 text-amber-400" /><div><p id="sk-bagbaguin-assistant-title" className="text-sm font-bold">SK Bagbaguin Digital Assistant</p><p className="text-[10px] text-slate-200">Verified public information only</p></div></div>
             <div className="flex items-center gap-1">
-              <button type="button" onClick={() => { abortRef.current?.abort(); setMessages([initialMessage]); setError(''); }} className="rounded px-2 py-1 text-[10px] hover:bg-white/10">New chat</button>
+              <button type="button" onClick={() => { abortRef.current?.abort(); setMessages([initialMessage]); setInput(''); setError(''); }} className="rounded px-2 py-1 text-[10px] hover:bg-white/10">New chat</button>
               <button ref={closeButtonRef} type="button" onClick={() => { abortRef.current?.abort(); setIsOpen(false); }} aria-label="Close assistant" className="rounded-lg p-1 hover:bg-white/10"><X className="h-4 w-4" /></button>
             </div>
           </div>
@@ -99,12 +105,12 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ onNavigate }) => {
             {error && <p role="alert" className="text-xs text-rose-600">{error}</p>}
           </div>
           <div className="border-t border-slate-200 p-3 dark:border-slate-700">
-            <div className="mb-1 flex justify-between gap-2 text-[10px] text-slate-500"><span>AI assistant. It can make mistakes. Please don't share personal information.</span><span>{input.length}/500</span></div>
-            <div className="flex items-center gap-2"><input value={input} maxLength={500} disabled={isLoading} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') void send(); }} placeholder="Ask about SK Bagbaguin..." aria-label="Ask Kabataan Assistant" className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-[#0F2C59] dark:border-slate-600 dark:bg-slate-800" /><button type="button" onClick={() => void send()} disabled={isLoading || !input.trim()} aria-label="Send message" className="rounded-lg bg-[#0F2C59] p-2 text-white disabled:opacity-50"><Send className="h-4 w-4 text-amber-400" /></button></div>
+            <div className="mb-1 flex justify-between gap-2 text-[10px] text-slate-500"><span>Huwag mag-share ng personal information dito. / Please don't share personal information here.</span><span>{input.length}/500</span></div>
+            <div className="flex items-center gap-2"><input value={input} maxLength={500} disabled={isLoading} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') void send(); }} placeholder="Ask about SK Bagbaguin..." aria-label="Ask SK Bagbaguin Digital Assistant" className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-[#0F2C59] dark:border-slate-600 dark:bg-slate-800" /><button type="button" onClick={() => void send()} disabled={isLoading || !input.trim()} aria-label="Send message" className="rounded-lg bg-[#0F2C59] p-2 text-white disabled:opacity-50"><Send className="h-4 w-4 text-amber-400" /></button></div>
           </div>
         </div>
       )}
-      <button type="button" onClick={() => setIsOpen((current) => !current)} aria-expanded={isOpen} aria-label={isOpen ? 'Close Kabataan Assistant' : 'Open Kabataan Assistant'} className="flex items-center gap-2 rounded-full bg-[#0F2C59] px-4 py-3 text-xs font-bold text-white shadow-xl hover:bg-[#0b2348]">{isOpen ? <ChevronDown className="h-4 w-4 text-amber-400" /> : <Bot className="h-4 w-4 text-amber-400" />}{isOpen ? 'Close' : 'Ask Kabataan Assistant'}</button>
+      <button type="button" onClick={() => setIsOpen((current) => !current)} aria-expanded={isOpen} aria-label={isOpen ? 'Close SK Bagbaguin Digital Assistant' : 'Open SK Bagbaguin Digital Assistant'} className="flex items-center gap-2 rounded-full bg-[#0F2C59] px-4 py-3 text-xs font-bold text-white shadow-xl hover:bg-[#0b2348]">{isOpen ? <ChevronDown className="h-4 w-4 text-amber-400" /> : <Bot className="h-4 w-4 text-amber-400" />}{isOpen ? 'Close' : 'Ask SK Assistant'}</button>
     </div>
   );
 };
