@@ -66,7 +66,7 @@ export async function sendAiChat(
 
   // The FAQ/retrieval assistant is intentionally usable without an AI provider.
   // A configured server endpoint may add retrieval later, but it is never required.
-  if (!supabase) return fallbackResponse();
+  if (!supabase) return fallbackResponse(message);
 
   let response: Response;
   try {
@@ -85,18 +85,18 @@ export async function sendAiChat(
     });
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') throw error;
-    return fallbackResponse();
+    return fallbackResponse(message);
   }
   if (response.status === 404 && import.meta.env.DEV) {
-    return fallbackResponse();
+    return fallbackResponse(message);
   }
   if (!response.ok) {
     if (response.status === 429) throw new Error('Please wait a moment before trying again.');
-    return fallbackResponse();
+    return fallbackResponse(message);
   }
   try {
     return validateResponse(await response.json());
   } catch {
-    return fallbackResponse();
+    return fallbackResponse(message);
   }
 }

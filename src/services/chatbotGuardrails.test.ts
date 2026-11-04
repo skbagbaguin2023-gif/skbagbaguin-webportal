@@ -25,8 +25,17 @@ test('matches verified route FAQs without inventing office details', () => {
   assert.doesNotMatch(contact?.reply ?? '', /\+639|09\d{9}/);
 });
 
+test('matches common Tagalog route questions', () => {
+  const programs = matchVerifiedFaq('Ano ang mga programa para sa kabataan?');
+  assert.equal(programs?.category, 'programs');
+  assert.match(programs?.reply ?? '', /Programs page/);
+  const announcements = matchVerifiedFaq('Saan makikita ang mga bagong anunsyo?');
+  assert.equal(announcements?.category, 'announcements');
+});
+
 test('returns a safe fallback for unsupported questions', () => {
   const answer = matchVerifiedFaq('Can you give me legal advice?');
   assert.equal(answer, null);
   assert.equal(fallbackResponse().source, 'fallback');
+  assert.match(fallbackResponse('Paano ako makakakuha ng tulong?').reply, /Wala pa akong beripikadong impormasyon/);
 });
