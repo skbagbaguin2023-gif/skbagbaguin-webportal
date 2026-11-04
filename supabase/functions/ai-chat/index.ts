@@ -177,6 +177,24 @@ function fixedAnswer(): Answer {
   return { intent: 'out_of_scope', answer: FIXED_OUT_OF_SCOPE, sourceIds: [] };
 }
 
+function contractResponse(answer: Answer): Record<string, unknown> {
+  const category = answer.intent === 'smalltalk'
+    ? 'assistant'
+    : answer.intent === 'out_of_scope'
+      ? 'unavailable'
+      : answer.sourceIds.some((id) => id.startsWith('announcement:')) ? 'announcements'
+        : answer.sourceIds.some((id) => id.startsWith('event:')) ? 'events'
+          : answer.sourceIds.some((id) => id.startsWith('service:')) ? 'barangay-services'
+            : 'portal-information';
+  return {
+    success: true,
+    source: answer.intent === 'answer' ? 'ai' : answer.intent === 'smalltalk' ? 'faq' : 'fallback',
+    reply: answer.answer,
+    category,
+    knowledge: answer.sourceIds,
+  };
+}
+
 function validateAnswer(value: unknown, sentIds: Set<string>): Answer {
   if (!value || typeof value !== 'object') return fixedAnswer();
   const result = value as Partial<Answer>;
@@ -225,20 +243,20 @@ Deno.serve(async (request) => {
     const ranked = rankItems(portal.items, filteredMessages);
     const reference = portalText([...ranked, ...PAGE_MAP.filter((item) => !ranked.some((entry) => entry.id === item.id)), portal.items.find((item) => item.id === 'contact')!]);
     const fallback: Answer = { intent: 'answer', answer: `The assistant is busy right now. Here is what I found / Medyo abala ang assistant ngayon. Ito po ang nahanap ko.\n${ranked.slice(0, 3).map((item) => `- ${item.title} (${item.page})`).join('\n')}\n- Contact Us (${portal.items.find((item) => item.id === 'contact')?.page ?? '/contact'})`, sourceIds: ranked.slice(0, 3).map((item) => item.id).concat('contact') };
-    if (checks.some(({ error, data }) => error || data !== true)) return jsonResponse(origin, 200, fallback);
+    if (checks.some(({ error, data }) => error || data !== true)) return jsonResponse(origin, 200, contractResponse(fallback));
     const sentIds = new Set(ranked.map((item) => item.id).concat(PAGE_MAP.map((item) => item.id), 'contact'));
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
     let response: Response;
     try { response = await callModel(filteredMessages, reference, controller.signal); } finally { clearTimeout(timeout); }
-    if (!response.ok) return jsonResponse(origin, 200, fallback);
+    if (!response.ok) return jsonResponse(origin, 200, contractResponse(fallback));
     const payload = await response.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
     const text = payload.candidates?.[0]?.content?.parts?.find((part) => typeof part.text === 'string')?.text ?? '';
     let modelAnswer: unknown;
-    try { modelAnswer = JSON.parse(text); } catch { return jsonResponse(origin, 200, fixedAnswer()); }
+    try { modelAnswer = JSON.parse(text); } catch { return jsonResponse(origin, 200, contractResponse(fixedAnswer())); }
     const validated = validateAnswer(modelAnswer, sentIds);
-    return jsonResponse(origin, 200, { ...validated, answer: stripUnsafeUrls(validated.answer) });
+    return jsonResponse(origin, 200, contractResponse({ ...validated, answer: stripUnsafeUrls(validated.answer) }));
   } catch {
-    return jsonResponse(origin, 200, fixedAnswer());
+    return jsonResponse(origin, 200, contractResponse(fixedAnswer()));
   }
 });
