@@ -118,7 +118,7 @@ To use Groq, add these **server-only** environment variables in Vercel:
 
 ```text
 GROQ_API_KEY=your-groq-api-key
-GROQ_MODEL=llama-3.1-8b-instant
+GROQ_MODEL=openai/gpt-oss-120b
 ```
 
 The chatbot needs access to the same public Supabase project used by the
@@ -142,7 +142,7 @@ For local testing, add the same variables to your private `.env.local`:
 
 ```text
 GROQ_API_KEY=your-groq-api-key
-GROQ_MODEL=llama-3.1-8b-instant
+GROQ_MODEL=openai/gpt-oss-120b
 ALLOWED_ORIGINS=http://localhost:3000
 ```
 
