@@ -62,7 +62,9 @@ export async function sendAiChat(
   if ('error' in validRequest) throw new Error(validRequest.error);
 
   const faq = matchVerifiedFaq(message);
-  if (faq) return faq;
+  // Current announcements must reach the server so it can retrieve the
+  // latest published records from Supabase instead of returning a static FAQ.
+  if (faq && faq.category !== 'announcements') return faq;
 
   // The FAQ/retrieval assistant is intentionally usable without an AI provider.
   // A configured server endpoint may add retrieval later, but it is never required.
