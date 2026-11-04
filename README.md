@@ -119,6 +119,23 @@ Never use `VITE_GROQ_API_KEY`, and never put the key in frontend code or
 `.env.local` if that file is committed or exposed. Groq uses the
 OpenAI-compatible endpoint `https://api.groq.com/openai/v1/chat/completions`.
 
+For local testing, add the same variables to your private `.env.local`:
+
+```text
+GROQ_API_KEY=your-groq-api-key
+GROQ_MODEL=llama-3.3-70b-versatile
+ALLOWED_ORIGINS=http://localhost:3000
+```
+
+Then restart the dev server:
+
+```powershell
+npm run dev
+```
+
+The Vite development server includes a local `/api/chatbot` adapter, so you
+do not need `vercel dev` for local chatbot testing.
+
 To add or change verified answers, update
 [`chatbotGuardrails.ts`](./src/services/chatbotGuardrails.ts) with verified
 public information only. Office details, certificate requirements, official

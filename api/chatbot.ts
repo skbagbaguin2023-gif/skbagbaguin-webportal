@@ -32,7 +32,11 @@ function allowedOrigins(): string[] {
 }
 
 function originAllowed(origin: string): boolean {
-  if (origin) return allowedOrigins().includes(origin.replace(/\/+$/, ''));
+  const configured = allowedOrigins();
+  if (origin) {
+    if (configured.length > 0) return configured.includes(origin.replace(/\/+$/, ''));
+    return process.env.NODE_ENV !== 'production' && /^https?:\/\/localhost(?::\d+)?$/.test(origin);
+  }
   return process.env.NODE_ENV !== 'production';
 }
 

@@ -71,8 +71,11 @@ export function matchVerifiedFaq(message: string): ChatbotResponse | null {
   if (/\b(hi|hello|hey|kumusta|good morning|good afternoon)\b/.test(normalized)) {
     return { success: true, source: 'faq', reply: 'Hello po! I can help you find verified SK Bagbaguin programs, services, announcements, requirements, and official contact channels.', category: 'assistant', knowledge: [] };
   }
-  if (/\b(service|services|program|programs|project|projects)\b/.test(normalized)) {
+  if (/\b(what|which|list|available|offer|show)\b.*\b(service|services)\b/.test(normalized)) {
     return { success: true, source: 'faq', reply: 'You can view current SK programs and projects on the Programs page, and available youth services on the Youth Services page. Availability and requirements depend on the published portal records.', category: 'barangay-services', knowledge: ['page:programs', 'page:services'] };
+  }
+  if (/\b(what|which|list|available|current|show)\b.*\b(program|programs|project|projects)\b/.test(normalized)) {
+    return { success: true, source: 'faq', reply: 'Current SK programs and projects are listed on the Programs page. Details and availability depend on the published portal records.', category: 'programs', knowledge: ['page:programs'] };
   }
   if (/\b(announcement|announcements|notice|notices|latest update|updates)\b/.test(normalized)) {
     return { success: true, source: 'faq', reply: 'Published announcements and public notices are available on the Announcements page. Please check that page for the latest verified updates.', category: 'announcements', knowledge: ['page:announcements'] };
