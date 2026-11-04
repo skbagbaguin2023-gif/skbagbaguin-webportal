@@ -67,10 +67,12 @@ import {
 } from './services/supabaseData.ts';
 import { ToastNotifications } from './components/ToastNotifications.tsx';
 import type { ToastKind, ToastMessage } from './components/ToastNotifications.tsx';
+import { InitialLoadingScreen } from './components/InitialLoadingScreen.tsx';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<PublicPage>('home');
   const [pathname, setPathname] = useState(window.location.pathname);
+  const [isInitialLoading, setIsInitialLoading] = useState(window.location.pathname === '/');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [backendError, setBackendError] = useState('');
   const [toast, setToast] = useState<ToastMessage | null>(null);
@@ -83,6 +85,25 @@ export default function App() {
     const updatePathname = () => setPathname(window.location.pathname);
     window.addEventListener('popstate', updatePathname);
     return () => window.removeEventListener('popstate', updatePathname);
+  }, []);
+
+  useEffect(() => {
+    if (pathname !== '/') return;
+
+    const loadingTimer = window.setTimeout(() => {
+      setIsInitialLoading(false);
+    }, 1400);
+
+    return () => window.clearTimeout(loadingTimer);
+  }, [pathname]);
+
+  useEffect(() => {
+    const updatePointerPosition = (event: PointerEvent) => {
+      document.documentElement.style.setProperty('--pointer-x', `${event.clientX}px`);
+      document.documentElement.style.setProperty('--pointer-y', `${event.clientY}px`);
+    };
+    window.addEventListener('pointermove', updatePointerPosition, { passive: true });
+    return () => window.removeEventListener('pointermove', updatePointerPosition);
   }, []);
 
   useEffect(() => {
@@ -584,9 +605,13 @@ export default function App() {
     );
   }
 
+  if (isInitialLoading && pathname === '/') {
+    return <InitialLoadingScreen />;
+  }
+
   return (
     <ThemeProvider>
-      <div className="min-h-screen overflow-x-clip flex flex-col bg-slate-50 text-slate-800 dark:bg-[#071324] dark:text-slate-100 transition-colors duration-200">
+      <div className="public-shell min-h-screen overflow-x-clip flex flex-col bg-slate-50 text-slate-800 dark:bg-[#071324] dark:text-slate-100 transition-colors duration-200">
         <ToastNotifications toast={toast} onDismiss={() => setToast(null)} />
         {backendError && (
           <div role="status" className="bg-amber-100 border-b border-amber-300 px-4 py-2 text-center text-sm text-amber-950">

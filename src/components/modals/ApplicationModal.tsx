@@ -65,6 +65,7 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
   const [isDraggingFiles, setIsDraggingFiles] = useState(false);
   const isPrintingService = serviceType.toLowerCase().includes('printing');
   const isKkProfilingService = serviceType.toLowerCase().includes('profiling');
+  const activeServices = services.filter((service) => service.isActive);
 
   useEffect(() => {
     const activeServices = services.filter((service) => service.isActive);
@@ -74,7 +75,15 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
     } else if (!activeServices.some((service) => service.name === serviceType)) {
       setServiceType(activeServices[0]?.name ?? '');
     }
-  }, [defaultService, services, serviceType]);
+  }, [defaultService, services]);
+
+  const handleServiceChange = (nextService: string) => {
+    setServiceType(nextService as ServiceType);
+    setPrintingPdf(null);
+    setUploadedFiles([]);
+    setErrors({});
+    setStep(1);
+  };
 
   if (!isOpen) return null;
   if (isKkProfilingService) {
@@ -82,6 +91,8 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
       <KkProfilingForm
         onClose={onClose}
         services={services}
+        serviceType={serviceType}
+        onServiceChange={handleServiceChange}
         onSubmitApplication={onSubmitApplication}
       />
     );
@@ -362,13 +373,10 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
                 </label>
                 <select
                   value={serviceType}
-                  onChange={(event) => {
-                    setServiceType(event.target.value as ServiceType);
-                    setPrintingPdf(null);
-                  }}
+                  onChange={(event) => handleServiceChange(event.target.value)}
                   className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                 >
-                  {services.filter((service) => service.isActive).map((service) => (
+                  {activeServices.map((service) => (
                     <option key={service.id} value={service.name}>{service.name}</option>
                   ))}
                 </select>
@@ -537,15 +545,15 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
                 </label>
                 <select
                   value={serviceType}
-                  onChange={(e) => setServiceType(e.target.value as ServiceType)}
-                  disabled={services.filter((service) => service.isActive).length === 0}
+                  onChange={(event) => handleServiceChange(event.target.value)}
+                  disabled={activeServices.length === 0}
                   className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0F2C59] dark:focus:ring-amber-400"
                 >
-                  {services.filter((service) => service.isActive).map((service) => (
+                  {activeServices.map((service) => (
                     <option key={service.id} value={service.name}>{service.name}</option>
                   ))}
                 </select>
-                {services.filter((service) => service.isActive).length === 0 && (
+                {activeServices.length === 0 && (
                   <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
                     There are currently no active services available.
                   </p>

@@ -8,6 +8,8 @@ import { syncKkProfileToGoogle } from '../../services/supabaseData.ts';
 interface KkProfilingFormProps {
   onClose: () => void;
   services: YouthService[];
+  serviceType: string;
+  onServiceChange: (service: string) => void;
   onSubmitApplication: (application: YouthApplication) => Promise<void>;
 }
 
@@ -111,6 +113,8 @@ function RadioGroup({
 export function KkProfilingForm({
   onClose,
   services,
+  serviceType,
+  onServiceChange,
   onSubmitApplication,
 }: KkProfilingFormProps) {
   const [profile, setProfile] = useState<KkProfilingData>(EMPTY_PROFILE);
@@ -235,6 +239,21 @@ export function KkProfilingForm({
           </div>
         ) : (
           <form onSubmit={submit} className="max-h-[calc(90vh-76px)] space-y-5 overflow-y-auto p-6">
+            <div>
+              <label htmlFor="kk-service-type" className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                Youth Assistance Program / Service
+              </label>
+              <select
+                id="kk-service-type"
+                value={serviceType}
+                onChange={(event) => onServiceChange(event.target.value)}
+                className={fieldClass}
+              >
+                {services.filter((service) => service.isActive).map((service) => (
+                  <option key={service.id} value={service.name}>{service.name}</option>
+                ))}
+              </select>
+            </div>
             <p className="text-xs text-slate-500 dark:text-slate-400">Complete the required fields. This submission is saved in the portal and synchronized to the existing Google Form response sheet.</p>
             <div className="grid gap-4 sm:grid-cols-2">
               <FormField label="Email Account"><input type="email" autoComplete="email" required value={profile.email} onChange={(event) => update('email', event.target.value)} className={fieldClass} /></FormField>
