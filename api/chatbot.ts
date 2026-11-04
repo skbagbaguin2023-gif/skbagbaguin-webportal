@@ -80,6 +80,7 @@ Verified portal facts:
 - Official Contact page: /contact
 - Certificate requirements, office address, office hours, official contacts, and emergency numbers are currently unavailable unless shown in supplied public portal records.
 `;
+const DEFAULT_GROQ_MODEL = 'llama-3.1-8b-instant';
 
 function publicSupabaseConfig(): { url: string; key: string } | null {
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -269,7 +270,7 @@ async function askGroq(
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) return null;
 
-  const model = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+  const model = process.env.GROQ_MODEL || DEFAULT_GROQ_MODEL;
   const messages = [
     {
       role: 'system',
@@ -287,8 +288,7 @@ async function askGroq(
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 12000);
-  try {
-    const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+  const requestModel = async (modelName: string) => fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       signal: controller.signal,
       headers: {
@@ -296,12 +296,18 @@ async function askGroq(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model,
+        model: modelName,
         messages,
         temperature: 0.2,
         max_tokens: 350,
       }),
     });
+  try {
+    let groqResponse = await requestModel(model);
+    if (groqResponse.status === 404 && model !== DEFAULT_GROQ_MODEL) {
+      console.error(`Configured Groq model "${model}" was not found. Retrying with "${DEFAULT_GROQ_MODEL}".`);
+      groqResponse = await requestModel(DEFAULT_GROQ_MODEL);
+    }
     if (!groqResponse.ok) {
       console.error('Groq chatbot request failed with status.', groqResponse.status);
       return null;
