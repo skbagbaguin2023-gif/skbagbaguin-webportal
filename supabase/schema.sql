@@ -241,6 +241,7 @@ insert into public.portal_records (collection, id, data)
 values
   (
     'services',
+    'maintenance',
     'printing-services',
     '{
       "id": "printing-services",

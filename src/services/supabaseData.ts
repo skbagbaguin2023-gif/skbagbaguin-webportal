@@ -14,7 +14,8 @@ export type PortalCollection =
   | 'council'
   | 'feedbacks'
   | 'registrations'
-  | 'services';
+  | 'services'
+  | 'maintenance';
 
 const PORTAL_IMAGES_BUCKET = 'portal-images';
 const MAX_PORTAL_IMAGE_SIZE = 5 * 1024 * 1024;
@@ -317,10 +318,24 @@ async function loadCollection<T extends PortalRecord>(
 export function subscribeToPortalCollection<T extends PortalRecord>(
   name: PortalCollection,
   onData: (records: T[]) => void,
-  onError: (error: Error) => void
+  onError: (error: Error) => void,
+  enableRealtime = true
 ): () => void {
   const client = getClient();
   let isActive = true;
+  if (!enableRealtime) {
+    void loadCollection<T>(
+      name,
+      (records) => {
+        if (isActive) onData(records);
+      },
+      onError
+    );
+    return () => {
+      isActive = false;
+    };
+  }
+
   const channel: RealtimeChannel = client
     .channel(`portal-${name}`)
     .on(

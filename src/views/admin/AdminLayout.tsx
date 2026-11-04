@@ -13,6 +13,7 @@ import {
   EventRegistration,
   ApplicationStatus,
   YouthService,
+  MaintenanceIssue,
 } from '../../types/index.ts';
 import { 
   LayoutDashboard, 
@@ -33,6 +34,7 @@ import {
   ExternalLink,
   Settings,
   Facebook,
+  AlertTriangle,
 } from 'lucide-react';
 import { AdminOverview } from './AdminOverview.tsx';
 import { AnnouncementsManager } from './AnnouncementsManager.tsx';
@@ -44,6 +46,7 @@ import { TransparencyManager } from './TransparencyManager.tsx';
 import { FeedbackInbox } from './FeedbackInbox.tsx';
 import { CouncilManager } from './CouncilManager.tsx';
 import { ServicesManager } from './ServicesManager.tsx';
+import { MaintenanceManager } from './MaintenanceManager.tsx';
 import { ThemeToggle } from '../../components/ThemeToggle.tsx';
 import skLogo from '../../assets/images/skLogo.png';
 import { ConfirmationModal } from '../../components/modals/ConfirmationModal.tsx';
@@ -61,6 +64,7 @@ interface AdminLayoutProps {
   feedbacks: FeedbackSuggestion[];
   registrations: EventRegistration[];
   services: YouthService[];
+  maintenanceIssues: MaintenanceIssue[];
   onAddAnnouncement: (ann: Announcement) => Promise<void>;
   onUpdateAnnouncement: (ann: Announcement) => Promise<void>;
   onDeleteAnnouncement: (id: string) => void;
@@ -93,6 +97,9 @@ interface AdminLayoutProps {
   onAddService: (service: YouthService) => void;
   onUpdateService: (service: YouthService) => void;
   onDeleteService: (id: string) => void;
+  onAddMaintenanceIssue: (issue: MaintenanceIssue) => void;
+  onUpdateMaintenanceIssue: (issue: MaintenanceIssue) => void;
+  onDeleteMaintenanceIssue: (id: string) => void;
 }
 
 export const AdminLayout: React.FC<AdminLayoutProps> = ({
@@ -108,6 +115,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   feedbacks,
   registrations,
   services,
+  maintenanceIssues,
   onAddAnnouncement,
   onUpdateAnnouncement,
   onDeleteAnnouncement,
@@ -136,6 +144,9 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   onAddService,
   onUpdateService,
   onDeleteService,
+  onAddMaintenanceIssue,
+  onUpdateMaintenanceIssue,
+  onDeleteMaintenanceIssue,
 }) => {
   const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -174,6 +185,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
     },
     { id: 'council', label: 'Council Profile', icon: <UserCheck className="w-4 h-4" /> },
     { id: 'services', label: 'Youth Services', icon: <Settings className="w-4 h-4" /> },
+    { id: 'maintenance', label: 'Maintenance & Bugs', icon: <AlertTriangle className="w-4 h-4" /> },
   ];
 
   const handleReviewAppFromDashboard = (app: YouthApplication) => {
@@ -556,6 +568,14 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
               onUpdateCouncilMember={onUpdateCouncilMember}
               onDeleteCouncilMember={onDeleteCouncilMember}
               onReorderCouncil={onReorderCouncil}
+            />
+          )}
+          {activeSection === 'maintenance' && (
+            <MaintenanceManager
+              issues={maintenanceIssues}
+              onAddIssue={onAddMaintenanceIssue}
+              onUpdateIssue={onUpdateMaintenanceIssue}
+              onDeleteIssue={onDeleteMaintenanceIssue}
             />
           )}
           </div>

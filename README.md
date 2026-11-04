@@ -53,7 +53,9 @@ Supabase secret/service-role key in `.env.local` or client code.
    [`supabase/program_disbursement_privacy_migration.sql`](./supabase/program_disbursement_privacy_migration.sql)
    to remove previously saved program-level disbursed amounts and itemized breakdowns. Run
    [`supabase/facebook_posts_migration.sql`](./supabase/facebook_posts_migration.sql)
-   to enable admin-managed Facebook posts on the Home page.
+   to enable admin-managed Facebook posts on the Home page. Run
+   [`supabase/maintenance_migration.sql`](./supabase/maintenance_migration.sql)
+   to enable the admin-only Maintenance & Bugs collection.
 4. In **Authentication > Users**, create an admin user with email and password.
    Copy that user's UUID. In **SQL Editor**, add them to the admin allowlist:
 
@@ -72,6 +74,13 @@ Supabase secret/service-role key in `.env.local` or client code.
 The app uses client-side routes such as `/admin/login`. `vercel.json` rewrites
 direct route requests to the app entry point so those paths also work when
 opened or refreshed on Vercel.
+
+Public visitors load published records with a one-time Supabase request and use
+the built-in announcements and council fallback content if the backend is
+temporarily unavailable. Realtime subscriptions are reserved for authenticated
+admin sessions, so a public connection or Realtime policy issue does not expose
+an error banner to visitors. Check the browser console and the admin dashboard
+when diagnosing a backend configuration problem.
 
 For Vercel, add these variables under **Project Settings > Environment
 Variables**, select the environments you deploy to, and redeploy:

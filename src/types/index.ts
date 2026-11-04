@@ -21,7 +21,8 @@ export type AdminSection =
   | 'transparency' 
   | 'feedback'
   | 'council'
-  | 'services';
+  | 'services'
+  | 'maintenance';
 
 export type ProgramCategory = 'All' | 'Education' | 'Sports' | 'Livelihood' | 'Environment' | 'Health' | 'Leadership';
 export type ProgramStatus = 'Upcoming' | 'Ongoing' | 'Completed';
@@ -125,6 +126,25 @@ export interface YouthService {
   requirements: string[];
   isActive: boolean;
 }
+
+export type MaintenanceSeverity = 'Low' | 'Medium' | 'High' | 'Critical';
+export type MaintenanceStatus = 'Open' | 'Investigating' | 'Resolved' | 'Closed';
+export type MaintenanceArea = 'Public Portal' | 'Admin Dashboard' | 'Supabase' | 'Chatbot' | 'Forms' | 'Deployment' | 'Other';
+
+export interface MaintenanceIssue {
+  id: string;
+  title: string;
+  description: string;
+  area: MaintenanceArea;
+  severity: MaintenanceSeverity;
+  status: MaintenanceStatus;
+  stepsToReproduce?: string;
+  resolution?: string;
+  reportedBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type ApplicationStatus = 'Pending' | 'Under Review' | 'Approved' | 'Rejected';
 
 export interface YouthApplication {

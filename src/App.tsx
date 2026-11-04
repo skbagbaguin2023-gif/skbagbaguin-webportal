@@ -19,6 +19,7 @@ import {
   ApplicationStatus,
   YouthService,
   ProgramFiscalYear,
+  MaintenanceIssue,
 } from './types/index.ts';
 import { ThemeProvider } from './context/ThemeContext.tsx';
 import { DEFAULT_COUNCIL_MEMBERS } from './data/councilMembers.ts';
@@ -122,54 +123,64 @@ export default function App() {
   const [feedbacks, setFeedbacks] = useState<FeedbackSuggestion[]>([]);
   const [registrations, setRegistrations] = useState<EventRegistration[]>([]);
   const [services, setServices] = useState<YouthService[]>([]);
+  const [maintenanceIssues, setMaintenanceIssues] = useState<MaintenanceIssue[]>([]);
 
   useEffect(() => {
     if (!supabaseConfigured) {
-      setBackendError('Supabase is not configured. Add the project URL and publishable key to .env.local.');
+      if (pathname === '/admin') {
+        setBackendError('Supabase is not configured. The admin dashboard cannot load portal records.');
+      } else {
+        console.warn('Supabase is not configured. Public pages are using their built-in fallback content.');
+      }
       return;
     }
 
     setBackendError('');
     const isAdmin = isAdminUser(currentUser);
-    const reportListenerError = (error: Error) => {
+    const reportDataError = (error: Error) => {
       console.error('Supabase data subscription failed.', error);
-      setBackendError('Unable to load portal data from Supabase. Check your project and database policies.');
+      if (isAdmin) {
+        setBackendError('Unable to load portal data from Supabase. Check the admin project configuration and database policies.');
+      }
     };
     let isActive = true;
     const subscriptions: (() => void)[] = [];
+    const subscribeCollection = <T extends { id: string }>(
+      name: PortalCollection,
+      onData: (records: T[]) => void,
+    ) => subscribeToPortalCollection<T>(name, onData, reportDataError, isAdmin);
     const subscribe = () => {
       if (!isActive) return;
       subscriptions.push(
-        subscribeToPortalCollection<Program>('programs', setPrograms, reportListenerError),
-        subscribeToPortalCollection<ProgramFiscalYear>('programSettings', setProgramFiscalYears, reportListenerError),
-        subscribeToPortalCollection<EventItem>('events', setEvents, reportListenerError),
-        subscribeToPortalCollection<Announcement>(
+        subscribeCollection<Program>('programs', setPrograms),
+        subscribeCollection<ProgramFiscalYear>('programSettings', setProgramFiscalYears),
+        subscribeCollection<EventItem>('events', setEvents),
+        subscribeCollection<Announcement>(
           'announcements',
           (records) => setAnnouncements(
             records.length > 0 || isAdmin ? records : DEFAULT_ANNOUNCEMENTS
-          ),
-          reportListenerError
+          )
         ),
-        subscribeToPortalCollection<FacebookPost>('facebookPosts', setFacebookPosts, reportListenerError),
-        subscribeToPortalCollection<YouthApplication>('applications', setApplications, reportListenerError),
-        subscribeToPortalCollection<TransparencyDoc>('transparencyDocs', setTransparencyDocs, reportListenerError),
-        subscribeToPortalCollection<CouncilMember>(
+        subscribeCollection<FacebookPost>('facebookPosts', setFacebookPosts),
+        subscribeCollection<YouthApplication>('applications', setApplications),
+        subscribeCollection<TransparencyDoc>('transparencyDocs', setTransparencyDocs),
+        subscribeCollection<CouncilMember>(
           'council',
           (records) => setCouncil(
             records.length > 0 ? records : DEFAULT_COUNCIL_MEMBERS
-          ),
-          reportListenerError
+          )
         ),
-        subscribeToPortalCollection<FeedbackSuggestion>('feedbacks', setFeedbacks, reportListenerError),
-        subscribeToPortalCollection<EventRegistration>('registrations', setRegistrations, reportListenerError),
-        subscribeToPortalCollection<YouthService>('services', setServices, reportListenerError),
+        subscribeCollection<FeedbackSuggestion>('feedbacks', setFeedbacks),
+        subscribeCollection<EventRegistration>('registrations', setRegistrations),
+        subscribeCollection<YouthService>('services', setServices),
+        subscribeCollection<MaintenanceIssue>('maintenance', setMaintenanceIssues),
       );
     };
 
     if (isAdmin) {
       void initializePortalDefaults(announcements, DEFAULT_COUNCIL_MEMBERS)
         .then(subscribe)
-        .catch(reportListenerError);
+        .catch(reportDataError);
     } else {
       subscribe();
     }
@@ -178,7 +189,7 @@ export default function App() {
       isActive = false;
       subscriptions.forEach((unsubscribe) => unsubscribe());
     };
-  }, [currentUser]);
+  }, [currentUser, pathname]);
 
   const reportWriteError = (error: unknown) => {
     console.error('Supabase data write failed.', error);
@@ -277,6 +288,21 @@ export default function App() {
   const handleDeleteService = (id: string) => {
     setServices((previous) => previous.filter((item) => item.id !== id));
     deleteRecord('services', id);
+  };
+
+  const handleAddMaintenanceIssue = (issue: MaintenanceIssue) => {
+    setMaintenanceIssues((previous) => [issue, ...previous]);
+    saveRecord('maintenance', issue);
+  };
+
+  const handleUpdateMaintenanceIssue = (issue: MaintenanceIssue) => {
+    setMaintenanceIssues((previous) => previous.map((item) => item.id === issue.id ? issue : item));
+    saveRecord('maintenance', issue);
+  };
+
+  const handleDeleteMaintenanceIssue = (id: string) => {
+    setMaintenanceIssues((previous) => previous.filter((item) => item.id !== id));
+    deleteRecord('maintenance', id);
   };
 
   // CMS Handlers
@@ -570,6 +596,7 @@ export default function App() {
             feedbacks={feedbacks}
             registrations={registrations}
             services={services}
+            maintenanceIssues={maintenanceIssues}
             onAddAnnouncement={handleAddAnnouncement}
             onUpdateAnnouncement={handleUpdateAnnouncement}
             onDeleteAnnouncement={handleDeleteAnnouncement}
@@ -598,6 +625,9 @@ export default function App() {
             onAddService={handleAddService}
             onUpdateService={handleUpdateService}
             onDeleteService={handleDeleteService}
+            onAddMaintenanceIssue={handleAddMaintenanceIssue}
+            onUpdateMaintenanceIssue={handleUpdateMaintenanceIssue}
+            onDeleteMaintenanceIssue={handleDeleteMaintenanceIssue}
             />
           </ProtectedRoute>
         </>
