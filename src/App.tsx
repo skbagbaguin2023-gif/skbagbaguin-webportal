@@ -124,6 +124,22 @@ export default function App() {
   const [registrations, setRegistrations] = useState<EventRegistration[]>([]);
   const [services, setServices] = useState<YouthService[]>([]);
   const [maintenanceIssues, setMaintenanceIssues] = useState<MaintenanceIssue[]>([]);
+  const adminFacebookPosts: FacebookPost[] = facebookPosts.length > 0
+    ? [...facebookPosts].sort((first, second) => second.date.localeCompare(first.date))
+    : announcements
+      .filter((announcement) => announcement.sourcePostUrl?.trim())
+      .sort((first, second) => second.date.localeCompare(first.date))
+      .slice(0, 2)
+      .map((announcement) => ({
+        id: announcement.id,
+        title: announcement.title,
+        excerpt: announcement.excerpt,
+        date: announcement.date,
+        imageUrl: announcement.coverImage ?? '',
+        imageUrls: announcement.coverImage ? [announcement.coverImage] : [],
+        postUrl: announcement.sourcePostUrl ?? '',
+        isFallback: true,
+      }));
 
   useEffect(() => {
     if (!supabaseConfigured) {
@@ -589,7 +605,7 @@ export default function App() {
             programFiscalYears={programFiscalYears}
             events={events}
             announcements={announcements}
-            facebookPosts={facebookPosts}
+            facebookPosts={adminFacebookPosts}
             applications={applications}
             transparencyDocs={transparencyDocs}
             council={council}

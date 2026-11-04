@@ -9,7 +9,7 @@ create policy "public content and admins can read portal records"
   on public.portal_records for select to anon, authenticated
   using (
     (select public.is_portal_admin())
-    or collection in ('programs', 'events', 'council', 'announcements')
+    or collection in ('programs', 'events', 'council', 'announcements', 'facebookPosts')
     or (collection = 'services' and data ->> 'isActive' = 'true')
     or (collection = 'transparencyDocs' and data ->> 'isPublic' = 'true')
   );

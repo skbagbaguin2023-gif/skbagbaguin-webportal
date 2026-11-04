@@ -4,22 +4,60 @@ import Reveal from './Reveal.jsx';
 import FacebookPostCard from './FacebookPostCard.jsx';
 import { getDefaultAnnouncementCoverImage } from '../data/defaultAnnouncements.ts';
 import { PortalImage } from './PortalImage.tsx';
-/** @typedef {import('../types/index.ts').FacebookPost} FacebookPost */
+function FacebookGallery({ post }) {
+  const [imageIndex, setImageIndex] = useState(0);
+  const fallbackImage = post.imageUrl || post.coverImage || getDefaultAnnouncementCoverImage(post.id);
+  const images = post.imageUrls?.length ? post.imageUrls : fallbackImage ? [fallbackImage] : [];
+  const activeImage = images[imageIndex % Math.max(images.length, 1)];
 
-/** @param {{ announcements: import('../types/index.ts').Announcement[], facebookPosts?: FacebookPost[] }} props */
-export default function Announcements({ announcements, facebookPosts = [] }) {
+  return (
+    <div className="relative isolate h-56 overflow-hidden bg-slate-100 dark:bg-slate-800 sm:h-64">
+      <PortalImage src={activeImage} alt={post.title} className="relative z-10 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]" />
+      {images.length > 1 && (
+        <>
+          <button type="button" onClick={() => setImageIndex((current) => (current - 1 + images.length) % images.length)} aria-label={`Previous image for ${post.title}`} className="absolute left-2 top-1/2 z-20 -translate-y-1/2 rounded-full bg-slate-950/65 p-1.5 text-white hover:bg-slate-950/85">
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button type="button" onClick={() => setImageIndex((current) => (current + 1) % images.length)} aria-label={`Next image for ${post.title}`} className="absolute right-2 top-1/2 z-20 -translate-y-1/2 rounded-full bg-slate-950/65 p-1.5 text-white hover:bg-slate-950/85">
+            <ChevronRight className="h-4 w-4" />
+          </button>
+          <span className="absolute bottom-2 left-1/2 z-20 -translate-x-1/2 rounded-full bg-slate-950/65 px-2 py-1 text-[10px] font-semibold text-white">
+            {imageIndex + 1} / {images.length}
+          </span>
+        </>
+      )}
+    </div>
+  );
+}
+
+/** @param {{ announcements: import('../types/index.ts').Announcement[], facebookPosts?: import('../types/index.ts').FacebookPost[] }} props */
+export default function Announcements(props) {
+  const { announcements, facebookPosts = [] } = props;
   const publishedAnnouncements = announcements;
   const [activeIndex, setActiveIndex] = useState(0);
+  const [activeFacebookIndex, setActiveFacebookIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const hasMultipleAnnouncements = publishedAnnouncements.length > 1;
   const activeAnnouncement = publishedAnnouncements[activeIndex % Math.max(publishedAnnouncements.length, 1)];
   const latestFacebookPosts = facebookPosts.length > 0
-    ? facebookPosts.slice(0, 2)
-    : publishedAnnouncements.filter((announcement) => announcement.sourcePostUrl?.trim()).slice(0, 2);
+    ? [...facebookPosts].sort((first, second) => second.date.localeCompare(first.date))
+    : publishedAnnouncements
+      .filter((announcement) => announcement.sourcePostUrl?.trim())
+      .sort((first, second) => second.date.localeCompare(first.date));
+  const hasMultipleFacebookPosts = latestFacebookPosts.length > 1;
+  const visibleFacebookPosts = latestFacebookPosts.length > 1
+    ? [0, 1].map((offset) => latestFacebookPosts[
+      (activeFacebookIndex + offset) % latestFacebookPosts.length
+    ])
+    : latestFacebookPosts;
 
   useEffect(() => {
     setActiveIndex(0);
   }, [publishedAnnouncements.length]);
+
+  useEffect(() => {
+    setActiveFacebookIndex(0);
+  }, [latestFacebookPosts.length]);
 
   useEffect(() => {
     if (!hasMultipleAnnouncements || isPaused) return undefined;
@@ -37,6 +75,16 @@ export default function Announcements({ announcements, facebookPosts = [] }) {
 
   const showNext = () => {
     setActiveIndex((index) => (index + 1) % publishedAnnouncements.length);
+  };
+
+  const showPreviousFacebookPost = () => {
+    setActiveFacebookIndex((index) => (
+      (index - 1 + latestFacebookPosts.length) % latestFacebookPosts.length
+    ));
+  };
+
+  const showNextFacebookPost = () => {
+    setActiveFacebookIndex((index) => (index + 1) % latestFacebookPosts.length);
   };
 
   return (
@@ -154,44 +202,77 @@ export default function Announcements({ announcements, facebookPosts = [] }) {
             </a>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {latestFacebookPosts.map((announcement) => (
-              <article
-                key={announcement.id}
-                className="group overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs transition-all duration-200 hover:-translate-y-1 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
-              >
-                {(announcement.coverImage || getDefaultAnnouncementCoverImage(announcement.id)) && (
-                  <div className="h-44 overflow-hidden bg-slate-200 dark:bg-slate-800">
-                    <PortalImage
-                      src={announcement.imageUrl || announcement.coverImage}
-                      fallbackSrc={getDefaultAnnouncementCoverImage(announcement.id)}
-                      alt=""
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                  </div>
-                )}
-                <div className="flex min-h-36 flex-col p-4">
-                  <p className="line-clamp-3 text-xs font-semibold uppercase leading-relaxed tracking-wide text-slate-600 dark:text-slate-300">
-                    {announcement.title}
-                  </p>
-                  <p className="mt-3 line-clamp-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                    {announcement.excerpt}
-                  </p>
-                  <div className="mt-auto flex items-center justify-between gap-3 pt-4 text-[11px] text-slate-400 dark:text-slate-500">
-                    <span>{announcement.date}</span>
-                    <a
-                      href={announcement.postUrl || announcement.sourcePostUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 font-semibold text-[#1877F2] hover:underline"
-                    >
-                      <span>View Post</span>
-                      <ExternalLink className="h-3 w-3" />
-                    </a>
-                  </div>
+          <div
+            role="region"
+            aria-roledescription="carousel"
+            aria-label="Latest Facebook posts"
+            className="relative"
+            onMouseEnter={() => setIsPaused(true)}
+            onMouseLeave={() => setIsPaused(false)}
+            onFocusCapture={() => setIsPaused(true)}
+            onBlurCapture={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget)) setIsPaused(false);
+            }}
+          >
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <span className="text-xs font-medium tabular-nums text-slate-500 dark:text-slate-400" aria-live="polite">
+                {latestFacebookPosts.length > 1
+                  ? `${activeFacebookIndex + 1}-${Math.min(activeFacebookIndex + 2, latestFacebookPosts.length)} / ${latestFacebookPosts.length}`
+                  : `1 / ${latestFacebookPosts.length}`}
+              </span>
+              {hasMultipleFacebookPosts && (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={showPreviousFacebookPost}
+                    aria-label="Previous Facebook post"
+                    className="rounded-full border border-slate-300 bg-white p-2 text-slate-700 shadow-xs transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={showNextFacebookPost}
+                    aria-label="Next Facebook post"
+                    className="rounded-full border border-slate-300 bg-white p-2 text-slate-700 shadow-xs transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
                 </div>
-              </article>
-            ))}
+              )}
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {visibleFacebookPosts.map((post) => (
+                <article
+                  key={post.id}
+                  className="group overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs transition-all duration-200 hover:-translate-y-1 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+                >
+                  {(post.coverImage || getDefaultAnnouncementCoverImage(post.id) || post.imageUrl) && (
+                    <FacebookGallery post={post} />
+                  )}
+                  <div className="flex min-h-36 flex-col p-4">
+                    <p className="line-clamp-3 text-xs font-semibold uppercase leading-relaxed tracking-wide text-slate-600 dark:text-slate-300">
+                      {post.title}
+                    </p>
+                    <p className="mt-3 line-clamp-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                      {post.excerpt}
+                    </p>
+                    <div className="mt-auto flex items-center justify-between gap-3 pt-4 text-[11px] text-slate-400 dark:text-slate-500">
+                      <span>{post.date}</span>
+                      <a
+                        href={post.postUrl || post.sourcePostUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 font-semibold text-[#1877F2] hover:underline"
+                      >
+                        <span>View Post</span>
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
           </div>
         </div>
       )}

@@ -54,6 +54,9 @@ Supabase secret/service-role key in `.env.local` or client code.
    to remove previously saved program-level disbursed amounts and itemized breakdowns. Run
    [`supabase/facebook_posts_migration.sql`](./supabase/facebook_posts_migration.sql)
    to enable admin-managed Facebook posts on the Home page. Run
+   [`supabase/facebook_posts_public_policy_migration.sql`](./supabase/facebook_posts_public_policy_migration.sql)
+   if Facebook posts saved in the admin module are not visible to public visitors.
+   Run this after any older announcement policy migration. Run
    [`supabase/maintenance_migration.sql`](./supabase/maintenance_migration.sql)
    to enable the admin-only Maintenance & Bugs collection.
 4. In **Authentication > Users**, create an admin user with email and password.

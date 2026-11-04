@@ -111,7 +111,9 @@ export interface FacebookPost {
   excerpt: string;
   date: string;
   imageUrl: string;
+  imageUrls?: string[];
   postUrl: string;
+  isFallback?: boolean;
 }
 
 export type ServiceType = string;
