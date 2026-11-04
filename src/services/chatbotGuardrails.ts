@@ -99,6 +99,13 @@ export function matchVerifiedFaq(message: string): ChatbotResponse | null {
       : 'Community events and event registration information are available on the Events page.';
     return { success: true, source: 'faq', reply, category: 'events', knowledge: ['page:events'] };
   }
+  if (/\b(where|located|location|address|saan|nasaan|lokasyon|adresa)\b/.test(normalized)
+    && /\b(office|opisina|tanggapan|sk|bagbaguin)\b/.test(normalized)) {
+    const reply = /\b(saan|nasaan|lokasyon|adresa)\b/.test(normalized)
+      ? 'Ang SK Bagbaguin Office ay nasa 4th Floor, SK Bagbaguin Office, Sitio Malinis Multi-Purpose Building, Bagbaguin, Valenzuela City, Metro Manila 1440. Bukas ang opisina mula 8:00 AM hanggang 5:00 PM.'
+      : 'The SK Bagbaguin Office is on the 4th Floor of the SK Bagbaguin Office, Sitio Malinis Multi-Purpose Building, Bagbaguin, Valenzuela City, Metro Manila 1440. Office hours are 8:00 AM to 5:00 PM.';
+    return { success: true, source: 'faq', reply, category: 'contact', knowledge: ['page:contact'] };
+  }
   if (/\b(contact|official|officials|council|facebook|office|location|address|hours|makipag ugnayan|opisina|tanggapan|lokasyon|address|oras)\b/.test(normalized)) {
     const reply = /\b(makipag ugnayan|opisina|tanggapan|lokasyon|oras)\b/.test(normalized)
       ? 'Pakitingnan ang opisyal na Contact page para sa beripikadong contact channels at mga tanong para sa SK Bagbaguin. Wala akong karagdagang beripikadong detalye tungkol sa opisina.'

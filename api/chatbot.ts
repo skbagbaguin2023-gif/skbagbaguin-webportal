@@ -79,7 +79,9 @@ Verified portal facts:
 - Transparency page
 - About SK page and public council information
 - Official Contact page
-- Certificate requirements, office address, office hours, official contacts, and emergency numbers are currently unavailable unless shown in supplied public portal records.
+- SK Bagbaguin Office: 4th Floor, SK Bagbaguin Office, Sitio Malinis Multi-Purpose Building, Bagbaguin, Valenzuela City, Metro Manila 1440
+- Office hours: 8:00 AM to 5:00 PM
+- Certificate requirements, official contacts, and emergency numbers are currently unavailable unless shown in supplied public portal records.
 `;
 const DEFAULT_GROQ_MODEL = 'openai/gpt-oss-120b';
 const GROQ_MODEL_FALLBACKS = [

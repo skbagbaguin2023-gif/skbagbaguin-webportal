@@ -21,8 +21,11 @@ test('matches verified route FAQs without inventing office details', () => {
   assert.equal(answer?.category, 'announcements');
   assert.deepEqual(answer?.knowledge, ['page:announcements']);
   const contact = matchVerifiedFaq('What is the office address and phone number?');
-  assert.match(contact?.reply ?? '', /official Contact page/i);
+  assert.match(contact?.reply ?? '', /4th Floor/i);
   assert.doesNotMatch(contact?.reply ?? '', /\+639|09\d{9}/);
+  const location = matchVerifiedFaq('Saan located ang SK office ng Bagbaguin?');
+  assert.equal(location?.category, 'contact');
+  assert.match(location?.reply ?? '', /4th Floor/i);
 });
 
 test('matches common Tagalog route questions', () => {
