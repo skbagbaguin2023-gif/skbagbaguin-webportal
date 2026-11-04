@@ -31,6 +31,12 @@ interface PublicAnnouncement {
   isPinned: boolean;
 }
 
+interface PublicPortalRecord {
+  id: string;
+  collection: string;
+  data: Record<string, unknown>;
+}
+
 function header(request: ApiRequest, name: string): string {
   const value = request.headers[name] ?? request.headers[name.toLowerCase()];
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
@@ -133,6 +139,102 @@ async function loadPublicAnnouncements(): Promise<PublicAnnouncement[]> {
   }
 }
 
+function requestedCollections(message: string): string[] {
+  const normalized = message.toLowerCase();
+  const collections = new Set<string>();
+  if (/\b(program|programs|project|projects|budget|fund)\b/.test(normalized)) collections.add('programs');
+  if (/\b(event|events|activity|activities)\b/.test(normalized)) collections.add('events');
+  if (/\b(service|services|certificate|requirement)\b/.test(normalized)) collections.add('services');
+  if (/\b(council|official|chairperson|chairman|kagawad|sk member)\b/.test(normalized)) collections.add('council');
+  if (/\b(transparency|report|financial|disbursement|coa|budget)\b/.test(normalized)) collections.add('transparencyDocs');
+  return [...collections];
+}
+
+async function loadPublicPortalContext(message: string): Promise<PublicPortalRecord[]> {
+  const config = publicSupabaseConfig();
+  const collections = requestedCollections(message);
+  if (!config || collections.length === 0) return [];
+
+  const query = new URLSearchParams({
+    select: 'id,collection,data',
+    collection: `in.(${collections.join(',')})`,
+    limit: '30',
+  });
+  try {
+    const result = await fetch(`${config.url}/rest/v1/portal_records?${query}`, {
+      headers: {
+        apikey: config.key,
+        Authorization: 'Bearer ' + config.key,
+      },
+    });
+    if (!result.ok) {
+      console.error('Public portal lookup failed with status.', result.status);
+      return [];
+    }
+    const rows = await result.json() as Array<{ id?: unknown; collection?: unknown; data?: unknown }>;
+    return rows
+      .filter((row): row is { id: string; collection: string; data: Record<string, unknown> } =>
+        typeof row.id === 'string'
+        && typeof row.collection === 'string'
+        && Boolean(row.data)
+        && typeof row.data === 'object'
+      )
+      .map((row) => ({
+        id: row.id,
+        collection: row.collection,
+        data: row.data,
+      }));
+  } catch (error) {
+    console.error('Public portal lookup failed.', error instanceof Error ? error.message : 'Unknown error');
+    return [];
+  }
+}
+
+function portalContextText(records: PublicPortalRecord[]): string {
+  return records
+    .map((record) => `${record.collection}/${record.id}: ${JSON.stringify(record.data).slice(0, 1200)}`)
+    .join('\n');
+}
+
+function publicRecordAnswer(message: string, records: PublicPortalRecord[]): ChatbotResponse | null {
+  const normalized = message.toLowerCase();
+  const isTagalog = /\b(ano|ang|mga|ilan|sino|magkano|pinakabago|badyet|pondo)\b/.test(normalized);
+  if (/\b(how many|ilan)\b.*\b(council|official|member|kagawad)\b|\b(council|official|member|kagawad)\b.*\b(how many|ilan)\b/.test(normalized)) {
+    const members = records.filter((record) => record.collection === 'council');
+    if (members.length > 0) {
+      return {
+        success: true,
+        source: 'retrieval',
+        reply: isTagalog
+          ? `Batay sa kasalukuyang public records ng portal, may ${members.length} na nakalistang SK council member. Para sa mga pangalan at tungkulin, tingnan ang About SK page.`
+          : `Based on the current public portal records, there are ${members.length} listed SK council members. For names and roles, please visit the About SK page.`,
+        category: 'council',
+        knowledge: members.map((member) => `council:${member.id}`),
+      };
+    }
+  }
+  if (/\b(latest|current|2026|magkano|badyet|budget|fund|pondo|financial)\b/.test(normalized)) {
+    const documents = records.filter((record) => record.collection === 'transparencyDocs');
+    if (documents.length > 0) {
+      const titles = documents.slice(0, 5).map((record) => {
+        const title = typeof record.data.title === 'string' ? record.data.title : record.id;
+        const year = typeof record.data.year === 'number' || typeof record.data.year === 'string' ? ` (${record.data.year})` : '';
+        return `- ${title}${year}`;
+      });
+      return {
+        success: true,
+        source: 'retrieval',
+        reply: isTagalog
+          ? `Narito ang mga kasalukuyang public transparency records na may kaugnayan sa pondo o budget:\n${titles.join('\n')}\n\nPara sa eksaktong halaga, tingnan ang Transparency page at ang mismong public report.`
+          : `Here are the current public transparency records related to funds or budget:\n${titles.join('\n')}\n\nFor exact amounts, please review the Transparency page and the public report itself.`,
+        category: 'transparency',
+        knowledge: documents.slice(0, 5).map((document) => `transparency:${document.id}`),
+      };
+    }
+  }
+  return null;
+}
+
 function announcementResponse(announcements: PublicAnnouncement[], tagalog: boolean): ChatbotResponse | null {
   if (announcements.length === 0) return null;
   const lines = announcements.slice(0, 5).map((announcement) =>
@@ -159,7 +261,11 @@ function modelResponse(value: unknown): string {
   return typeof content === 'string' ? content.trim().slice(0, 1200) : '';
 }
 
-async function askGroq(requestData: ChatbotRequest, announcements: PublicAnnouncement[] = []): Promise<ChatbotResponse | null> {
+async function askGroq(
+  requestData: ChatbotRequest,
+  announcements: PublicAnnouncement[] = [],
+  portalRecords: PublicPortalRecord[] = [],
+): Promise<ChatbotResponse | null> {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) return null;
 
@@ -167,7 +273,7 @@ async function askGroq(requestData: ChatbotRequest, announcements: PublicAnnounc
   const messages = [
     {
       role: 'system',
-      content: `${SYSTEM_PROMPT}${announcements.length > 0 ? `\n\nVerified current public announcements:\n${announcements.map((announcement) => `- ${announcement.title} (${announcement.date}, ${announcement.category}): ${announcement.excerpt || announcement.content}`).join('\n')}` : ''}`,
+      content: `${SYSTEM_PROMPT}${announcements.length > 0 ? `\n\nVerified current public announcements:\n${announcements.map((announcement) => `- ${announcement.title} (${announcement.date}, ${announcement.category}): ${announcement.excerpt || announcement.content}`).join('\n')}` : ''}${portalRecords.length > 0 ? `\n\nVerified current public portal records. Use only fields relevant to the question:\n${portalContextText(portalRecords)}` : ''}`,
     },
     ...requestData.recentMessages.slice(-8).map((message) => ({
       role: message.role,
@@ -229,6 +335,9 @@ export default async function chatbot(request: ApiRequest, response: ApiResponse
   const announcements = isAnnouncementQuestion(requestData.message)
     ? await loadPublicAnnouncements()
     : [];
+  const portalRecords = await loadPublicPortalContext(requestData.message);
+  const publicAnswer = publicRecordAnswer(requestData.message, portalRecords);
+  if (publicAnswer) return response.status(200).json(publicAnswer);
   if (faq?.category === 'announcements') {
     const retrieved = announcementResponse(
       announcements,
@@ -238,6 +347,6 @@ export default async function chatbot(request: ApiRequest, response: ApiResponse
     return response.status(200).json(faq);
   }
   if (faq) return response.status(200).json(faq);
-  const aiResponse = await askGroq(requestData, announcements);
+  const aiResponse = await askGroq(requestData, announcements, portalRecords);
   return response.status(200).json(aiResponse ?? fallbackResponse(requestData.message));
 }

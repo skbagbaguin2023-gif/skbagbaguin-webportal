@@ -19,6 +19,14 @@ interface SendOptions {
 }
 
 const MAX_RECENT_MESSAGES = 10;
+const MAX_RECENT_MESSAGE_LENGTH = 500;
+
+function recentMessagesForApi(messages: ChatMessage[]): ChatMessage[] {
+  return messages.slice(-MAX_RECENT_MESSAGES).map((message) => ({
+    role: message.role,
+    content: message.content.slice(0, MAX_RECENT_MESSAGE_LENGTH),
+  }));
+}
 
 function sessionId(): string {
   const key = 'sk-bagbaguin-chat-session';
@@ -82,7 +90,7 @@ export async function sendAiChat(
       body: JSON.stringify({
         message: message.trim(),
         context,
-        recentMessages: recentMessages.slice(-MAX_RECENT_MESSAGES),
+        recentMessages: recentMessagesForApi(recentMessages),
       }),
     });
   } catch (error) {
