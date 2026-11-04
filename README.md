@@ -108,12 +108,31 @@ answers approved FAQs locally, then optionally uses Groq for natural-language
 answers. If Groq is not configured, unavailable, or over quota, the assistant
 uses the safe FAQ/fallback behavior instead.
 
+For questions about current announcements, the server reads published public
+announcement records from Supabase and supplies them as verified context. It
+does not scrape the rendered page or expose private/admin records. If Groq is
+unavailable, the assistant can still return the current published announcement
+titles and summaries through the retrieval fallback.
+
 To use Groq, add these **server-only** environment variables in Vercel:
 
 ```text
 GROQ_API_KEY=your-groq-api-key
 GROQ_MODEL=llama-3.3-70b-versatile
 ```
+
+The chatbot needs access to the same public Supabase project used by the
+frontend. If your deployment does not already expose the frontend Supabase
+variables to the API function, add these non-secret configuration variables:
+
+```text
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_PUBLISHABLE_KEY=your-supabase-publishable-key
+```
+
+The Supabase publishable/anon key is intentionally public and must still be
+protected by Supabase RLS. Never use a Supabase service-role key in the
+frontend or chatbot request.
 
 Never use `VITE_GROQ_API_KEY`, and never put the key in frontend code or
 `.env.local` if that file is committed or exposed. Groq uses the

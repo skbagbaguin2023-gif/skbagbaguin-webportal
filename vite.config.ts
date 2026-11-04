@@ -65,6 +65,11 @@ export default defineConfig(({ mode }) => {
   if (env.GROQ_API_KEY) process.env.GROQ_API_KEY = env.GROQ_API_KEY;
   if (env.GROQ_MODEL) process.env.GROQ_MODEL = env.GROQ_MODEL;
   if (env.ALLOWED_ORIGINS) process.env.ALLOWED_ORIGINS = env.ALLOWED_ORIGINS;
+  if (env.SUPABASE_URL) process.env.SUPABASE_URL = env.SUPABASE_URL;
+  if (env.SUPABASE_PUBLISHABLE_KEY) process.env.SUPABASE_PUBLISHABLE_KEY = env.SUPABASE_PUBLISHABLE_KEY;
+  if (env.VITE_SUPABASE_URL) process.env.VITE_SUPABASE_URL = env.VITE_SUPABASE_URL;
+  if (env.VITE_SUPABASE_PUBLISHABLE_KEY) process.env.VITE_SUPABASE_PUBLISHABLE_KEY = env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  if (env.VITE_SUPABASE_ANON_KEY) process.env.VITE_SUPABASE_ANON_KEY = env.VITE_SUPABASE_ANON_KEY;
 
   return {
     plugins: [chatbotApiPlugin(), react(), tailwindcss()],

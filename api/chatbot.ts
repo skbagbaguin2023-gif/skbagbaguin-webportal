@@ -19,6 +19,18 @@ interface ApiResponse {
   json: (body: unknown) => void;
 }
 
+interface PublicAnnouncement {
+  id: string;
+  title: string;
+  excerpt: string;
+  content: string;
+  category: string;
+  author: string;
+  date: string;
+  status: string;
+  isPinned: boolean;
+}
+
 function header(request: ApiRequest, name: string): string {
   const value = request.headers[name] ?? request.headers[name.toLowerCase()];
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
@@ -63,6 +75,81 @@ Verified portal facts:
 - Certificate requirements, office address, office hours, official contacts, and emergency numbers are currently unavailable unless shown in supplied public portal records.
 `;
 
+function publicSupabaseConfig(): { url: string; key: string } | null {
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const key = process.env.SUPABASE_PUBLISHABLE_KEY
+    || process.env.VITE_SUPABASE_PUBLISHABLE_KEY
+    || process.env.VITE_SUPABASE_ANON_KEY;
+  return url && key ? { url: url.replace(/\/+$/, ''), key } : null;
+}
+
+function isAnnouncementQuestion(message: string): boolean {
+  return /\b(announcement|announcements|notice|notices|latest update|updates|anunsyo|abiso|pinakabagong balita|bagong update)\b/i.test(message);
+}
+
+async function loadPublicAnnouncements(): Promise<PublicAnnouncement[]> {
+  const config = publicSupabaseConfig();
+  if (!config) return [];
+
+  const query = new URLSearchParams({
+    select: 'id,data,updated_at',
+    collection: 'eq.announcements',
+    order: 'updated_at.desc',
+    limit: '8',
+  });
+  try {
+    const result = await fetch(`${config.url}/rest/v1/portal_records?${query}`, {
+      headers: {
+        apikey: config.key,
+        Authorization: 'Bearer ' + config.key,
+      },
+    });
+    if (!result.ok) {
+      console.error('Public announcement lookup failed with status.', result.status);
+      return [];
+    }
+    const rows = await result.json() as Array<{ id?: unknown; data?: unknown }>;
+    return rows
+      .map((row) => {
+        if (!row.id || !row.data || typeof row.data !== 'object') return null;
+        const data = row.data as Partial<PublicAnnouncement>;
+        if (data.status !== 'Published' || typeof data.title !== 'string' || typeof data.date !== 'string') return null;
+        return {
+          id: String(row.id),
+          title: data.title,
+          excerpt: typeof data.excerpt === 'string' ? data.excerpt : '',
+          content: typeof data.content === 'string' ? data.content.slice(0, 1000) : '',
+          category: typeof data.category === 'string' ? data.category : 'General Notice',
+          author: typeof data.author === 'string' ? data.author : 'SK Bagbaguin',
+          date: data.date,
+          status: data.status,
+          isPinned: data.isPinned === true,
+        };
+      })
+      .filter((announcement): announcement is PublicAnnouncement => announcement !== null);
+  } catch (error) {
+    console.error('Public announcement lookup failed.', error instanceof Error ? error.message : 'Unknown error');
+    return [];
+  }
+}
+
+function announcementResponse(announcements: PublicAnnouncement[], tagalog: boolean): ChatbotResponse | null {
+  if (announcements.length === 0) return null;
+  const lines = announcements.slice(0, 5).map((announcement) =>
+    `- ${announcement.title} (${announcement.date}, ${announcement.category}): ${announcement.excerpt || announcement.content}`
+  );
+  const reply = tagalog
+    ? `Narito ang mga pinakabagong beripikadong anunsyo sa portal:\n${lines.join('\n')}\n\nPara sa buong detalye, tingnan ang Announcements page.`
+    : `Here are the latest verified announcements from the portal:\n${lines.join('\n')}\n\nFor full details, please visit the Announcements page.`;
+  return {
+    success: true,
+    source: 'retrieval',
+    reply: reply.slice(0, 1200),
+    category: 'announcements',
+    knowledge: announcements.slice(0, 5).map((announcement) => `announcement:${announcement.id}`),
+  };
+}
+
 function modelResponse(value: unknown): string {
   if (!value || typeof value !== 'object') return '';
   const choices = (value as {
@@ -72,13 +159,16 @@ function modelResponse(value: unknown): string {
   return typeof content === 'string' ? content.trim().slice(0, 1200) : '';
 }
 
-async function askGroq(requestData: ChatbotRequest): Promise<ChatbotResponse | null> {
+async function askGroq(requestData: ChatbotRequest, announcements: PublicAnnouncement[] = []): Promise<ChatbotResponse | null> {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) return null;
 
   const model = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
   const messages = [
-    { role: 'system', content: SYSTEM_PROMPT },
+    {
+      role: 'system',
+      content: `${SYSTEM_PROMPT}${announcements.length > 0 ? `\n\nVerified current public announcements:\n${announcements.map((announcement) => `- ${announcement.title} (${announcement.date}, ${announcement.category}): ${announcement.excerpt || announcement.content}`).join('\n')}` : ''}`,
+    },
     ...requestData.recentMessages.slice(-8).map((message) => ({
       role: message.role,
       content: message.content,
@@ -96,7 +186,7 @@ async function askGroq(requestData: ChatbotRequest): Promise<ChatbotResponse | n
       method: 'POST',
       signal: controller.signal,
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: 'Bearer ' + apiKey,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -136,7 +226,18 @@ export default async function chatbot(request: ApiRequest, response: ApiResponse
   if ('error' in validated) return response.status(400).json({ success: false, error: validated.error });
   const requestData: ChatbotRequest = validated.request;
   const faq = matchVerifiedFaq(requestData.message);
+  const announcements = isAnnouncementQuestion(requestData.message)
+    ? await loadPublicAnnouncements()
+    : [];
+  if (faq?.category === 'announcements') {
+    const retrieved = announcementResponse(
+      announcements,
+      /\b(anunsyo|abiso|pinakabagong balita|bagong update)\b/i.test(requestData.message),
+    );
+    if (retrieved) return response.status(200).json(retrieved);
+    return response.status(200).json(faq);
+  }
   if (faq) return response.status(200).json(faq);
-  const aiResponse = await askGroq(requestData);
+  const aiResponse = await askGroq(requestData, announcements);
   return response.status(200).json(aiResponse ?? fallbackResponse(requestData.message));
 }
