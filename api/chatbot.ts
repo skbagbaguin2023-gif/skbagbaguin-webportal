@@ -81,6 +81,11 @@ Verified portal facts:
 - Certificate requirements, office address, office hours, official contacts, and emergency numbers are currently unavailable unless shown in supplied public portal records.
 `;
 const DEFAULT_GROQ_MODEL = 'llama-3.1-8b-instant';
+const GROQ_MODEL_FALLBACKS = [
+  DEFAULT_GROQ_MODEL,
+  'openai/gpt-oss-120b',
+  'llama-3.3-70b-versatile',
+];
 
 function publicSupabaseConfig(): { url: string; key: string } | null {
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -304,9 +309,17 @@ async function askGroq(
     });
   try {
     let groqResponse = await requestModel(model);
-    if (groqResponse.status === 404 && model !== DEFAULT_GROQ_MODEL) {
-      console.error(`Configured Groq model "${model}" was not found. Retrying with "${DEFAULT_GROQ_MODEL}".`);
-      groqResponse = await requestModel(DEFAULT_GROQ_MODEL);
+    if (groqResponse.status === 400 || groqResponse.status === 404) {
+      const errorText = await groqResponse.clone().text();
+      const modelNotFound = /model[_ -]?not[_ -]?found|does not exist|not available/i.test(errorText);
+      if (modelNotFound) {
+        const candidates = GROQ_MODEL_FALLBACKS.filter((candidate) => candidate !== model);
+        for (const candidate of candidates) {
+          console.error(`Groq model "${model}" was rejected. Retrying with "${candidate}".`);
+          groqResponse = await requestModel(candidate);
+          if (groqResponse.ok) break;
+        }
+      }
     }
     if (!groqResponse.ok) {
       console.error('Groq chatbot request failed with status.', groqResponse.status);
