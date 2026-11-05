@@ -12,8 +12,9 @@ import {
   Info, 
   Phone, 
   Layers, 
-  Bell, 
-  ChevronRight
+  Bell,
+  ChevronRight,
+  SearchCheck
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -36,6 +37,7 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'events', label: 'Events', icon: <Calendar className="w-4 h-4" /> },
     { id: 'announcements', label: 'Announcements', icon: <Bell className="w-4 h-4" /> },
     { id: 'services', label: 'Youth Services', icon: <FileText className="w-4 h-4" /> },
+    { id: 'track', label: 'Track Request', icon: <SearchCheck className="w-4 h-4" /> },
     { id: 'transparency', label: 'Transparency', icon: <ShieldCheck className="w-4 h-4" /> },
     { id: 'contact', label: 'Contact Us', icon: <Phone className="w-4 h-4" /> },
   ];
@@ -136,7 +138,7 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Mobile Navigation Drawer */}
         {mobileMenuOpen && (
-          <div className="lg:hidden bg-[#081830] border-t border-navy-800 px-4 pt-3 pb-6 space-y-1 shadow-2xl animate-in slide-in-from-top-2 duration-200">
+          <div className="absolute left-0 right-0 top-full max-h-[calc(100vh-4.5rem)] overflow-y-auto border-t border-white/10 bg-[#081830]/90 px-4 pt-3 pb-6 shadow-2xl backdrop-blur-md animate-in slide-in-from-top-2 duration-200 lg:hidden">
             <div className="text-xs text-slate-400 font-medium px-3 py-1 uppercase tracking-wider">
               Navigation Menu
             </div>

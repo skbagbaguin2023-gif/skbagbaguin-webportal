@@ -10,9 +10,7 @@ export default function FacebookPostCard() {
       <div className="relative h-28 overflow-hidden bg-[#0F2C59]">
         <img src={postcardImg1} alt="" className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#081830]/75 via-[#0F2C59]/50 to-[#081830]/55" />
-        <span className="absolute bottom-3 left-4 text-xs font-semibold uppercase tracking-[0.18em] text-white/75">
-          Official Facebook Page
-        </span>
+        
       </div>
 
       <div className="px-5 pb-5">

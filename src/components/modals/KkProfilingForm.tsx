@@ -4,6 +4,7 @@ import type { KkProfilingData, YouthApplication, YouthService } from '../../type
 import { generateApplicationRef } from '../../utils/portalLogic.ts';
 import { generateUuid } from '../../utils/uuid.ts';
 import { syncKkProfileToGoogle } from '../../services/supabaseData.ts';
+import { useModalScrollLock } from '../useModalScrollLock.ts';
 
 interface KkProfilingFormProps {
   onClose: () => void;
@@ -88,11 +89,18 @@ function RadioGroup({
   onChange: (value: string) => void;
 }) {
   return (
-    <fieldset className="space-y-2">
-      <legend className="mb-2 text-xs font-semibold text-slate-700 dark:text-slate-300">{label} *</legend>
+    <fieldset className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 shadow-xs dark:border-slate-700 dark:bg-slate-800/50">
+      <legend className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-700 dark:text-slate-300">{label} *</legend>
       <div className="grid gap-2 sm:grid-cols-2">
         {options.map((option) => (
-          <label key={option} className="flex cursor-pointer items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+          <label
+            key={option}
+            className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2.5 text-sm transition-colors ${
+              value === option
+                ? 'border-[#0F2C59] bg-[#0F2C59]/10 font-semibold text-[#0F2C59] dark:border-amber-400 dark:bg-amber-400/10 dark:text-amber-300'
+                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-slate-500'
+            }`}
+          >
             <input
               type="radio"
               name={label}
@@ -100,7 +108,7 @@ function RadioGroup({
               checked={value === option}
               onChange={() => onChange(option)}
               required
-              className="accent-[#0F2C59]"
+              className="h-4 w-4 accent-[#0F2C59]"
             />
             {option}
           </label>
@@ -117,6 +125,7 @@ export function KkProfilingForm({
   onServiceChange,
   onSubmitApplication,
 }: KkProfilingFormProps) {
+  useModalScrollLock(true);
   const [profile, setProfile] = useState<KkProfilingData>(EMPTY_PROFILE);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
@@ -212,7 +221,7 @@ export function KkProfilingForm({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-900/70 p-4 backdrop-blur-xs">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-slate-900/70 p-4 backdrop-blur-xs" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
       <section className="my-8 max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
         <header className="flex items-center justify-between bg-[#0F2C59] px-6 py-4 text-white">
           <div>
@@ -287,11 +296,18 @@ export function KkProfilingForm({
             )}
             <RadioGroup label="Are you a registered national voter?" value={profile.nationalVoter} options={['YES', 'NO']} onChange={(value) => update('nationalVoter', value)} />
 
-            <fieldset className="space-y-2">
-              <legend className="mb-2 text-xs font-semibold text-slate-700 dark:text-slate-300">Youth Classification * (select all that apply)</legend>
+            <fieldset className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 shadow-xs dark:border-slate-700 dark:bg-slate-800/50">
+              <legend className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-700 dark:text-slate-300">Youth Classification * (select all that apply)</legend>
               <div className="grid gap-2 sm:grid-cols-2">
                 {CLASSIFICATIONS.map((classification) => (
-                  <label key={classification} className="flex cursor-pointer items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                  <label
+                    key={classification}
+                    className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2.5 text-sm transition-colors ${
+                      profile.youthClassifications.includes(classification)
+                        ? 'border-[#0F2C59] bg-[#0F2C59]/10 font-semibold text-[#0F2C59] dark:border-amber-400 dark:bg-amber-400/10 dark:text-amber-300'
+                        : 'border-slate-200 bg-white text-slate-700 hover:border-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-slate-500'
+                    }`}
+                  >
                     <input
                       type="checkbox"
                       checked={profile.youthClassifications.includes(classification)}
@@ -301,7 +317,7 @@ export function KkProfilingForm({
                           ? [...profile.youthClassifications, classification]
                           : profile.youthClassifications.filter((item) => item !== classification)
                       )}
-                      className="accent-[#0F2C59]"
+                      className="h-4 w-4 accent-[#0F2C59]"
                     />
                     {classification}
                   </label>

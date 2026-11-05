@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { EventItem } from '../../types/index.ts';
 import { X, CheckCircle2, Calendar, MapPin, Clock, QrCode } from 'lucide-react';
+import { useModalScrollLock } from '../useModalScrollLock.ts';
 
 interface EventRegistrationModalProps {
   event: EventItem | null;
@@ -33,6 +34,7 @@ export const EventRegistrationModal: React.FC<EventRegistrationModalProps> = ({
   const [ticketCode, setTicketCode] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  useModalScrollLock(isOpen);
 
   if (!isOpen || !event) return null;
 
@@ -66,8 +68,8 @@ export const EventRegistrationModal: React.FC<EventRegistrationModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs overflow-y-auto">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 dark:border-slate-800 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs overflow-hidden" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full max-h-[calc(100vh-2rem)] border border-slate-200 dark:border-slate-800 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
         
         {/* Header */}
         <div className="bg-[#0F2C59] text-white px-6 py-4 flex items-center justify-between">

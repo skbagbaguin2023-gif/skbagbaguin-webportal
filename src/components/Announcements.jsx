@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, ExternalLink, Facebook } from 'lucide-react';
 import Reveal from './Reveal.jsx';
 import FacebookPostCard from './FacebookPostCard.jsx';
@@ -45,11 +45,7 @@ export default function Announcements(props) {
       .filter((announcement) => announcement.sourcePostUrl?.trim())
       .sort((first, second) => second.date.localeCompare(first.date));
   const hasMultipleFacebookPosts = latestFacebookPosts.length > 1;
-  const visibleFacebookPosts = latestFacebookPosts.length > 1
-    ? [0, 1].map((offset) => latestFacebookPosts[
-      (activeFacebookIndex + offset) % latestFacebookPosts.length
-    ])
-    : latestFacebookPosts;
+  const facebookPostsTrackRef = useRef(null);
 
   useEffect(() => {
     setActiveIndex(0);
@@ -58,6 +54,15 @@ export default function Announcements(props) {
   useEffect(() => {
     setActiveFacebookIndex(0);
   }, [latestFacebookPosts.length]);
+
+  useEffect(() => {
+    const track = facebookPostsTrackRef.current;
+    const activeCard = track?.children[activeFacebookIndex];
+
+    if (activeCard && window.matchMedia('(max-width: 639px)').matches) {
+      activeCard.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+    }
+  }, [activeFacebookIndex]);
 
   useEffect(() => {
     if (!hasMultipleAnnouncements || isPaused) return undefined;
@@ -217,7 +222,7 @@ export default function Announcements(props) {
             <div className="mb-3 flex items-center justify-between gap-3">
               <span className="text-xs font-medium tabular-nums text-slate-500 dark:text-slate-400" aria-live="polite">
                 {latestFacebookPosts.length > 1
-                  ? `${activeFacebookIndex + 1}-${Math.min(activeFacebookIndex + 2, latestFacebookPosts.length)} / ${latestFacebookPosts.length}`
+                  ? `${activeFacebookIndex + 1} / ${latestFacebookPosts.length}`
                   : `1 / ${latestFacebookPosts.length}`}
               </span>
               {hasMultipleFacebookPosts && (
@@ -241,11 +246,22 @@ export default function Announcements(props) {
                 </div>
               )}
             </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {visibleFacebookPosts.map((post) => (
+            <div
+              ref={facebookPostsTrackRef}
+              className="flex snap-x snap-mandatory gap-4 overflow-x-auto overscroll-x-contain pb-2 sm:grid sm:grid-cols-2 sm:overflow-visible sm:pb-0"
+              onScroll={(event) => {
+                if (window.matchMedia('(min-width: 640px)').matches) return;
+                const firstCard = event.currentTarget.children[0];
+                if (!firstCard) return;
+                const cardWidth = firstCard.getBoundingClientRect().width + 16;
+                const nextIndex = Math.round(event.currentTarget.scrollLeft / cardWidth);
+                setActiveFacebookIndex(Math.min(nextIndex, latestFacebookPosts.length - 1));
+              }}
+            >
+              {latestFacebookPosts.map((post) => (
                 <article
                   key={post.id}
-                  className="group overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs transition-all duration-200 hover:-translate-y-1 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+                  className="group min-w-[calc(100%-1rem)] snap-start overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs transition-all duration-200 hover:-translate-y-1 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 sm:min-w-0"
                 >
                   {(post.coverImage || getDefaultAnnouncementCoverImage(post.id) || post.imageUrl) && (
                     <FacebookGallery post={post} />

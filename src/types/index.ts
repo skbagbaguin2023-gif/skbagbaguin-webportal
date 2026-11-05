@@ -8,6 +8,7 @@ export type PublicPage =
   | 'announcements' 
   | 'facebookPosts'
   | 'services'
+  | 'track'
   | 'transparency' 
   | 'contact';
 
@@ -148,6 +149,7 @@ export interface MaintenanceIssue {
 }
 
 export type ApplicationStatus = 'Pending' | 'Under Review' | 'Approved' | 'Rejected';
+export type NotificationPreference = 'Messenger' | 'SMS' | 'Phone call';
 
 export interface YouthApplication {
   id: string;
@@ -159,6 +161,9 @@ export interface YouthApplication {
   sitio?: string;
   address: string;
   contactNumber: string;
+  notificationPreference?: NotificationPreference;
+  messengerName?: string;
+  messengerProfileUrl?: string;
   email?: string;
   serviceType: ServiceType;
   schoolOrOrg?: string;

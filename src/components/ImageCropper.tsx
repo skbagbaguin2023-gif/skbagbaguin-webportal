@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Check, Move, RotateCcw, X } from 'lucide-react';
+import { useModalScrollLock } from './useModalScrollLock.ts';
 
 interface ImageCropperProps {
   file: File;
@@ -23,6 +24,7 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0 });
+  useModalScrollLock(true);
   const imagePositionStart = useRef({ x: 0, y: 0 });
 
   const viewportHeight = VIEWPORT_WIDTH / aspectRatio;
@@ -113,8 +115,8 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-3xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-sm" onMouseDown={(event) => event.target === event.currentTarget && onCancel()}>
+      <div className="max-h-[calc(100vh-2rem)] w-full max-w-3xl overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-800">
           <div>
             <h2 className="font-bold text-slate-900 dark:text-white">Adjust program photo</h2>

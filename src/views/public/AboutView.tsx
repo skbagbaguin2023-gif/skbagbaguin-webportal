@@ -30,29 +30,29 @@ export const AboutView: React.FC<AboutViewProps> = ({ council, transparencyDocs,
 
   const pillars = [
     {
-      title: 'Education & Academic Empowerment',
+      title: 'Equitable Access to Quality Education',
       icon: <BookOpen className="w-5 h-5 text-amber-500" />,
-      desc: 'Expanding educational subsidies, free public e-library internet connectivity, and college entrance review assistance.',
+      desc: 'Strengthening educational opportunities through financial and educational assistance for students, provision of school supplies and learning materials, scholarship assistance, and academic support programs for graduating students and board examination takers.',
     },
     {
-      title: 'Sports & Grassroots Athletics',
-      icon: <Trophy className="w-5 h-5 text-blue-500" />,
-      desc: 'Inter-Sitio leagues, facility upgrades, and grassroots sports clinics that nurture discipline and deter youth substance abuse.',
-    },
-    {
-      title: 'Environmental Protection & Climate Action',
-      icon: <Leaf className="w-5 h-5 text-emerald-500" />,
-      desc: 'Tullahan creek clean-ups, urban vertical agriculture, and disaster hazard mitigation for flood-prone Sitios.',
-    },
-    {
-      title: 'Youth Health & Mental Well-being',
+      title: 'Health, Wellness & Anti-Drug Abuse',
       icon: <HeartPulse className="w-5 h-5 text-rose-500" />,
-      desc: 'Free HPV vaccinations, adolescent health check-ups, and stigma-free psychological first-aid consultations.',
+      desc: 'Promoting a healthy and drug-free youth community through health awareness seminars, adolescent health and wellness initiatives, anti-drug education campaigns, youth-focused health programs, and community-based health interventions.',
     },
     {
-      title: 'Civic Leadership & Digital Livelihood',
+      title: 'Sports Development & Youth Engagement',
+      icon: <Trophy className="w-5 h-5 text-blue-500" />,
+      desc: 'Developing the athletic potential and sportsmanship of young people through the Barangay Sportsfest, inter-sitio sports leagues, provision of sports equipment and facilities, and grassroots sporting activities that encourage teamwork, discipline, and active participation.',
+    },
+    {
+      title: 'Environmental Protection & Climate Resilience',
+      icon: <Leaf className="w-5 h-5 text-emerald-500" />,
+      desc: 'Building an environmentally responsible and disaster-resilient community through tree planting, seed distribution, green and clean initiatives, urban gardening, environmental awareness, and disaster preparedness programs.',
+    },
+    {
+      title: 'Youth Governance, Social Inclusion & Economic Empowerment',
       icon: <Compass className="w-5 h-5 text-purple-500" />,
-      desc: 'Tech freelancing bootcamps, Katipunan ng Kabataan general assemblies, and participatory youth budgeting.',
+      desc: 'Empowering young people through Katipunan ng Kabataan assemblies, youth leadership and participation, social inclusion initiatives, support for persons with disabilities (PWDs), community health support, youth entrepreneurship programs, SK Negosyo Kart, and livelihood opportunities.',
     },
   ];
 
@@ -82,28 +82,26 @@ export const AboutView: React.FC<AboutViewProps> = ({ council, transparencyDocs,
           <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center">
             <Award className="w-5 h-5" />
           </div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Ang Aming Misyon (Mission)</h2>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Our Mission</h2>
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-            Maghatid ng transparent, may integridad, at maka-kabataang pamamahala sa pamamagitan ng pantay na edukasyon, programang pampalakasan, proteksyon sa kalikasan, at paghubog sa liderato ng bawat kabataang Bagbagueno.
-          </p>
+            To promote transparent, integrity-driven, and youth-centered governance by providing equal educational opportunities, fostering sports development, protecting the environment, and nurturing the leadership potential of every youth of Bagbaguin.</p>
         </div>
 
         <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
           <div className="w-10 h-10 rounded-xl bg-[#0F2C59]/10 dark:bg-sky-950/50 text-[#0F2C59] dark:text-sky-400 flex items-center justify-center">
             <CheckCircle className="w-5 h-5" />
           </div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Ang Aming Bisyon (Vision)</h2>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Our Vision</h2>
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-            Isang maunlad, nagkakaisa, at makakalikasang Barangay Bagbaguin kung saan ang bawat kabataan ay may boses sa pamamahala, may kakayahang magtagumpay sa pag-aaral at hanapbuhay, at aktibong katuwang sa kaunlaran ng Lungsod ng Valenzuela.
-          </p>
+            A progressive, united, and environmentally sustainable Barangay Bagbaguin where every youth has a voice in governance, is empowered to succeed in education and livelihood, and actively contributes to the development of the City of Valenzuela.</p>
         </div>
       </Reveal>
 
       {/* 3. Core Pillars */}
       <Reveal className="space-y-6">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Limang Haligi ng Paglilingkod (Core Pillars)</h2>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Guided by the Comprehensive Barangay Youth Development Plan (CBYDP)</p>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Five Pillars of Service (Core Pillars)</h2>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Guided by the Comprehensive Barangay Youth Development Plan (CBYDP) and Annual Barangay Youth Investment Program (ABYIP) of SK Bagbaguin.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">

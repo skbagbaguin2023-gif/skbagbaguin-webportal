@@ -36,6 +36,7 @@ import { ProgramsView } from './views/public/ProgramsView.tsx';
 import { EventsView } from './views/public/EventsView.tsx';
 import { AnnouncementsView } from './views/public/AnnouncementsView.tsx';
 import { YouthServicesView } from './views/public/YouthServicesView.tsx';
+import { TrackRequestView } from './views/public/TrackRequestView.tsx';
 import { TransparencyView } from './views/public/TransparencyView.tsx';
 import { ContactView } from './views/public/ContactView.tsx';
 const ChatAssistant = lazy(() => import('./components/ChatAssistant.tsx').then((module) => ({ default: module.ChatAssistant })));
@@ -723,6 +724,13 @@ export default function App() {
 
               {currentPage === 'services' && (
               <YouthServicesView services={services} onOpenApplyModal={handleOpenApplyModal} />
+              )}
+
+              {currentPage === 'track' && (
+              <TrackRequestView onNavigateToServices={() => {
+                setCurrentPage('services');
+                window.scrollTo({ top: 0 });
+              }} />
               )}
 
               {currentPage === 'transparency' && (

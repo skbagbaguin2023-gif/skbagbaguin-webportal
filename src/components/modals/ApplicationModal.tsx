@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ServiceType, YouthApplication, YouthService } from '../../types/index.ts';
+import { NotificationPreference, ServiceType, YouthApplication, YouthService } from '../../types/index.ts';
 import { validateYouthApplication, generateApplicationRef } from '../../utils/portalLogic.ts';
 import { 
   X, 
@@ -10,13 +10,16 @@ import {
   ArrowRight, 
   ArrowLeft,
   Copy,
-  Check
+  Check,
+  Download,
+  Printer
 } from 'lucide-react';
 import { uploadApplicationDocument, uploadPrintingRequestPdf } from '../../services/supabaseData.ts';
 import { ConfirmationModal } from './ConfirmationModal.tsx';
 import { generateUuid } from '../../utils/uuid.ts';
 import { KkProfilingForm } from './KkProfilingForm.tsx';
 import { validatePrintingRequest } from '../../utils/printingLogic.ts';
+import { useModalScrollLock } from '../useModalScrollLock.ts';
 
 const getLocalDateString = () => {
   const date = new Date();
@@ -47,6 +50,9 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
   const [sitio, setSitio] = useState('');
   const [address, setAddress] = useState('');
   const [contactNumber, setContactNumber] = useState('');
+  const [notificationPreference, setNotificationPreference] = useState<NotificationPreference>('Messenger');
+  const [messengerName, setMessengerName] = useState('');
+  const [messengerProfileUrl, setMessengerProfileUrl] = useState('');
   const [email, setEmail] = useState('');
   const [schoolOrOrg, setSchoolOrOrg] = useState('');
   const [yearLevel, setYearLevel] = useState('');
@@ -66,6 +72,7 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
   const isPrintingService = serviceType.toLowerCase().includes('printing');
   const isKkProfilingService = serviceType.toLowerCase().includes('profiling');
   const activeServices = services.filter((service) => service.isActive);
+  useModalScrollLock(isOpen);
 
   useEffect(() => {
     const activeServices = services.filter((service) => service.isActive);
@@ -182,6 +189,24 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
         setErrors(nextErrors);
         return;
       }
+      if (notificationPreference === 'Messenger' && !messengerName.trim() && !messengerProfileUrl.trim()) {
+        setErrors({ messengerContact: 'Provide your Messenger name or Facebook profile URL.' });
+        return;
+      }
+      if (messengerProfileUrl.trim()) {
+        try {
+          const profileUrl = new URL(messengerProfileUrl.trim());
+          const hostname = profileUrl.hostname.toLowerCase();
+          const isFacebookHost = hostname === 'facebook.com' || hostname.endsWith('.facebook.com');
+          if (!['http:', 'https:'].includes(profileUrl.protocol) || !isFacebookHost || !profileUrl.pathname || profileUrl.pathname === '/') {
+            setErrors({ messengerProfileUrl: 'Enter a valid Facebook profile URL, such as https://www.facebook.com/your.profile.' });
+            return;
+          }
+        } catch {
+          setErrors({ messengerProfileUrl: 'Enter a valid Facebook profile URL, such as https://www.facebook.com/your.profile.' });
+          return;
+        }
+      }
       setErrors({});
       setIsSubmitConfirmOpen(true);
       return;
@@ -236,6 +261,9 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
           ? {
               address: address.trim(),
               contactNumber: contactNumber.replace(/[\s-]/g, ''),
+              notificationPreference,
+              ...(messengerName.trim() ? { messengerName: messengerName.trim() } : {}),
+              ...(messengerProfileUrl.trim() ? { messengerProfileUrl: messengerProfileUrl.trim() } : {}),
             }
           : {
               birthday,
@@ -321,9 +349,103 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
     }
   };
 
+  const createReceiptImage = (): string => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1200;
+    canvas.height = isPrintingService ? 900 : 720;
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Receipt image could not be created.');
+
+    const navy = '#0F2C59';
+    const gold = '#F5A623';
+    const ink = '#172033';
+    const muted = '#64748B';
+    context.fillStyle = '#F8FAFC';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = navy;
+    context.fillRect(0, 0, canvas.width, 190);
+    context.fillStyle = gold;
+    context.fillRect(0, 0, 18, canvas.height);
+
+    context.fillStyle = '#FFFFFF';
+    context.font = 'bold 24px Arial';
+    context.fillText('SANGGUNIANG KABATAAN NG BARANGAY BAGBAGUIN', 70, 65);
+    context.font = 'bold 42px Arial';
+    context.fillText('SERVICE REQUEST RECEIPT', 70, 130);
+
+    context.fillStyle = '#FFFFFF';
+    context.fillRect(70, 230, 1060, 130);
+    context.strokeStyle = '#CBD5E1';
+    context.lineWidth = 2;
+    context.strokeRect(70, 230, 1060, 130);
+    context.fillStyle = muted;
+    context.font = 'bold 20px Arial';
+    context.fillText('OFFICIAL APPLICATION REFERENCE CODE', 100, 275);
+    context.fillStyle = navy;
+    context.font = 'bold 38px monospace';
+    context.fillText(submittedRef ?? '', 100, 330);
+
+    const rows = [
+      ['Applicant', applicantName],
+      ['Service', serviceType],
+      ...(isPrintingService ? [
+        ['Requested date', requestedDate],
+        ['Date needed', dateNeeded],
+        ['Copies', String(copiesNeeded)],
+        ['Preferred notification', notificationPreference],
+        ...(messengerName.trim() ? [['Messenger name', messengerName.trim()]] : []),
+        ...(messengerProfileUrl.trim() ? [['Facebook profile', messengerProfileUrl.trim()]] : []),
+      ] : [['Sitio', sitio]]),
+      ['Initial status', 'Under Evaluation'],
+    ];
+    let y = 410;
+    context.font = '22px Arial';
+    rows.forEach(([label, value]) => {
+      context.fillStyle = muted;
+      context.fillText(`${label}:`, 100, y);
+      context.fillStyle = ink;
+      context.font = 'bold 22px Arial';
+      context.fillText(value, 390, y);
+      context.font = '22px Arial';
+      y += 42;
+    });
+
+    context.fillStyle = '#E2E8F0';
+    context.fillRect(70, canvas.height - 105, 1060, 1);
+    context.fillStyle = muted;
+    context.font = '20px Arial';
+    context.fillText('Keep this receipt and your reference code for request tracking.', 70, canvas.height - 55);
+    return canvas.toDataURL('image/png');
+  };
+
+  const handleDownloadReceipt = () => {
+    const url = createReceiptImage();
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${submittedRef ?? 'service-request'}-receipt.png`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handlePrintReceipt = () => {
+    const imageUrl = createReceiptImage();
+    const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=720,height=720');
+    if (!printWindow) return;
+    printWindow.document.write(`<html><head><title>${submittedRef ?? 'Service Request'} Receipt</title><style>body{margin:0;padding:24px;text-align:center}img{max-width:100%;height:auto}</style></head><body><img src="${imageUrl}" alt="SK Bagbaguin service request receipt"></body></html>`);
+    printWindow.document.close();
+    printWindow.focus();
+    const image = printWindow.document.querySelector('img');
+    image?.addEventListener('load', () => printWindow.print());
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs overflow-y-auto">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-200 dark:border-slate-800 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs overflow-hidden"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !isSubmitting) handleClose();
+      }}
+    >
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[calc(100vh-2rem)] border border-slate-200 dark:border-slate-800 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
         
         {/* Header */}
         <div className="bg-[#0F2C59] text-white px-6 py-4 flex items-center justify-between">
@@ -492,6 +614,60 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
                   className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                 />
                 {errors.contactNumber && <p role="alert" className="mt-1 text-xs text-rose-600">{errors.contactNumber}</p>}
+              </div>
+
+              <div>
+                <label htmlFor="printing-notification-preference" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                  Preferred Notification Method *
+                </label>
+                <select
+                  id="printing-notification-preference"
+                  value={notificationPreference}
+                  onChange={(event) => setNotificationPreference(event.target.value as NotificationPreference)}
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                >
+                  <option value="Messenger">Messenger (manual notification)</option>
+                  <option value="SMS">SMS text message</option>
+                  <option value="Phone call">Phone call</option>
+                </select>
+                <p className="mt-1 text-[11px] text-slate-500">
+                  Messenger is the primary manual channel. Your mobile number is retained for SMS or phone-call alternatives.
+                </p>
+                {notificationPreference === 'Messenger' && (
+                  <div className="mt-3 space-y-3">
+                    <div>
+                      <label htmlFor="printing-messenger-name" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                        Messenger Name
+                      </label>
+                      <input
+                        id="printing-messenger-name"
+                        type="text"
+                        maxLength={120}
+                        value={messengerName}
+                        onChange={(event) => setMessengerName(event.target.value)}
+                        placeholder="Name shown on Messenger"
+                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="printing-messenger-url" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                        Facebook Profile URL
+                      </label>
+                      <input
+                        id="printing-messenger-url"
+                        type="url"
+                        maxLength={300}
+                        value={messengerProfileUrl}
+                        onChange={(event) => setMessengerProfileUrl(event.target.value)}
+                        placeholder="https://www.facebook.com/your.profile"
+                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                      />
+                    </div>
+                    {(errors.messengerContact || errors.messengerProfileUrl) && (
+                      <p role="alert" className="text-xs text-rose-600">{errors.messengerContact || errors.messengerProfileUrl}</p>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div>
@@ -930,17 +1106,36 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
                     <div><strong>Sitio:</strong> {sitio}</div>
                   )}
                   <div><strong>Service:</strong> {serviceType}</div>
+                  {isPrintingService && <div><strong>Preferred notification:</strong> {notificationPreference}</div>}
+                  {isPrintingService && messengerName.trim() && <div><strong>Messenger name:</strong> {messengerName}</div>}
+                  {isPrintingService && messengerProfileUrl.trim() && <div><strong>Facebook profile:</strong> {messengerProfileUrl}</div>}
                   <div><strong>Initial Status:</strong> <span className="text-amber-600 dark:text-amber-400 font-semibold">Under Evaluation</span></div>
                 </div>
               </div>
 
               <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
                 {isPrintingService
-                  ? <>Please present your reference code at the SK Council Secretariat when following up on your request.</>
+                  ? <>The SK Council will manually notify you through <strong className="text-slate-700 dark:text-slate-200">{notificationPreference}</strong>. Save your reference code and mobile number to track this request online from the <strong className="text-slate-700 dark:text-slate-200">Track Request</strong> page. You may also present the code at the SK Council Secretariat.</>
                   : <>An SMS verification has been queued for <strong className="font-mono text-slate-800 dark:text-slate-200">{contactNumber}</strong>. You may also track this reference code directly with the SK Council Secretariat at the Barangay Hall.</>}
               </p>
 
-              <div className="pt-2">
+              <div className="pt-2 flex flex-wrap justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleDownloadReceipt}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
+                >
+                  <Download className="w-4 h-4" />
+                  Download Receipt
+                </button>
+                <button
+                  type="button"
+                  onClick={handlePrintReceipt}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
+                >
+                  <Printer className="w-4 h-4" />
+                  Print Receipt
+                </button>
                 <button
                   type="button"
                   onClick={handleClose}

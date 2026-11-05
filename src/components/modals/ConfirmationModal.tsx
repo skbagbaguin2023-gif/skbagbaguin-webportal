@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertTriangle, LoaderCircle } from 'lucide-react';
+import { useModalScrollLock } from '../useModalScrollLock.ts';
 
 interface ConfirmationModalProps {
   isOpen: boolean;
@@ -22,10 +23,11 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   onConfirm,
   onCancel,
 }) => {
+  useModalScrollLock(isOpen);
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm" onMouseDown={(event) => event.target === event.currentTarget && !isLoading && onCancel()}>
       <div
         role="dialog"
         aria-modal="true"

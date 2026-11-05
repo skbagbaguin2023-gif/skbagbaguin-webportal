@@ -429,6 +429,30 @@ export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
                 <span className="text-slate-400 dark:text-slate-400 block text-[11px]">Contact Mobile</span>
                 <strong className="text-slate-800 dark:text-slate-200 font-mono">{activeApp.contactNumber}</strong>
               </div>
+              {activeApp.serviceType === 'Printing Services' && (
+                <>
+                  <div>
+                    <span className="text-slate-400 dark:text-slate-400 block text-[11px]">Preferred Notification</span>
+                    <strong className="text-slate-800 dark:text-slate-200">{activeApp.notificationPreference || 'Messenger'}</strong>
+                  </div>
+                  {(activeApp.messengerName || activeApp.messengerProfileUrl) && (
+                    <div className="col-span-2 sm:col-span-3">
+                      <span className="text-slate-400 dark:text-slate-400 block text-[11px]">Messenger Contact</span>
+                      {activeApp.messengerName && <strong className="text-slate-800 dark:text-slate-200 block">{activeApp.messengerName}</strong>}
+                      {activeApp.messengerProfileUrl && (
+                        <a
+                          href={activeApp.messengerProfileUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs text-blue-600 dark:text-blue-400 hover:underline break-all"
+                        >
+                          Open Facebook profile
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
               {activeApp.serviceType !== 'Printing Services' && (
                 <>
                   <div>

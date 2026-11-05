@@ -38,6 +38,18 @@ export interface PortalRecord {
   id: string;
 }
 
+export interface ApplicationTrackingResult {
+  refNumber: string;
+  applicantName: string;
+  serviceType: string;
+  status: string;
+  submittedAt: string;
+  requestedDate?: string;
+  dateNeeded?: string;
+  copiesNeeded?: number;
+  lastUpdated: string;
+}
+
 interface PortalRow {
   id: string;
   data: PortalRecord;
@@ -405,6 +417,43 @@ export async function createPortalRecord<T extends PortalRecord>(
     .insert({ collection, id: record.id, data: record });
 
   if (error) throw error;
+}
+
+export async function findApplicationForTracking(
+  refNumber: string,
+  contactNumber: string
+): Promise<ApplicationTrackingResult | null> {
+  const { data, error } = await getClient().rpc('find_application_for_tracking', {
+    p_ref_number: refNumber.trim().toUpperCase(),
+    p_contact_number: contactNumber.replace(/[\s-]/g, ''),
+  });
+
+  if (error) throw error;
+  const result = Array.isArray(data) ? data[0] : data;
+  if (!result) return null;
+
+  const row = result as {
+    ref_number: string;
+    applicant_name: string;
+    service_type: string;
+    status: string;
+    submitted_at: string;
+    requested_date?: string;
+    date_needed?: string;
+    copies_needed?: number;
+    last_updated: string;
+  };
+  return {
+    refNumber: row.ref_number,
+    applicantName: row.applicant_name,
+    serviceType: row.service_type,
+    status: row.status,
+    submittedAt: row.submitted_at,
+    requestedDate: row.requested_date,
+    dateNeeded: row.date_needed,
+    copiesNeeded: row.copies_needed,
+    lastUpdated: row.last_updated,
+  };
 }
 
 export async function deletePortalRecord(

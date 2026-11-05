@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { TransparencyDoc } from '../../types/index.ts';
 import { X, FileText, ExternalLink, ShieldCheck, Calendar, Hash, LoaderCircle } from 'lucide-react';
 import { getTransparencyDocumentSignedUrl } from '../../services/supabaseData.ts';
+import { useModalScrollLock } from '../useModalScrollLock.ts';
 
 interface DocumentPreviewModalProps {
   doc: TransparencyDoc | null;
@@ -17,6 +18,7 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
   const [signedUrl, setSignedUrl] = useState('');
   const [loadError, setLoadError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  useModalScrollLock(isOpen);
 
   useEffect(() => {
     let isCurrent = true;
@@ -49,8 +51,19 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
   if (!isOpen || !doc) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs overflow-y-auto">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-xl w-full border border-slate-200 dark:border-slate-800 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
+    <div
+      role="presentation"
+      className="fixed inset-0 z-50 flex h-screen w-screen items-center justify-center overflow-hidden overscroll-none bg-slate-900/70 p-4 backdrop-blur-xs"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="document-preview-title"
+        className="max-h-[calc(100dvh-2rem)] w-full max-w-xl overflow-y-auto overscroll-contain rounded-2xl border border-slate-200 bg-white shadow-2xl animate-in fade-in zoom-in-95 dark:border-slate-800 dark:bg-slate-900"
+      >
         
         {/* Header */}
         <div className="bg-[#0F2C59] text-white px-6 py-4 flex items-center justify-between">
@@ -60,7 +73,7 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
               <span className="text-[11px] font-semibold text-amber-400 uppercase tracking-wider block">
                 Public Transparency Record
               </span>
-              <h2 className="text-base font-bold truncate max-w-md">
+              <h2 id="document-preview-title" className="text-base font-bold truncate max-w-md">
                 {doc.title}
               </h2>
             </div>

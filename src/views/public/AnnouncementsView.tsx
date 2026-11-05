@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Announcement, AnnouncementCategory } from '../../types/index.ts';
 import { Bell, Search, Pin, Calendar, User, ArrowRight, X } from 'lucide-react';
 import Reveal from '../../components/Reveal.jsx';
 import { PortalImage } from '../../components/PortalImage.tsx';
 import { getDefaultAnnouncementCoverImage } from '../../data/defaultAnnouncements.ts';
+import { useModalScrollLock } from '../../components/useModalScrollLock.ts';
 
 interface AnnouncementsViewProps {
   announcements: Announcement[];
@@ -13,6 +15,7 @@ export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ announceme
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<'All' | AnnouncementCategory>('All');
   const [activeModalAnnouncement, setActiveModalAnnouncement] = useState<Announcement | null>(null);
+  useModalScrollLock(!!activeModalAnnouncement);
 
   const categories: ('All' | AnnouncementCategory)[] = [
     'All',
@@ -166,15 +169,21 @@ export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ announceme
       </div>
 
       {/* Full Announcement Modal */}
-      {activeModalAnnouncement && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-200 dark:border-slate-800 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
+      {activeModalAnnouncement && createPortal(
+        <div
+          role="presentation"
+          className="fixed inset-0 z-[100] flex h-[100dvh] w-screen items-center justify-center overflow-hidden overscroll-none bg-slate-900/70 p-4 backdrop-blur-xs"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setActiveModalAnnouncement(null);
+          }}
+        >
+          <div className="flex max-h-[calc(100dvh-2rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl animate-in fade-in zoom-in-95 dark:border-slate-800 dark:bg-slate-900" role="dialog" aria-modal="true" aria-labelledby="announcement-modal-title">
             <div className="bg-[#0F2C59] text-white px-6 py-4 flex items-center justify-between">
               <div>
                 <span className="text-[11px] font-semibold text-amber-400 uppercase tracking-wider">
                   {activeModalAnnouncement.category}
                 </span>
-                <h2 className="text-base font-bold truncate max-w-md sm:max-w-lg">
+                <h2 id="announcement-modal-title" className="text-base font-bold truncate max-w-md sm:max-w-lg">
                   {activeModalAnnouncement.title}
                 </h2>
               </div>
@@ -186,7 +195,7 @@ export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ announceme
               </button>
             </div>
 
-            <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-6 space-y-4">
               <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800 pb-3">
                 <span className="font-medium text-slate-700 dark:text-slate-300">{activeModalAnnouncement.author}</span>
                 <span className="font-mono">{activeModalAnnouncement.date}</span>
@@ -215,7 +224,8 @@ export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ announceme
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>

@@ -26,6 +26,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ onNavigate }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([initialMessage]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showIdlePrompt, setShowIdlePrompt] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -53,6 +54,16 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ onNavigate }) => {
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setShowIdlePrompt(false);
+      return undefined;
+    }
+
+    const promptTimer = window.setTimeout(() => setShowIdlePrompt(true), 3500);
+    return () => window.clearTimeout(promptTimer);
   }, [isOpen]);
 
   const navigateFromText = (text: string) => {
@@ -140,7 +151,32 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ onNavigate }) => {
           </div>
         </div>
       )}
-      <button type="button" onClick={() => setIsOpen((current) => !current)} aria-expanded={isOpen} aria-label={isOpen ? 'Close SK Bagbaguin Digital Assistant' : 'Open SK Bagbaguin Digital Assistant'} className="group flex items-center gap-2 rounded-full bg-[#0F2C59] px-4 py-3 text-xs font-bold text-white shadow-[0_12px_30px_-8px_rgba(15,44,89,.75)] transition hover:-translate-y-0.5 hover:bg-[#173B72]">{isOpen ? <ChevronDown className="h-4 w-4 text-amber-300" /> : <span className="relative"><Bot className="h-4 w-4 text-amber-300" /><span className="absolute -right-1 -top-1 h-1.5 w-1.5 rounded-full bg-emerald-400 ring-2 ring-[#0F2C59]" /></span>}{isOpen ? 'Close' : 'Ask SK Assistant'}</button>
+      {!isOpen && showIdlePrompt && (
+        <div role="status" className="absolute bottom-full right-0 mb-3 w-[min(18rem,calc(100vw-2rem))] animate-in slide-in-from-bottom-2 fade-in rounded-2xl border border-slate-200 bg-white p-3 text-left shadow-xl dark:border-slate-700 dark:bg-slate-900">
+          <div className="flex items-start gap-2.5">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#0F2C59] text-amber-300"><Bot className="h-4 w-4" /></div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-bold text-slate-900 dark:text-white">Need help?</p>
+              <p className="mt-0.5 text-[11px] leading-relaxed text-slate-600 dark:text-slate-300">Ask me about SK programs, services, announcements, or contact details.</p>
+            </div>
+            <button type="button" onClick={() => setShowIdlePrompt(false)} aria-label="Dismiss assistant prompt" className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"><X className="h-3.5 w-3.5" /></button>
+          </div>
+          <div className="absolute -bottom-1.5 right-7 h-3 w-3 rotate-45 border-b border-r border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900" />
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={() => {
+          setShowIdlePrompt(false);
+          setIsOpen((current) => !current);
+        }}
+        aria-expanded={isOpen}
+        aria-label={isOpen ? 'Close SK Bagbaguin Digital Assistant' : 'Open SK Bagbaguin Digital Assistant'}
+        className="group flex items-center gap-2 rounded-full bg-[#0F2C59] px-4 py-3 text-xs font-bold text-white shadow-[0_12px_30px_-8px_rgba(15,44,89,.75)] transition hover:-translate-y-0.5 hover:bg-[#173B72]"
+      >
+        {isOpen ? <ChevronDown className="h-4 w-4 text-amber-300" /> : <span className="relative"><Bot className="h-4 w-4 text-amber-300" /><span className="absolute -right-1 -top-1 h-1.5 w-1.5 rounded-full bg-emerald-400 ring-2 ring-[#0F2C59]" /></span>}
+        {isOpen ? 'Close' : 'Ask SK Assistant'}
+      </button>
     </div>
   );
 };
