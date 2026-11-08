@@ -41,6 +41,7 @@ export const Header: React.FC<HeaderProps> = ({
   const [selectedSuggestion, setSelectedSuggestion] = useState(-1);
   const [isSearching, setIsSearching] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+  const searchPanelRef = useRef<HTMLDivElement>(null);
   const requestRef = useRef<AbortController | null>(null);
 
   const navLinks: { id: PublicPage; label: string; icon: React.ReactNode }[] = [
@@ -85,6 +86,19 @@ export const Header: React.FC<HeaderProps> = ({
     window.addEventListener('keydown', handleShortcut);
     return () => window.removeEventListener('keydown', handleShortcut);
   }, []);
+
+  useEffect(() => {
+    const handleOutsidePointerDown = (event: PointerEvent) => {
+      if (searchOpen && !searchPanelRef.current?.contains(event.target as Node)) {
+        requestRef.current?.abort();
+        setSearchOpen(false);
+        setSuggestions([]);
+        setIsSearching(false);
+      }
+    };
+    document.addEventListener('pointerdown', handleOutsidePointerDown);
+    return () => document.removeEventListener('pointerdown', handleOutsidePointerDown);
+  }, [searchOpen]);
 
   useEffect(() => {
     const value = query.trim();
@@ -220,7 +234,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Action Zone */}
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-            <button type="button" onClick={() => { setSearchOpen(true); window.setTimeout(() => searchRef.current?.focus(), 0); }} className="rounded-lg p-2 text-slate-200 hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400" aria-label="Open global search">
+            <button type="button" onClick={() => { setSearchOpen((open) => !open); window.setTimeout(() => searchRef.current?.focus(), 0); }} className="rounded-lg p-2 text-slate-200 hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400" aria-label={searchOpen ? 'Close global search' : 'Open global search'}>
               <SearchCheck className="h-5 w-5" />
             </button>
             <ThemeToggle variant="header" />
@@ -244,10 +258,10 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {searchOpen && (
-          <div className="absolute left-0 right-0 top-full z-50 border-t border-white/10 bg-[#081830]/95 px-4 py-3 shadow-2xl backdrop-blur-md sm:px-6 lg:px-8">
+          <div ref={searchPanelRef} className="absolute left-0 right-0 top-full z-50 border-t border-slate-200/70 bg-white/90 px-4 py-3 text-slate-900 shadow-2xl backdrop-blur-xl dark:border-slate-700/70 dark:bg-slate-900/90 dark:text-white sm:px-6 lg:px-8">
             <div className="mx-auto max-w-3xl">
-              <div className="flex items-center rounded-lg border border-white/25 bg-white/10 focus-within:ring-2 focus-within:ring-amber-400">
-                <SearchCheck className="ml-3 h-4 w-4 shrink-0 text-slate-300" aria-hidden="true" />
+              <div className="flex items-center rounded-lg border border-slate-300 bg-white/80 focus-within:ring-2 focus-within:ring-amber-400 dark:border-slate-600 dark:bg-slate-800/80">
+                <SearchCheck className="ml-3 h-4 w-4 shrink-0 text-slate-500 dark:text-slate-300" aria-hidden="true" />
                 <input
                   ref={searchRef}
                   value={query}
@@ -262,23 +276,20 @@ export const Header: React.FC<HeaderProps> = ({
                   aria-expanded={suggestions.length > 0}
                   aria-controls="global-search-suggestions"
                   aria-autocomplete="list"
-                  className="min-w-0 flex-1 bg-transparent px-2 py-2.5 text-sm text-white placeholder:text-slate-300 focus:outline-none"
+                  className="min-w-0 flex-1 bg-transparent px-2 py-2.5 text-sm text-slate-900 placeholder:text-slate-500 focus:outline-none dark:text-white dark:placeholder:text-slate-300"
                 />
-                {isSearching && <span className="px-2 text-xs text-slate-300" role="status">...</span>}
+                {isSearching && <span className="px-2 text-xs text-slate-500 dark:text-slate-300" role="status">...</span>}
                 {query && (
-                  <button type="button" onClick={() => setQuery('')} className="p-2 text-slate-300 hover:text-white" aria-label="Clear search">
+                  <button type="button" onClick={() => setQuery('')} className="p-2 text-slate-500 hover:text-slate-800 dark:text-slate-300 dark:hover:text-white" aria-label="Clear search">
                     <X className="h-4 w-4" />
                   </button>
                 )}
-                <button type="button" onClick={closeSearch} className="p-2 text-slate-300 hover:text-white" aria-label="Close search">
-                  <X className="h-4 w-4" />
-                </button>
-                <button type="button" onClick={() => submitSearch()} className="p-2 text-amber-300 hover:text-amber-200" aria-label="Submit search">
-                  <SearchCheck className="h-4 w-4" />
+                <button type="button" onClick={() => submitSearch()} className="p-2 text-amber-600 hover:text-amber-700 dark:text-amber-300 dark:hover:text-amber-200" aria-label="Submit search">
+                <SearchCheck className="h-4 w-4" />
                 </button>
               </div>
               {suggestions.length > 0 && (
-                <div id="global-search-suggestions" role="listbox" className="mt-2 overflow-hidden rounded-xl border border-slate-200 bg-white p-2 text-slate-900 shadow-2xl dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                <div id="global-search-suggestions" role="listbox" className="mt-2 overflow-hidden rounded-xl border border-slate-200/80 bg-white/90 p-2 text-slate-900 shadow-2xl backdrop-blur-md dark:border-slate-700/80 dark:bg-slate-900/90 dark:text-white">
                   {suggestions.map((suggestion, index) => (
                     <a
                       key={`${suggestion.type}-${suggestion.id}`}
