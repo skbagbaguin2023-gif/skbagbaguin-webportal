@@ -1,9 +1,19 @@
 create extension if not exists unaccent;
 create extension if not exists pg_trgm;
 
+create or replace function public.immutable_unaccent(value text)
+returns text
+language sql
+immutable
+parallel safe
+set search_path = public, extensions
+as $$
+  select public.unaccent(value);
+$$;
+
 create index if not exists portal_records_public_search_idx
   on public.portal_records using gin (
-    lower(public.unaccent(data::text)) gin_trgm_ops
+    lower(public.immutable_unaccent(data::text)) gin_trgm_ops
   );
 
 create or replace function public.search_public_content(
@@ -37,7 +47,7 @@ begin
   return query
   with input as (
     select
-      lower(public.unaccent(trim(regexp_replace(coalesce(p_query, ''), '[^[:alnum:]'' -]', ' ', 'g')))) as query,
+      lower(public.immutable_unaccent(trim(regexp_replace(coalesce(p_query, ''), '[^[:alnum:]'' -]', ' ', 'g')))) as query,
       greatest(1, least(coalesce(p_limit, 8), 50)) as result_limit,
       greatest(0, coalesce(p_offset, 0)) as result_offset
   ),
@@ -77,8 +87,8 @@ begin
         when 'council' then '/?page=about'
         when 'services' then '/?page=services'
       end as result_href,
-      lower(public.unaccent(pr.data::text)) as search_text,
-      lower(public.unaccent(coalesce(pr.data ->> 'title', pr.data ->> 'name', pr.data ->> 'position', ''))) as title_text
+      lower(public.immutable_unaccent(pr.data::text)) as search_text,
+      lower(public.immutable_unaccent(coalesce(pr.data ->> 'title', pr.data ->> 'name', pr.data ->> 'position', ''))) as title_text
     from public.portal_records pr
     where (
       pr.collection in ('programs', 'events', 'council', 'facebookPosts')
