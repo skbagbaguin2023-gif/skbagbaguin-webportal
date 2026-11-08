@@ -36,7 +36,9 @@ export const SearchView: React.FC<SearchViewProps> = ({ query }) => {
         } else if (message.includes('search_public_content') || message.includes('check_rate_limit')) {
           setError('Search is not fully configured yet. Please run the Supabase rate-limit migration, then the global-search migration.');
         } else {
-          setError('Search is temporarily unavailable. Please try again.');
+          setError(import.meta.env.DEV && message
+            ? `Search failed: ${message}`
+            : 'Search is temporarily unavailable. Please try again.');
         }
       })
       .finally(() => {

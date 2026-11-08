@@ -682,6 +682,9 @@ export default function App() {
             currentPage={currentPage}
             onNavigate={(page) => {
               setCurrentPage(page);
+              const nextPath = page === 'home' ? '/' : `/?page=${page}`;
+              window.history.pushState({}, '', nextPath);
+              setPathname('/');
               window.scrollTo({ top: 0 });
             }}
             onOpenApplyModal={() => handleOpenApplyModal()}
