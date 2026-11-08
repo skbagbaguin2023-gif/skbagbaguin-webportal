@@ -123,6 +123,14 @@ export const Header: React.FC<HeaderProps> = ({
     onSearch(trimmed);
   };
 
+  const closeSearch = () => {
+    requestRef.current?.abort();
+    setSearchOpen(false);
+    setSuggestions([]);
+    setIsSearching(false);
+    searchRef.current?.blur();
+  };
+
   const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'ArrowDown') {
       event.preventDefault();
@@ -163,7 +171,7 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Main Sticky Header */}
       <header className="sticky top-0 z-40 bg-[#0F2C59] text-white shadow-md border-b border-navy-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between gap-4">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between gap-3">
           
           {/* Brand Zone */}
           <button
@@ -191,7 +199,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-1 xl:gap-2 text-sm font-medium">
+          <nav className="hidden xl:flex min-w-0 flex-1 items-center justify-center gap-1 text-sm font-medium">
             {navLinks.map((link) => {
               const isActive = currentPage === link.id;
               return (
@@ -211,8 +219,8 @@ export const Header: React.FC<HeaderProps> = ({
           </nav>
 
           {/* Action Zone */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className={`relative ${searchOpen ? 'w-[min(70vw,22rem)]' : 'w-auto'}`}>
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+            <div className={`relative ${searchOpen ? 'w-40 xl:w-56 max-lg:absolute max-lg:left-0 max-lg:right-0 max-lg:top-2 max-lg:z-50' : 'w-auto'}`}>
               {searchOpen ? (
                 <>
                   <div className="flex items-center rounded-lg border border-white/25 bg-white/10 focus-within:ring-2 focus-within:ring-amber-400">
@@ -240,6 +248,9 @@ export const Header: React.FC<HeaderProps> = ({
                         <X className="h-4 w-4" />
                       </button>
                     )}
+                    <button type="button" onClick={closeSearch} className="p-2 text-slate-300 hover:text-white" aria-label="Close search">
+                      <X className="h-4 w-4" />
+                    </button>
                     <button type="button" onClick={() => submitSearch()} className="p-2 text-amber-300 hover:text-amber-200" aria-label="Submit search">
                       <SearchCheck className="h-4 w-4" />
                     </button>
@@ -275,7 +286,7 @@ export const Header: React.FC<HeaderProps> = ({
 
             <button
               onClick={onOpenApplyModal}
-              className="bg-[#F5A623] hover:bg-[#D98E16] text-[#081830] font-bold text-xs sm:text-sm px-3 sm:px-4 py-2 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 whitespace-nowrap shrink-0 flex items-center gap-1.5 cursor-pointer"
+              className="bg-[#F5A623] hover:bg-[#D98E16] text-[#081830] font-bold text-xs sm:text-sm px-2.5 sm:px-3 py-2 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 whitespace-nowrap shrink-0 flex items-center gap-1.5 cursor-pointer"
             >
               <span>Request <span className="hidden sm:inline">a Service</span></span>
             </button>
@@ -283,7 +294,7 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Mobile Hamburger Toggle */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 text-slate-200 hover:text-white hover:bg-white/10 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+              className="xl:hidden p-2 text-slate-200 hover:text-white hover:bg-white/10 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
               aria-label="Toggle navigation menu"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -293,7 +304,7 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Mobile Navigation Drawer */}
         {mobileMenuOpen && (
-          <div className="absolute left-0 right-0 top-full max-h-[calc(100vh-4.5rem)] overflow-y-auto border-t border-white/10 bg-[#081830]/90 px-4 pt-3 pb-6 shadow-2xl backdrop-blur-md animate-in slide-in-from-top-2 duration-200 lg:hidden">
+          <div className="absolute left-0 right-0 top-full max-h-[calc(100vh-4.5rem)] overflow-y-auto border-t border-white/10 bg-[#081830]/90 px-4 pt-3 pb-6 shadow-2xl backdrop-blur-md animate-in slide-in-from-top-2 duration-200 xl:hidden">
             <div className="text-xs text-slate-400 font-medium px-3 py-1 uppercase tracking-wider">
               Navigation Menu
             </div>
