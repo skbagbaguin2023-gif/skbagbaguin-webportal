@@ -199,7 +199,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden 2xl:flex min-w-0 flex-1 items-center justify-center gap-1 text-sm font-medium">
+          <nav className="hidden lg:flex items-center gap-1 xl:gap-2 text-sm font-medium">
             {navLinks.map((link) => {
               const isActive = currentPage === link.id;
               return (
@@ -220,68 +220,9 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Action Zone */}
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-            <div className={`relative ${searchOpen ? 'w-40 2xl:w-56 max-2xl:absolute max-2xl:left-0 max-2xl:right-0 max-2xl:top-2 max-2xl:z-50' : 'w-auto'}`}>
-              {searchOpen ? (
-                <>
-                  <div className="flex items-center rounded-lg border border-white/25 bg-white/10 focus-within:ring-2 focus-within:ring-amber-400">
-                    <SearchCheck className="ml-3 h-4 w-4 shrink-0 text-slate-300" aria-hidden="true" />
-                    <input
-                      ref={searchRef}
-                      value={query}
-                      onChange={(event) => {
-                        setQuery(event.target.value);
-                        setSelectedSuggestion(-1);
-                      }}
-                      onKeyDown={handleSearchKeyDown}
-                      onFocus={() => setSearchOpen(true)}
-                      placeholder="Search SK Bagbaguin"
-                      aria-label="Search public SK Bagbaguin content"
-                      role="combobox"
-                      aria-expanded={suggestions.length > 0}
-                      aria-controls="global-search-suggestions"
-                      aria-autocomplete="list"
-                      className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm text-white placeholder:text-slate-300 focus:outline-none"
-                    />
-                    {isSearching && <span className="px-2 text-xs text-slate-300" role="status">...</span>}
-                    {query && (
-                      <button type="button" onClick={() => setQuery('')} className="p-2 text-slate-300 hover:text-white" aria-label="Clear search">
-                        <X className="h-4 w-4" />
-                      </button>
-                    )}
-                    <button type="button" onClick={closeSearch} className="p-2 text-slate-300 hover:text-white" aria-label="Close search">
-                      <X className="h-4 w-4" />
-                    </button>
-                    <button type="button" onClick={() => submitSearch()} className="p-2 text-amber-300 hover:text-amber-200" aria-label="Submit search">
-                      <SearchCheck className="h-4 w-4" />
-                    </button>
-                  </div>
-                  {suggestions.length > 0 && (
-                    <div id="global-search-suggestions" role="listbox" className="absolute right-0 top-full z-50 mt-2 w-[min(92vw,28rem)] overflow-hidden rounded-xl border border-slate-200 bg-white p-2 text-slate-900 shadow-2xl dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-                      {suggestions.map((suggestion, index) => (
-                        <a
-                          key={`${suggestion.type}-${suggestion.id}`}
-                          href={suggestion.href}
-                          role="option"
-                          aria-selected={selectedSuggestion === index}
-                          className={`block rounded-lg px-3 py-2 text-left ${selectedSuggestion === index ? 'bg-slate-100 dark:bg-slate-800' : 'hover:bg-slate-50 dark:hover:bg-slate-800'}`}
-                        >
-                          <span className="block text-[10px] font-bold uppercase tracking-wide text-amber-600 dark:text-amber-400">{suggestion.type}</span>
-                          <span className="block truncate text-sm font-semibold">{suggestion.title}</span>
-                          <span className="block truncate text-xs text-slate-500 dark:text-slate-400">{highlightSnippet(suggestion.snippet)}</span>
-                        </a>
-                      ))}
-                      <button type="button" onClick={() => submitSearch()} className="w-full border-t border-slate-200 px-3 py-2 text-left text-xs font-semibold text-[#0F2C59] dark:border-slate-700 dark:text-amber-300">
-                        See all results for “{query.trim()}”
-                      </button>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <button type="button" onClick={() => { setSearchOpen(true); window.setTimeout(() => searchRef.current?.focus(), 0); }} className="rounded-lg p-2 text-slate-200 hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400" aria-label="Open global search">
-                  <SearchCheck className="h-5 w-5" />
-                </button>
-              )}
-            </div>
+            <button type="button" onClick={() => { setSearchOpen(true); window.setTimeout(() => searchRef.current?.focus(), 0); }} className="rounded-lg p-2 text-slate-200 hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400" aria-label="Open global search">
+              <SearchCheck className="h-5 w-5" />
+            </button>
             <ThemeToggle variant="header" />
 
             <button
@@ -294,7 +235,7 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Mobile Hamburger Toggle */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="2xl:hidden p-2 text-slate-200 hover:text-white hover:bg-white/10 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+              className="lg:hidden p-2 text-slate-200 hover:text-white hover:bg-white/10 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
               aria-label="Toggle navigation menu"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -302,9 +243,67 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
+        {searchOpen && (
+          <div className="absolute left-0 right-0 top-full z-50 border-t border-white/10 bg-[#081830]/95 px-4 py-3 shadow-2xl backdrop-blur-md sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-3xl">
+              <div className="flex items-center rounded-lg border border-white/25 bg-white/10 focus-within:ring-2 focus-within:ring-amber-400">
+                <SearchCheck className="ml-3 h-4 w-4 shrink-0 text-slate-300" aria-hidden="true" />
+                <input
+                  ref={searchRef}
+                  value={query}
+                  onChange={(event) => {
+                    setQuery(event.target.value);
+                    setSelectedSuggestion(-1);
+                  }}
+                  onKeyDown={handleSearchKeyDown}
+                  placeholder="Search SK Bagbaguin"
+                  aria-label="Search public SK Bagbaguin content"
+                  role="combobox"
+                  aria-expanded={suggestions.length > 0}
+                  aria-controls="global-search-suggestions"
+                  aria-autocomplete="list"
+                  className="min-w-0 flex-1 bg-transparent px-2 py-2.5 text-sm text-white placeholder:text-slate-300 focus:outline-none"
+                />
+                {isSearching && <span className="px-2 text-xs text-slate-300" role="status">...</span>}
+                {query && (
+                  <button type="button" onClick={() => setQuery('')} className="p-2 text-slate-300 hover:text-white" aria-label="Clear search">
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+                <button type="button" onClick={closeSearch} className="p-2 text-slate-300 hover:text-white" aria-label="Close search">
+                  <X className="h-4 w-4" />
+                </button>
+                <button type="button" onClick={() => submitSearch()} className="p-2 text-amber-300 hover:text-amber-200" aria-label="Submit search">
+                  <SearchCheck className="h-4 w-4" />
+                </button>
+              </div>
+              {suggestions.length > 0 && (
+                <div id="global-search-suggestions" role="listbox" className="mt-2 overflow-hidden rounded-xl border border-slate-200 bg-white p-2 text-slate-900 shadow-2xl dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                  {suggestions.map((suggestion, index) => (
+                    <a
+                      key={`${suggestion.type}-${suggestion.id}`}
+                      href={suggestion.href}
+                      role="option"
+                      aria-selected={selectedSuggestion === index}
+                      className={`block rounded-lg px-3 py-2 text-left ${selectedSuggestion === index ? 'bg-slate-100 dark:bg-slate-800' : 'hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+                    >
+                      <span className="block text-[10px] font-bold uppercase tracking-wide text-amber-600 dark:text-amber-400">{suggestion.type}</span>
+                      <span className="block truncate text-sm font-semibold">{suggestion.title}</span>
+                      <span className="block truncate text-xs text-slate-500 dark:text-slate-400">{highlightSnippet(suggestion.snippet)}</span>
+                    </a>
+                  ))}
+                  <button type="button" onClick={() => submitSearch()} className="w-full border-t border-slate-200 px-3 py-2 text-left text-xs font-semibold text-[#0F2C59] dark:border-slate-700 dark:text-amber-300">
+                    See all results for “{query.trim()}”
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Mobile Navigation Drawer */}
         {mobileMenuOpen && (
-          <div className="absolute left-0 right-0 top-full max-h-[calc(100vh-4.5rem)] overflow-y-auto border-t border-white/10 bg-[#081830]/90 px-4 pt-3 pb-6 shadow-2xl backdrop-blur-md animate-in slide-in-from-top-2 duration-200 2xl:hidden">
+          <div className="absolute left-0 right-0 top-full max-h-[calc(100vh-4.5rem)] overflow-y-auto border-t border-white/10 bg-[#081830]/90 px-4 pt-3 pb-6 shadow-2xl backdrop-blur-md animate-in slide-in-from-top-2 duration-200 lg:hidden">
             <div className="text-xs text-slate-400 font-medium px-3 py-1 uppercase tracking-wider">
               Navigation Menu
             </div>
