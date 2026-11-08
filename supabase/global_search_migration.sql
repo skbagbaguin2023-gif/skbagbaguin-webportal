@@ -1,5 +1,6 @@
-create extension if not exists unaccent;
-create extension if not exists pg_trgm;
+create schema if not exists extensions;
+create extension if not exists unaccent with schema extensions;
+create extension if not exists pg_trgm with schema extensions;
 
 create or replace function public.immutable_unaccent(value text)
 returns text
@@ -8,7 +9,7 @@ immutable
 parallel safe
 set search_path = public, extensions
 as $$
-  select public.unaccent(value);
+  select unaccent(value);
 $$;
 
 create index if not exists portal_records_public_search_idx

@@ -30,7 +30,14 @@ export const SearchView: React.FC<SearchViewProps> = ({ query }) => {
       .catch((caught: unknown) => {
         if (caught instanceof DOMException && caught.name === 'AbortError') return;
         console.error('Public search failed.', caught);
-        setError('Search is temporarily unavailable. Please try again.');
+        const message = caught instanceof Error ? caught.message : '';
+        if (message.includes('SEARCH_RATE_LIMITED')) {
+          setError('Search is receiving too many requests. Please wait a moment and try again.');
+        } else if (message.includes('search_public_content') || message.includes('check_rate_limit')) {
+          setError('Search is not fully configured yet. Please run the Supabase rate-limit migration, then the global-search migration.');
+        } else {
+          setError('Search is temporarily unavailable. Please try again.');
+        }
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);

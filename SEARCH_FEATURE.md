@@ -26,8 +26,10 @@ section; do not scrape the DOM or add private/admin text.
 
 ## Deploying and reindexing
 
-Run `supabase/global_search_migration.sql` in the Supabase SQL Editor after
-the base schema and existing rate-limit migration. The `pg_trgm` index is
+Run [`supabase/rate_limits.sql`](./supabase/rate_limits.sql) first, then run
+[`supabase/global_search_migration.sql`](./supabase/global_search_migration.sql)
+in the Supabase SQL Editor after the base schema. The search migration uses the
+existing rate-limit function. The `pg_trgm` index is
 maintained by Postgres as records change; there is no separate search service
 or manual reindex job. If the index is rebuilt, run:
 
