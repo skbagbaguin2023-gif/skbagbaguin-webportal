@@ -39,6 +39,7 @@ import { YouthServicesView } from './views/public/YouthServicesView.tsx';
 import { TrackRequestView } from './views/public/TrackRequestView.tsx';
 import { TransparencyView } from './views/public/TransparencyView.tsx';
 import { ContactView } from './views/public/ContactView.tsx';
+import { SearchView } from './views/public/SearchView.tsx';
 const ChatAssistant = lazy(() => import('./components/ChatAssistant.tsx').then((module) => ({ default: module.ChatAssistant })));
 
 // Modals
@@ -84,8 +85,15 @@ export default function App() {
   };
 
   useEffect(() => {
-    const updatePathname = () => setPathname(window.location.pathname);
+    const updatePathname = () => {
+      setPathname(window.location.pathname);
+      const page = new URLSearchParams(window.location.search).get('page') as PublicPage | null;
+      if (page && ['home', 'about', 'programs', 'events', 'announcements', 'services', 'track', 'transparency', 'contact'].includes(page)) {
+        setCurrentPage(page);
+      }
+    };
     window.addEventListener('popstate', updatePathname);
+    updatePathname();
     return () => window.removeEventListener('popstate', updatePathname);
   }, []);
 
@@ -656,6 +664,10 @@ export default function App() {
     return <InitialLoadingScreen />;
   }
 
+  const searchQuery = pathname === '/search'
+    ? new URLSearchParams(window.location.search).get('q')?.trim() ?? ''
+    : '';
+
   return (
     <ThemeProvider>
       <div className="public-shell min-h-screen overflow-x-clip flex flex-col bg-slate-50 text-slate-800 dark:bg-[#071324] dark:text-slate-100 transition-colors duration-200">
@@ -673,9 +685,17 @@ export default function App() {
               window.scrollTo({ top: 0 });
             }}
             onOpenApplyModal={() => handleOpenApplyModal()}
+            onSearch={(query) => {
+              window.history.pushState({}, '', `/search?q=${encodeURIComponent(query)}`);
+              setPathname('/search');
+              window.scrollTo({ top: 0 });
+            }}
           />
 
           <main className="flex-1 pb-20">
+            {pathname === '/search' ? (
+              <SearchView query={searchQuery} />
+            ) : (
             <div key={currentPage} className="page-transition">
               {currentPage === 'home' && (
               <HomeView
@@ -744,6 +764,7 @@ export default function App() {
               <ContactView onSubmitFeedback={handleSubmitFeedback} />
               )}
             </div>
+            )}
           </main>
 
           <Footer

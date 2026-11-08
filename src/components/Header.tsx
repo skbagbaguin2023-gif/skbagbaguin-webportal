@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { PublicPage } from '../types/index.ts';
 import skLogo from '../assets/images/skLogo.png';
 import { ThemeToggle } from './ThemeToggle.tsx';
@@ -16,19 +16,30 @@ import {
   ChevronRight,
   SearchCheck
 } from 'lucide-react';
+import { searchPublicContent, type SearchResult } from '../services/search.ts';
+import { expandSearchQuery } from '../services/searchLogic.ts';
 
 interface HeaderProps {
   currentPage: PublicPage;
   onNavigate: (page: PublicPage) => void;
   onOpenApplyModal: () => void;
+  onSearch: (query: string) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   currentPage,
   onNavigate,
   onOpenApplyModal,
+  onSearch,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [suggestions, setSuggestions] = useState<SearchResult[]>([]);
+  const [selectedSuggestion, setSelectedSuggestion] = useState(-1);
+  const [isSearching, setIsSearching] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const requestRef = useRef<AbortController | null>(null);
 
   const navLinks: { id: PublicPage; label: string; icon: React.ReactNode }[] = [
     { id: 'home', label: 'Home', icon: <Layers className="w-4 h-4" /> },
@@ -41,6 +52,89 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'transparency', label: 'Transparency', icon: <ShieldCheck className="w-4 h-4" /> },
     { id: 'contact', label: 'Contact Us', icon: <Phone className="w-4 h-4" /> },
   ];
+
+  const highlightSnippet = (text: string) => {
+    const terms = expandSearchQuery(query).filter((term) => term.length > 1);
+    if (!terms.length) return text;
+    const pattern = new RegExp(`(${terms.join('|')})`, 'ig');
+    return text.split(pattern).map((part, index) => (
+      terms.some((term) => part.toLocaleLowerCase() === term.toLocaleLowerCase())
+        ? <mark key={index} className="rounded bg-amber-200 px-0.5 text-inherit dark:bg-amber-700">{part}</mark>
+        : part
+    ));
+  };
+
+  useEffect(() => {
+    const handleShortcut = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setSearchOpen(true);
+        window.setTimeout(() => searchRef.current?.focus(), 0);
+      } else if (event.key === '/' && !['INPUT', 'TEXTAREA'].includes((event.target as HTMLElement)?.tagName)) {
+        event.preventDefault();
+        setSearchOpen(true);
+        window.setTimeout(() => searchRef.current?.focus(), 0);
+      } else if (event.key === 'Escape') {
+        setSearchOpen(false);
+        setSuggestions([]);
+        searchRef.current?.blur();
+      }
+    };
+    window.addEventListener('keydown', handleShortcut);
+    return () => window.removeEventListener('keydown', handleShortcut);
+  }, []);
+
+  useEffect(() => {
+    const value = query.trim();
+    if (value.length < 2) {
+      requestRef.current?.abort();
+      setSuggestions([]);
+      setIsSearching(false);
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      requestRef.current?.abort();
+      const controller = new AbortController();
+      requestRef.current = controller;
+      setIsSearching(true);
+      void searchPublicContent(value, { limit: 8, signal: controller.signal })
+        .then((response) => {
+          if (!controller.signal.aborted) setSuggestions(response.results.slice(0, 8));
+        })
+        .catch((error: unknown) => {
+          if (error instanceof DOMException && error.name === 'AbortError') return;
+          console.error('Public search suggestions failed.', error);
+          setSuggestions([]);
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setIsSearching(false);
+        });
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [query]);
+
+  const submitSearch = (value = query) => {
+    const trimmed = value.trim();
+    if (trimmed.length < 2) return;
+    setSearchOpen(false);
+    setSuggestions([]);
+    onSearch(trimmed);
+  };
+
+  const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setSelectedSuggestion((current) => Math.min(current + 1, suggestions.length - 1));
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setSelectedSuggestion((current) => Math.max(current - 1, -1));
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      const selected = suggestions[selectedSuggestion];
+      if (selected) window.location.href = selected.href;
+      else submitSearch();
+    }
+  };
 
   return (
     <>
@@ -116,6 +210,65 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Action Zone */}
           <div className="flex items-center gap-2 sm:gap-3">
+            <div className={`relative ${searchOpen ? 'w-[min(70vw,22rem)]' : 'w-auto'}`}>
+              {searchOpen ? (
+                <>
+                  <div className="flex items-center rounded-lg border border-white/25 bg-white/10 focus-within:ring-2 focus-within:ring-amber-400">
+                    <SearchCheck className="ml-3 h-4 w-4 shrink-0 text-slate-300" aria-hidden="true" />
+                    <input
+                      ref={searchRef}
+                      value={query}
+                      onChange={(event) => {
+                        setQuery(event.target.value);
+                        setSelectedSuggestion(-1);
+                      }}
+                      onKeyDown={handleSearchKeyDown}
+                      onFocus={() => setSearchOpen(true)}
+                      placeholder="Search SK Bagbaguin"
+                      aria-label="Search public SK Bagbaguin content"
+                      role="combobox"
+                      aria-expanded={suggestions.length > 0}
+                      aria-controls="global-search-suggestions"
+                      aria-autocomplete="list"
+                      className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm text-white placeholder:text-slate-300 focus:outline-none"
+                    />
+                    {isSearching && <span className="px-2 text-xs text-slate-300" role="status">...</span>}
+                    {query && (
+                      <button type="button" onClick={() => setQuery('')} className="p-2 text-slate-300 hover:text-white" aria-label="Clear search">
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                    <button type="button" onClick={() => submitSearch()} className="p-2 text-amber-300 hover:text-amber-200" aria-label="Submit search">
+                      <SearchCheck className="h-4 w-4" />
+                    </button>
+                  </div>
+                  {suggestions.length > 0 && (
+                    <div id="global-search-suggestions" role="listbox" className="absolute right-0 top-full z-50 mt-2 w-[min(92vw,28rem)] overflow-hidden rounded-xl border border-slate-200 bg-white p-2 text-slate-900 shadow-2xl dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                      {suggestions.map((suggestion, index) => (
+                        <a
+                          key={`${suggestion.type}-${suggestion.id}`}
+                          href={suggestion.href}
+                          role="option"
+                          aria-selected={selectedSuggestion === index}
+                          className={`block rounded-lg px-3 py-2 text-left ${selectedSuggestion === index ? 'bg-slate-100 dark:bg-slate-800' : 'hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+                        >
+                          <span className="block text-[10px] font-bold uppercase tracking-wide text-amber-600 dark:text-amber-400">{suggestion.type}</span>
+                          <span className="block truncate text-sm font-semibold">{suggestion.title}</span>
+                          <span className="block truncate text-xs text-slate-500 dark:text-slate-400">{highlightSnippet(suggestion.snippet)}</span>
+                        </a>
+                      ))}
+                      <button type="button" onClick={() => submitSearch()} className="w-full border-t border-slate-200 px-3 py-2 text-left text-xs font-semibold text-[#0F2C59] dark:border-slate-700 dark:text-amber-300">
+                        See all results for “{query.trim()}”
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <button type="button" onClick={() => { setSearchOpen(true); window.setTimeout(() => searchRef.current?.focus(), 0); }} className="rounded-lg p-2 text-slate-200 hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400" aria-label="Open global search">
+                  <SearchCheck className="h-5 w-5" />
+                </button>
+              )}
+            </div>
             <ThemeToggle variant="header" />
 
             <button
