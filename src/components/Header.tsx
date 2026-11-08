@@ -199,7 +199,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden xl:flex min-w-0 flex-1 items-center justify-center gap-1 text-sm font-medium">
+          <nav className="hidden 2xl:flex min-w-0 flex-1 items-center justify-center gap-1 text-sm font-medium">
             {navLinks.map((link) => {
               const isActive = currentPage === link.id;
               return (
@@ -220,7 +220,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Action Zone */}
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-            <div className={`relative ${searchOpen ? 'w-40 xl:w-56 max-lg:absolute max-lg:left-0 max-lg:right-0 max-lg:top-2 max-lg:z-50' : 'w-auto'}`}>
+            <div className={`relative ${searchOpen ? 'w-40 2xl:w-56 max-2xl:absolute max-2xl:left-0 max-2xl:right-0 max-2xl:top-2 max-2xl:z-50' : 'w-auto'}`}>
               {searchOpen ? (
                 <>
                   <div className="flex items-center rounded-lg border border-white/25 bg-white/10 focus-within:ring-2 focus-within:ring-amber-400">
@@ -294,7 +294,7 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Mobile Hamburger Toggle */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="xl:hidden p-2 text-slate-200 hover:text-white hover:bg-white/10 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+              className="2xl:hidden p-2 text-slate-200 hover:text-white hover:bg-white/10 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
               aria-label="Toggle navigation menu"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -304,7 +304,7 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Mobile Navigation Drawer */}
         {mobileMenuOpen && (
-          <div className="absolute left-0 right-0 top-full max-h-[calc(100vh-4.5rem)] overflow-y-auto border-t border-white/10 bg-[#081830]/90 px-4 pt-3 pb-6 shadow-2xl backdrop-blur-md animate-in slide-in-from-top-2 duration-200 xl:hidden">
+          <div className="absolute left-0 right-0 top-full max-h-[calc(100vh-4.5rem)] overflow-y-auto border-t border-white/10 bg-[#081830]/90 px-4 pt-3 pb-6 shadow-2xl backdrop-blur-md animate-in slide-in-from-top-2 duration-200 2xl:hidden">
             <div className="text-xs text-slate-400 font-medium px-3 py-1 uppercase tracking-wider">
               Navigation Menu
             </div>
