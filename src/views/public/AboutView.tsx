@@ -77,7 +77,7 @@ export const AboutView: React.FC<AboutViewProps> = ({ council, transparencyDocs,
       </Reveal>
 
       {/* 2. Mission & Vision */}
-      <Reveal className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <Reveal id="mission" className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
           <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center">
             <Award className="w-5 h-5" />
@@ -98,7 +98,7 @@ export const AboutView: React.FC<AboutViewProps> = ({ council, transparencyDocs,
       </Reveal>
 
       {/* 3. Core Pillars */}
-      <Reveal className="space-y-6">
+      <Reveal id="pillars" className="space-y-6">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Five Pillars of Service (Core Pillars)</h2>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Guided by the Comprehensive Barangay Youth Development Plan (CBYDP) and Annual Barangay Youth Investment Program (ABYIP) of SK Bagbaguin.</p>

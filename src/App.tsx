@@ -39,6 +39,8 @@ import { YouthServicesView } from './views/public/YouthServicesView.tsx';
 import { TrackRequestView } from './views/public/TrackRequestView.tsx';
 import { TransparencyView } from './views/public/TransparencyView.tsx';
 import { ContactView } from './views/public/ContactView.tsx';
+import { SearchView } from './views/public/SearchView.tsx';
+import type { SearchResult } from './services/search.ts';
 const ChatAssistant = lazy(() => import('./components/ChatAssistant.tsx').then((module) => ({ default: module.ChatAssistant })));
 
 // Modals
@@ -84,8 +86,15 @@ export default function App() {
   };
 
   useEffect(() => {
-    const updatePathname = () => setPathname(window.location.pathname);
+    const updatePathname = () => {
+      setPathname(window.location.pathname);
+      const page = new URLSearchParams(window.location.search).get('page') as PublicPage | null;
+      if (page && ['home', 'about', 'programs', 'events', 'announcements', 'services', 'track', 'transparency', 'contact'].includes(page)) {
+        setCurrentPage(page);
+      }
+    };
     window.addEventListener('popstate', updatePathname);
+    updatePathname();
     return () => window.removeEventListener('popstate', updatePathname);
   }, []);
 
@@ -141,6 +150,76 @@ export default function App() {
         postUrl: announcement.sourcePostUrl ?? '',
         isFallback: true,
       }));
+  const publicSearchResults: SearchResult[] = [
+    ...programs.map((item) => ({
+      id: item.id,
+      type: 'Programs' as const,
+      title: item.title,
+      snippet: `${item.summary} ${item.objectives.join(' ')}`,
+      date: item.timeline,
+      href: '/?page=programs',
+      score: 0,
+    })),
+    ...events.map((item) => ({
+      id: item.id,
+      type: 'Events' as const,
+      title: item.title,
+      snippet: `${item.summary} ${item.description} ${item.venue}`,
+      date: item.date,
+      href: '/?page=events',
+      score: 0,
+    })),
+    ...announcements
+      .filter((item) => item.status === 'Published')
+      .map((item) => ({
+        id: item.id,
+        type: 'Announcements' as const,
+        title: item.title,
+        snippet: `${item.excerpt} ${item.content}`,
+        date: item.date,
+        href: '/?page=announcements',
+        score: 0,
+      })),
+    ...facebookPosts.map((item) => ({
+      id: item.id,
+      type: 'News' as const,
+      title: item.title,
+      snippet: item.excerpt,
+      date: item.date,
+      href: '/?page=home',
+      score: 0,
+    })),
+    ...transparencyDocs
+      .filter((item) => item.isPublic)
+      .map((item) => ({
+        id: item.id,
+        type: 'Documents' as const,
+        title: item.title,
+        snippet: `${item.description} ${item.category} ${item.resolutionNumber ?? ''}`,
+        date: item.publishedDate,
+        href: '/?page=transparency',
+        score: 0,
+      })),
+    ...council.map((item) => ({
+      id: item.id,
+      type: 'Officials' as const,
+      title: item.name,
+      snippet: `${item.position} ${item.committee} ${item.bio}`,
+      date: item.term,
+      href: '/?page=about',
+      score: 0,
+    })),
+    ...services
+      .filter((item) => item.isActive)
+      .map((item) => ({
+        id: item.id,
+        type: 'Services' as const,
+        title: item.name,
+        snippet: `${item.tagline} ${item.description} ${item.eligibility.join(' ')} ${item.requirements.join(' ')}`,
+        href: '/?page=services',
+        score: 0,
+      })),
+  ];
 
   useEffect(() => {
     if (!supabaseConfigured) {
@@ -656,6 +735,10 @@ export default function App() {
     return <InitialLoadingScreen />;
   }
 
+  const searchQuery = pathname === '/search'
+    ? new URLSearchParams(window.location.search).get('q')?.trim() ?? ''
+    : '';
+
   return (
     <ThemeProvider>
       <div className="public-shell min-h-screen overflow-x-clip flex flex-col bg-slate-50 text-slate-800 dark:bg-[#071324] dark:text-slate-100 transition-colors duration-200">
@@ -670,12 +753,24 @@ export default function App() {
             currentPage={currentPage}
             onNavigate={(page) => {
               setCurrentPage(page);
+              const nextPath = page === 'home' ? '/' : `/?page=${page}`;
+              window.history.pushState({}, '', nextPath);
+              setPathname('/');
               window.scrollTo({ top: 0 });
             }}
             onOpenApplyModal={() => handleOpenApplyModal()}
+            onSearch={(query) => {
+              window.history.pushState({}, '', `/search?q=${encodeURIComponent(query)}`);
+              setPathname('/search');
+              window.scrollTo({ top: 0 });
+            }}
+            searchResults={publicSearchResults}
           />
 
           <main className="flex-1 pb-20">
+            {pathname === '/search' ? (
+              <SearchView query={searchQuery} localResults={publicSearchResults} />
+            ) : (
             <div key={currentPage} className="page-transition">
               {currentPage === 'home' && (
               <HomeView
@@ -744,6 +839,7 @@ export default function App() {
               <ContactView onSubmitFeedback={handleSubmitFeedback} />
               )}
             </div>
+            )}
           </main>
 
           <Footer
