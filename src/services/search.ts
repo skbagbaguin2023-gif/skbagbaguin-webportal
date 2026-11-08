@@ -30,6 +30,10 @@ export interface SearchResponse {
   total: number;
 }
 
+export interface LocalSearchOptions {
+  localResults?: SearchResult[];
+}
+
 const MIN_QUERY_LENGTH = 2;
 const cache = new Map<string, SearchResponse>();
 
@@ -79,6 +83,15 @@ export const STATIC_PUBLIC_SEARCH_CONTENT: SearchResult[] = [
     score: 0,
     isStatic: true,
   },
+  {
+    id: 'faq-emergency',
+    type: 'FAQs',
+    title: 'Emergency and safety guidance',
+    snippet: 'For immediate danger, contact local emergency services or the Barangay Bagbaguin office.',
+    href: '/?page=contact',
+    score: 0,
+    isStatic: true,
+  },
 ];
 
 function scoreStaticResult(result: SearchResult, query: string): number {
@@ -100,7 +113,7 @@ function mergeResults(query: string, remote: SearchResponse): SearchResponse {
 
 export async function searchPublicContent(
   rawQuery: string,
-  options: { limit?: number; offset?: number; signal?: AbortSignal } = {},
+  options: { limit?: number; offset?: number; signal?: AbortSignal; localResults?: SearchResult[] } = {},
 ): Promise<SearchResponse> {
   const query = sanitizeSearchQuery(rawQuery);
   if (query.length < MIN_QUERY_LENGTH) return { results: [], total: 0 };
@@ -109,23 +122,41 @@ export async function searchPublicContent(
   const cacheKey = `${query}:${limit}:${offset}`;
   if (!options.signal && cache.has(cacheKey)) return cache.get(cacheKey)!;
 
+  const local = mergeResults(query, {
+    results: (options.localResults ?? [])
+      .filter((result) => !result.isStatic)
+      .map((result) => ({
+        ...result,
+        score: rankSearchMatch(result.title, result.snippet, query),
+      }))
+      .filter((result) => result.score > 0),
+    total: 0,
+  });
   let remote: SearchResponse = { results: [], total: 0 };
   if (supabase) {
-    const { data, error } = await supabase.rpc('search_public_content', {
-      p_query: query,
-      p_limit: limit,
-      p_offset: offset,
-    });
-    if (options.signal?.aborted) throw new DOMException('Search request was cancelled.', 'AbortError');
-    if (error) throw error;
-    const rows = (data ?? []) as Array<SearchResult & { total_count: number }>;
-    remote = {
-      results: rows.map(({ total_count: _totalCount, ...result }) => result),
-      total: rows[0]?.total_count ?? 0,
-    };
+    try {
+      const { data, error } = await supabase.rpc('search_public_content', {
+        p_query: query,
+        p_limit: limit,
+        p_offset: offset,
+      });
+      if (options.signal?.aborted) throw new DOMException('Search request was cancelled.', 'AbortError');
+      if (error) throw error;
+      const rows = (data ?? []) as Array<SearchResult & { total_count: number }>;
+      remote = {
+        results: rows.map(({ total_count: _totalCount, ...result }) => result),
+        total: rows[0]?.total_count ?? 0,
+      };
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') throw error;
+      console.warn('Public search RPC unavailable; using local public content.', error);
+    }
   }
 
-  const response = mergeResults(query, remote);
+  const response = mergeResults(query, {
+    results: [...local.results, ...remote.results],
+    total: local.total + remote.total,
+  });
   if (!options.signal) cache.set(cacheKey, response);
   return response;
 }

@@ -24,6 +24,7 @@ interface HeaderProps {
   onNavigate: (page: PublicPage) => void;
   onOpenApplyModal: () => void;
   onSearch: (query: string) => void;
+  searchResults?: SearchResult[];
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -31,6 +32,7 @@ export const Header: React.FC<HeaderProps> = ({
   onNavigate,
   onOpenApplyModal,
   onSearch,
+  searchResults = [],
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -97,7 +99,7 @@ export const Header: React.FC<HeaderProps> = ({
       const controller = new AbortController();
       requestRef.current = controller;
       setIsSearching(true);
-      void searchPublicContent(value, { limit: 8, signal: controller.signal })
+      void searchPublicContent(value, { limit: 8, signal: controller.signal, localResults: searchResults })
         .then((response) => {
           if (!controller.signal.aborted) setSuggestions(response.results.slice(0, 8));
         })
@@ -111,7 +113,7 @@ export const Header: React.FC<HeaderProps> = ({
         });
     }, 300);
     return () => window.clearTimeout(timer);
-  }, [query]);
+  }, [query, searchResults]);
 
   const submitSearch = (value = query) => {
     const trimmed = value.trim();

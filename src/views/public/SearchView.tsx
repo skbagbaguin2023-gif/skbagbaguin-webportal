@@ -4,11 +4,12 @@ import { searchPublicContent, type SearchResult, type SearchType } from '../../s
 
 interface SearchViewProps {
   query: string;
+  localResults?: SearchResult[];
 }
 
 const filters: Array<'All' | SearchType> = ['All', 'Events', 'Announcements', 'Programs', 'Documents', 'News', 'Officials', 'Services', 'FAQs', 'About'];
 
-export const SearchView: React.FC<SearchViewProps> = ({ query }) => {
+export const SearchView: React.FC<SearchViewProps> = ({ query, localResults = [] }) => {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [total, setTotal] = useState(0);
   const [filter, setFilter] = useState<'All' | SearchType>('All');
@@ -20,7 +21,7 @@ export const SearchView: React.FC<SearchViewProps> = ({ query }) => {
     const controller = new AbortController();
     setLoading(true);
     setError('');
-    void searchPublicContent(query, { limit: 50, signal: controller.signal })
+    void searchPublicContent(query, { limit: 50, signal: controller.signal, localResults })
       .then((response) => {
         if (!controller.signal.aborted) {
           setResults(response.results);
@@ -45,7 +46,7 @@ export const SearchView: React.FC<SearchViewProps> = ({ query }) => {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [query]);
+  }, [query, localResults]);
 
   const visibleResults = useMemo(() => {
     const filtered = filter === 'All' ? results : results.filter((result) => result.type === filter);
