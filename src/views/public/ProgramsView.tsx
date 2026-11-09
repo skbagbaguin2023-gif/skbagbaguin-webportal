@@ -4,17 +4,22 @@ import { filterPrograms, formatCurrencyPHP } from '../../utils/portalLogic.ts';
 import { Search, Filter, Sparkles, ArrowLeft, SlidersHorizontal } from 'lucide-react';
 import Reveal from '../../components/Reveal.jsx';
 import { PortalImage } from '../../components/PortalImage.tsx';
+import { ProgramDetailView } from './ProgramDetailView.tsx';
 
 interface ProgramsViewProps {
   programs: Program[];
   fiscalYears: ProgramFiscalYear[];
   onSelectProgram: (prog: Program) => void;
+  selectedProgram: Program | null;
+  onBackFromProgram: () => void;
 }
 
 export const ProgramsView: React.FC<ProgramsViewProps> = ({
   programs,
   fiscalYears,
   onSelectProgram,
+  selectedProgram,
+  onBackFromProgram,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<ProgramCategory>('All');
@@ -32,6 +37,10 @@ export const ProgramsView: React.FC<ProgramsViewProps> = ({
   const filtered = filterPrograms(yearPrograms, searchQuery, selectedCategory, selectedStatus);
   const categories: ProgramCategory[] = ['All', 'Education', 'Sports', 'Livelihood', 'Environment', 'Health', 'Leadership'];
   const statuses: ('All' | ProgramStatus)[] = ['All', 'Ongoing', 'Upcoming', 'Completed'];
+
+  if (selectedProgram) {
+    return <ProgramDetailView program={selectedProgram} onBack={onBackFromProgram} />;
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">

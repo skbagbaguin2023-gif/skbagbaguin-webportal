@@ -51,6 +51,7 @@ export const ProgramsManager: React.FC<ProgramsManagerProps> = ({
   const [formCategory, setFormCategory] = useState<ProgramCategory>('Education');
   const [formSummary, setFormSummary] = useState('');
   const [formBudget, setFormBudget] = useState('');
+  const [formSpentBudget, setFormSpentBudget] = useState('0');
   const [formBeneficiaries, setFormBeneficiaries] = useState('');
   const [formLead, setFormLead] = useState('');
   const [formStatus, setFormStatus] = useState<ProgramStatus>('Upcoming');
@@ -122,6 +123,7 @@ export const ProgramsManager: React.FC<ProgramsManagerProps> = ({
     setFormCategory('Education');
     setFormSummary('');
     setFormBudget('');
+    setFormSpentBudget('0');
     setFormBeneficiaries('');
     setFormLead('');
     setFormStatus('Upcoming');
@@ -141,6 +143,7 @@ export const ProgramsManager: React.FC<ProgramsManagerProps> = ({
     setFormCategory(p.category);
     setFormSummary(p.summary);
     setFormBudget(String(p.allocatedBudget));
+    setFormSpentBudget(String(p.spentBudget ?? 0));
     setFormBeneficiaries(p.targetBeneficiaries);
     setFormLead(p.leadCouncilor);
     setFormStatus(p.status);
@@ -198,6 +201,7 @@ export const ProgramsManager: React.FC<ProgramsManagerProps> = ({
           category: formCategory,
           summary: formSummary,
           allocatedBudget: parseMoney(formBudget),
+          spentBudget: parseMoney(formSpentBudget),
           targetBeneficiaries: formBeneficiaries,
           leadCouncilor: formLead,
           status: formStatus,
@@ -220,6 +224,7 @@ export const ProgramsManager: React.FC<ProgramsManagerProps> = ({
           category: formCategory,
           summary: formSummary,
           allocatedBudget: parseMoney(formBudget),
+          spentBudget: parseMoney(formSpentBudget),
           targetBeneficiaries: formBeneficiaries,
           leadCouncilor: formLead,
           status: formStatus,
@@ -365,10 +370,20 @@ export const ProgramsManager: React.FC<ProgramsManagerProps> = ({
               {/* Budget and lead info */}
               <div className="grid grid-cols-2 gap-2 text-xs text-slate-500 dark:text-slate-400 pt-3 border-t border-slate-100 dark:border-slate-800 mt-3">
                 <div>
-                  <span className="block text-[11px] text-slate-400 dark:text-slate-500">Budget</span>
+                  <span className="block text-[11px] text-slate-400 dark:text-slate-500">Allocated</span>
                   <strong className="text-slate-800 dark:text-slate-200 font-mono">{formatCurrencyPHP(prog.allocatedBudget)}</strong>
                 </div>
                 <div>
+                  <span className="block text-[11px] text-slate-400 dark:text-slate-500">Spent / Disbursed</span>
+                  <strong className="text-slate-800 dark:text-slate-200 font-mono">{formatCurrencyPHP(prog.spentBudget ?? 0)}</strong>
+                </div>
+                <div>
+                  <span className="block text-[11px] text-slate-400 dark:text-slate-500">Remaining</span>
+                  <strong className={`font-mono ${(prog.allocatedBudget - (prog.spentBudget ?? 0)) < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-300'}`}>
+                    {formatCurrencyPHP(prog.allocatedBudget - (prog.spentBudget ?? 0))}
+                  </strong>
+                </div>
+                <div className="min-w-0">
                   <span className="block text-[11px] text-slate-400 dark:text-slate-500">Lead Councilor</span>
                   <span className="text-slate-800 dark:text-slate-200 font-medium truncate block">{prog.leadCouncilor}</span>
                 </div>
@@ -515,6 +530,24 @@ export const ProgramsManager: React.FC<ProgramsManagerProps> = ({
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-mono bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
                   />
                 </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                    Spent / Disbursed (PHP)
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={formSpentBudget}
+                    onChange={(e) => { if (isMoneyInput(e.target.value)) setFormSpentBudget(e.target.value); }}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-mono bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                  />
+                  <p className="mt-1 text-[10px] font-normal normal-case tracking-normal text-slate-500 dark:text-slate-400">
+                    Enter the actual amount spent or disbursed to date.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
                     Progress Percentage (%)

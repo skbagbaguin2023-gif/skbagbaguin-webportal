@@ -46,7 +46,6 @@ const ChatAssistant = lazy(() => import('./components/ChatAssistant.tsx').then((
 // Modals
 import { ApplicationModal } from './components/modals/ApplicationModal.tsx';
 import { EventRegistrationModal } from './components/modals/EventRegistrationModal.tsx';
-import { ProgramDetailModal } from './components/modals/ProgramDetailModal.tsx';
 import { DocumentPreviewModal } from './components/modals/DocumentPreviewModal.tsx';
 
 // Admin System
@@ -76,6 +75,8 @@ import { InitialLoadingScreen } from './components/InitialLoadingScreen.tsx';
 export default function App() {
   const [currentPage, setCurrentPage] = useState<PublicPage>('home');
   const [pathname, setPathname] = useState(window.location.pathname);
+  const [selectedProgramId, setSelectedProgramId] = useState<string | null>(null);
+  const [selectedAnnouncementId, setSelectedAnnouncementId] = useState<string | null>(null);
   const [isInitialLoading, setIsInitialLoading] = useState(window.location.pathname === '/');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [backendError, setBackendError] = useState('');
@@ -91,7 +92,12 @@ export default function App() {
       const page = new URLSearchParams(window.location.search).get('page') as PublicPage | null;
       if (page && ['home', 'about', 'programs', 'events', 'announcements', 'services', 'track', 'transparency', 'contact'].includes(page)) {
         setCurrentPage(page);
+      } else if (window.location.pathname === '/') {
+        setCurrentPage('home');
       }
+      const params = new URLSearchParams(window.location.search);
+      setSelectedProgramId(params.get('program'));
+      setSelectedAnnouncementId(params.get('announcement'));
     };
     window.addEventListener('popstate', updatePathname);
     updatePathname();
@@ -314,7 +320,6 @@ export default function App() {
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
   const [applyDefaultService, setApplyDefaultService] = useState<ServiceType>('');
 
-  const [selectedProgramModal, setSelectedProgramModal] = useState<Program | null>(null);
   const [selectedEventModal, setSelectedEventModal] = useState<EventItem | null>(null);
   const [selectedDocModal, setSelectedDocModal] = useState<TransparencyDoc | null>(null);
 
@@ -332,6 +337,52 @@ export default function App() {
   const handleSubmitApplication = async (newApp: YouthApplication) => {
     await createPortalRecord('applications', newApp);
     notify('success', 'Your application was submitted successfully.');
+  };
+
+  const openProgramPage = (program: Program) => {
+    const returnPage = currentPage;
+    setCurrentPage('programs');
+    setSelectedProgramId(program.id);
+    setSelectedAnnouncementId(null);
+    window.history.pushState(
+      { detailReturnPage: returnPage },
+      '',
+      `/?page=programs&program=${encodeURIComponent(program.id)}&from=${returnPage}`,
+    );
+    window.scrollTo({ top: 0 });
+  };
+
+  const openAnnouncementPage = (announcement: Announcement) => {
+    const returnPage = currentPage;
+    setCurrentPage('announcements');
+    setSelectedProgramId(null);
+    setSelectedAnnouncementId(announcement.id);
+    window.history.pushState(
+      { detailReturnPage: returnPage },
+      '',
+      `/?page=announcements&announcement=${encodeURIComponent(announcement.id)}&from=${returnPage}`,
+    );
+    window.scrollTo({ top: 0 });
+  };
+
+  const returnFromDetailPage = (page: 'programs' | 'announcements') => {
+    if (window.history.state?.detailReturnPage) {
+      window.history.back();
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const from = params.get('from');
+    const validReturnPages = page === 'programs' ? ['home', 'programs'] : ['home', 'announcements'];
+    const returnPage = from && validReturnPages.includes(from)
+      ? from as PublicPage
+      : page;
+    const returnPath = returnPage === 'home' ? '/' : `/?page=${returnPage}`;
+    window.history.replaceState({}, '', returnPath);
+    setCurrentPage(returnPage);
+    setSelectedProgramId(null);
+    setSelectedAnnouncementId(null);
+    window.scrollTo({ top: 0 });
   };
 
   const handleConfirmEventRegistration = async (
@@ -753,6 +804,8 @@ export default function App() {
             currentPage={currentPage}
             onNavigate={(page) => {
               setCurrentPage(page);
+              setSelectedProgramId(null);
+              setSelectedAnnouncementId(null);
               const nextPath = page === 'home' ? '/' : `/?page=${page}`;
               window.history.pushState({}, '', nextPath);
               setPathname('/');
@@ -776,10 +829,13 @@ export default function App() {
               <HomeView
                 onNavigate={(page) => {
                   setCurrentPage(page);
+                  setSelectedProgramId(null);
+                  setSelectedAnnouncementId(null);
                   window.scrollTo({ top: 0 });
                 }}
                 onOpenApplyModal={handleOpenApplyModal}
-                onSelectProgram={(prog) => setSelectedProgramModal(prog)}
+                onSelectProgram={openProgramPage}
+                onSelectAnnouncement={openAnnouncementPage}
                 onSelectEvent={(evt) => setSelectedEventModal(evt)}
                 programs={programs}
                 events={events}
@@ -802,7 +858,9 @@ export default function App() {
               <ProgramsView
                 programs={programs}
                 fiscalYears={programFiscalYears}
-                onSelectProgram={(prog) => setSelectedProgramModal(prog)}
+                onSelectProgram={openProgramPage}
+                selectedProgram={programs.find((program) => program.id === selectedProgramId) ?? null}
+                onBackFromProgram={() => returnFromDetailPage('programs')}
               />
               )}
 
@@ -814,7 +872,12 @@ export default function App() {
               )}
 
               {currentPage === 'announcements' && (
-              <AnnouncementsView announcements={announcements} />
+              <AnnouncementsView
+                announcements={announcements}
+                selectedAnnouncementId={selectedAnnouncementId}
+                onSelectAnnouncement={openAnnouncementPage}
+                onBackFromAnnouncement={() => returnFromDetailPage('announcements')}
+              />
               )}
 
               {currentPage === 'services' && (
@@ -845,12 +908,19 @@ export default function App() {
           <Footer
             onNavigate={(page) => {
               setCurrentPage(page);
+              setSelectedProgramId(null);
+              setSelectedAnnouncementId(null);
               window.scrollTo({ top: 0 });
             }}
           />
           {!currentUser && (
             <Suspense fallback={null}>
-              <ChatAssistant onNavigate={(page) => { setCurrentPage(page); window.scrollTo({ top: 0 }); }} />
+              <ChatAssistant onNavigate={(page) => {
+                setCurrentPage(page);
+                setSelectedProgramId(null);
+                setSelectedAnnouncementId(null);
+                window.scrollTo({ top: 0 });
+              }} />
             </Suspense>
           )}
         </>
@@ -869,12 +939,6 @@ export default function App() {
         event={selectedEventModal}
         onClose={() => setSelectedEventModal(null)}
         onConfirmRegistration={handleConfirmEventRegistration}
-      />
-
-      <ProgramDetailModal
-        isOpen={!!selectedProgramModal}
-        program={selectedProgramModal}
-        onClose={() => setSelectedProgramModal(null)}
       />
 
       <DocumentPreviewModal

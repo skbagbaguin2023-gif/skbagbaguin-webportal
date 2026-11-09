@@ -36,6 +36,7 @@ export interface Program {
   status: ProgramStatus;
   targetBeneficiaries: string;
   allocatedBudget: number;
+  spentBudget?: number;
   progressPercent: number;
   leadCouncilor: string;
   timeline: string;

@@ -35,6 +35,7 @@ interface HomeViewProps {
   onNavigate: (page: PublicPage) => void;
   onOpenApplyModal: (service?: ServiceType) => void;
   onSelectProgram: (prog: Program) => void;
+  onSelectAnnouncement: (announcement: Announcement) => void;
   onSelectEvent: (evt: EventItem) => void;
   programs: Program[];
   events: EventItem[];
@@ -48,6 +49,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onNavigate,
   onOpenApplyModal,
   onSelectProgram,
+  onSelectAnnouncement,
   onSelectEvent,
   programs,
   events,
@@ -136,7 +138,11 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </Reveal>
       </section>
 
-      <Announcements announcements={announcements} facebookPosts={facebookPosts} />
+      <Announcements
+        announcements={announcements}
+        facebookPosts={facebookPosts}
+        onViewAnnouncement={onSelectAnnouncement}
+      />
 
       {/* 2. QUICK ACCESS SERVICES GRID */}
       <Reveal as="section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -30,9 +30,9 @@ function FacebookGallery({ post }) {
   );
 }
 
-/** @param {{ announcements: import('../types/index.ts').Announcement[], facebookPosts?: import('../types/index.ts').FacebookPost[] }} props */
+/** @param {{ announcements: import('../types/index.ts').Announcement[], facebookPosts?: import('../types/index.ts').FacebookPost[], onViewAnnouncement?: (announcement: import('../types/index.ts').Announcement) => void }} props */
 export default function Announcements(props) {
-  const { announcements, facebookPosts = [] } = props;
+  const { announcements, facebookPosts = [], onViewAnnouncement } = props;
   const publishedAnnouncements = announcements;
   const [activeIndex, setActiveIndex] = useState(0);
   const [activeFacebookIndex, setActiveFacebookIndex] = useState(0);
@@ -174,6 +174,16 @@ export default function Announcements(props) {
                     <span>View Source Post</span>
                     <ExternalLink className="h-3.5 w-3.5" />
                   </a>
+                )}
+                {onViewAnnouncement && (
+                  <button
+                    type="button"
+                    onClick={() => onViewAnnouncement(activeAnnouncement)}
+                    className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-[#0F2C59] px-3.5 py-2 text-xs font-bold text-white transition-colors hover:bg-[#173B72] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+                  >
+                    Read Full Announcement
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </button>
                 )}
               </div>
             </div>

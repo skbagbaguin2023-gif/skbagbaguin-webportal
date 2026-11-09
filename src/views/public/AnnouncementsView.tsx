@@ -1,21 +1,25 @@
 import React, { useState } from 'react';
-import { createPortal } from 'react-dom';
 import { Announcement, AnnouncementCategory } from '../../types/index.ts';
-import { Bell, Search, Pin, Calendar, User, ArrowRight, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Bell, Calendar, Pin, Search, User } from 'lucide-react';
 import Reveal from '../../components/Reveal.jsx';
 import { PortalImage } from '../../components/PortalImage.tsx';
 import { getDefaultAnnouncementCoverImage } from '../../data/defaultAnnouncements.ts';
-import { useModalScrollLock } from '../../components/useModalScrollLock.ts';
 
 interface AnnouncementsViewProps {
   announcements: Announcement[];
+  selectedAnnouncementId: string | null;
+  onSelectAnnouncement: (announcement: Announcement) => void;
+  onBackFromAnnouncement: () => void;
 }
 
-export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ announcements }) => {
+export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({
+  announcements,
+  selectedAnnouncementId,
+  onSelectAnnouncement,
+  onBackFromAnnouncement,
+}) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<'All' | AnnouncementCategory>('All');
-  const [activeModalAnnouncement, setActiveModalAnnouncement] = useState<Announcement | null>(null);
-  useModalScrollLock(!!activeModalAnnouncement);
 
   const categories: ('All' | AnnouncementCategory)[] = [
     'All',
@@ -36,6 +40,71 @@ export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ announceme
 
   const featured = filtered.find((a) => a.isPinned) || filtered[0];
   const listAnnouncements = filtered.filter((a) => a.id !== featured?.id);
+  const selectedAnnouncement = announcements.find((announcement) => announcement.id === selectedAnnouncementId);
+
+  if (selectedAnnouncementId) {
+    return (
+      <div className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+        <button
+          type="button"
+          onClick={onBackFromAnnouncement}
+          className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-[#0F2C59] transition-colors hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 dark:text-amber-300 dark:hover:bg-slate-800"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to announcements
+        </button>
+
+        {selectedAnnouncement ? (
+          <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            {(selectedAnnouncement.coverImage || getDefaultAnnouncementCoverImage(selectedAnnouncement.id)) && (
+              <div className="relative max-h-[34rem] overflow-hidden bg-slate-100 dark:bg-slate-800">
+                <PortalImage
+                  src={selectedAnnouncement.coverImage}
+                  fallbackSrc={getDefaultAnnouncementCoverImage(selectedAnnouncement.id)}
+                  alt=""
+                  className="max-h-[34rem] w-full object-contain"
+                />
+              </div>
+            )}
+            <div className="p-5 sm:p-8">
+              <div className="flex flex-wrap items-center gap-2">
+                {selectedAnnouncement.isPinned && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+                    <Pin className="h-3.5 w-3.5 fill-current" />
+                    Pinned advisory
+                  </span>
+                )}
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                  {selectedAnnouncement.category}
+                </span>
+              </div>
+              <h1 className="mt-4 text-2xl font-extrabold leading-tight text-slate-900 dark:text-white sm:text-3xl">
+                {selectedAnnouncement.title}
+              </h1>
+              <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-slate-200 pb-4 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
+                <span className="flex items-center gap-1.5">
+                  <Calendar className="h-4 w-4" />
+                  {selectedAnnouncement.date}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <User className="h-4 w-4" />
+                  {selectedAnnouncement.author}
+                </span>
+              </div>
+              <div className="mt-6 whitespace-pre-line text-sm leading-7 text-slate-700 dark:text-slate-200 sm:text-base">
+                {selectedAnnouncement.content}
+              </div>
+            </div>
+          </article>
+        ) : (
+          <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center dark:border-slate-800 dark:bg-slate-900">
+            <h1 className="text-lg font-bold text-slate-900 dark:text-white">Announcement not found</h1>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">It may have been removed or is no longer available.</p>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
@@ -141,7 +210,7 @@ export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ announceme
 
                 <button
                   type="button"
-                  onClick={() => setActiveModalAnnouncement(featured)}
+                  onClick={() => onSelectAnnouncement(featured)}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-[#0F2C59] px-3.5 py-2 font-bold text-white transition-colors hover:bg-[#173B72] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 cursor-pointer"
                 >
                   <span>Read Full Advisory</span>
@@ -177,7 +246,7 @@ export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ announceme
             <div className="pt-4 mt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
               <span className="text-[11px] text-slate-400 dark:text-slate-500 truncate max-w-[200px]">{ann.author}</span>
               <button
-                onClick={() => setActiveModalAnnouncement(ann)}
+                onClick={() => onSelectAnnouncement(ann)}
                 className="text-xs font-bold text-[#0F2C59] dark:text-amber-400 hover:text-amber-600 dark:hover:text-amber-300 transition-colors cursor-pointer"
               >
                 Read More →
@@ -186,66 +255,6 @@ export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ announceme
           </Reveal>
         ))}
       </div>
-
-      {/* Full Announcement Modal */}
-      {activeModalAnnouncement && createPortal(
-        <div
-          role="presentation"
-          className="fixed inset-0 z-[100] flex h-[100dvh] w-screen items-center justify-center overflow-hidden overscroll-none bg-slate-900/70 p-4 backdrop-blur-xs"
-          onClick={(event) => {
-            if (event.target === event.currentTarget) setActiveModalAnnouncement(null);
-          }}
-        >
-          <div className="flex max-h-[calc(100dvh-2rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl animate-in fade-in zoom-in-95 dark:border-slate-800 dark:bg-slate-900" role="dialog" aria-modal="true" aria-labelledby="announcement-modal-title">
-            <div className="bg-[#0F2C59] text-white px-6 py-4 flex items-center justify-between">
-              <div>
-                <span className="text-[11px] font-semibold text-amber-400 uppercase tracking-wider">
-                  {activeModalAnnouncement.category}
-                </span>
-                <h2 id="announcement-modal-title" className="text-base font-bold truncate max-w-md sm:max-w-lg">
-                  {activeModalAnnouncement.title}
-                </h2>
-              </div>
-              <button
-                onClick={() => setActiveModalAnnouncement(null)}
-                className="text-slate-300 hover:text-white p-1 rounded-lg hover:bg-white/10"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-6 space-y-4">
-              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800 pb-3">
-                <span className="font-medium text-slate-700 dark:text-slate-300">{activeModalAnnouncement.author}</span>
-                <span className="font-mono">{activeModalAnnouncement.date}</span>
-              </div>
-
-              {(activeModalAnnouncement.coverImage || getDefaultAnnouncementCoverImage(activeModalAnnouncement.id)) && (
-                <PortalImage
-                  src={activeModalAnnouncement.coverImage}
-                  fallbackSrc={getDefaultAnnouncementCoverImage(activeModalAnnouncement.id)}
-                  alt=""
-                  className="min-h-48 max-h-[28rem] w-full rounded-xl object-contain"
-                />
-              )}
-
-              <div className="text-xs sm:text-sm text-slate-700 dark:text-slate-200 leading-relaxed whitespace-pre-line space-y-3 font-sans">
-                {activeModalAnnouncement.content}
-              </div>
-
-              <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end">
-                <button
-                  onClick={() => setActiveModalAnnouncement(null)}
-                  className="bg-[#0F2C59] hover:bg-navy-800 text-white text-xs font-semibold px-5 py-2 rounded-lg cursor-pointer"
-                >
-                  Close Advisory
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
 
     </div>
   );
