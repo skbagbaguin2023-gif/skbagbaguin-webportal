@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle2, X } from 'lucide-react';
+import { CheckCircle2, ClipboardList, X } from 'lucide-react';
 import type { KkProfilingData, YouthApplication, YouthService } from '../../types/index.ts';
 import { generateApplicationRef } from '../../utils/portalLogic.ts';
 import { generateUuid } from '../../utils/uuid.ts';
@@ -66,7 +66,7 @@ const EMPTY_PROFILE: KkProfilingData = {
   educationalBackground: '',
 };
 
-const fieldClass = 'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0F2C59] dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:ring-amber-400';
+const fieldClass = 'w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-xs transition placeholder:text-slate-400 focus:border-[#0F2C59] focus:outline-none focus:ring-4 focus:ring-[#0F2C59]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:border-amber-400 dark:focus:ring-amber-400/10';
 
 function FormField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -222,13 +222,18 @@ export function KkProfilingForm({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-slate-900/70 p-4 backdrop-blur-xs" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <section className="my-8 max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
-        <header className="flex items-center justify-between bg-[#0F2C59] px-6 py-4 text-white">
-          <div>
+      <section className="my-8 flex max-h-[90dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+        <header className="flex shrink-0 items-center justify-between gap-4 bg-gradient-to-r from-[#081830] via-[#0F2C59] to-[#173B72] px-5 py-4 text-white sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-amber-300/30 bg-white/10 text-amber-300">
+              <ClipboardList className="h-5 w-5" />
+            </span>
+            <div className="min-w-0">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-amber-400">Barangay Bagbaguin Youth Assistance Portal</p>
-            <h2 className="text-lg font-bold">Katipunan ng Kabataan Profiling</h2>
+            <h2 className="truncate text-lg font-bold">Katipunan ng Kabataan Profiling</h2>
+            </div>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close form" className="rounded-lg p-1 text-slate-300 hover:bg-white/10 hover:text-white">
+          <button type="button" onClick={onClose} aria-label="Close form" className="shrink-0 rounded-xl border border-white/10 p-2 text-slate-300 transition-colors hover:bg-white/10 hover:text-white">
             <X className="h-5 w-5" />
           </button>
         </header>
@@ -247,7 +252,23 @@ export function KkProfilingForm({
             <button type="button" onClick={onClose} className="rounded-lg bg-[#0F2C59] px-5 py-2 text-sm font-semibold text-white">Close</button>
           </div>
         ) : (
-          <form onSubmit={submit} className="max-h-[calc(90vh-76px)] space-y-5 overflow-y-auto p-6">
+          <form onSubmit={submit} className="kk-profile-form min-h-0 flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
+            <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-white p-4 dark:border-amber-900/60 dark:from-amber-950/30 dark:to-slate-900">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0F2C59] text-amber-300 shadow-sm">
+                <ClipboardList className="h-5 w-5" />
+              </span>
+              <div>
+                <h3 className="text-sm font-bold text-[#0F2C59] dark:text-white">Get started with your youth profile</h3>
+                <p className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+                  Share your information to help the SK understand and serve the youth of Bagbaguin. Fields marked with * are required.
+                </p>
+              </div>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 shadow-xs dark:border-slate-700 dark:bg-slate-800/40 sm:p-5">
+              <div className="mb-4">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">Service and personal details</h3>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Tell us how to identify and contact you.</p>
+              </div>
             <div>
               <label htmlFor="kk-service-type" className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                 Youth Assistance Program / Service
@@ -285,7 +306,13 @@ export function KkProfilingForm({
               <FormField label="Complete Address"><input required value={profile.completeAddress} onChange={(event) => update('completeAddress', event.target.value)} className={fieldClass} /></FormField>
               <FormField label="Precinct Number (if applicable)"><input value={profile.precinctNumber} onChange={(event) => update('precinctNumber', event.target.value)} className={fieldClass} /></FormField>
             </div>
+            </div>
 
+            <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 shadow-xs dark:border-slate-700 dark:bg-slate-800/40 sm:p-5">
+            <div className="mb-1">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">About you and your community</h3>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Select the options that best describe your background and participation.</p>
+            </div>
             <RadioGroup label="Sex / Gender Identity" value={profile.genderIdentity} options={['MALE', 'FEMALE', 'GAY', 'LESBIAN', 'BISEXUAL', 'Prefer not to say']} onChange={(value) => update('genderIdentity', value)} />
             <RadioGroup label="Civil Status" value={profile.civilStatus} options={CIVIL_STATUSES} onChange={(value) => update('civilStatus', value)} />
             <RadioGroup label="Registered Voter in Barangay Bagbaguin or Resident Only?" value={profile.voterStatus} options={['Voter', 'Resident Only', 'Voter & Resident']} onChange={(value) => update('voterStatus', value)} />
@@ -327,11 +354,13 @@ export function KkProfilingForm({
 
             <RadioGroup label="Work Status" value={profile.workStatus} options={WORK_STATUSES} onChange={(value) => update('workStatus', value)} />
             <RadioGroup label="Educational Background" value={profile.educationalBackground} options={EDUCATIONAL_BACKGROUNDS} onChange={(value) => update('educationalBackground', value)} />
+            </div>
 
             {error && <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700 dark:bg-rose-950/40 dark:text-rose-300">{error}</p>}
-            <div className="flex justify-end">
-              <button type="submit" disabled={isSaving} className="rounded-lg bg-[#0F2C59] px-5 py-2 text-sm font-semibold text-white disabled:opacity-60">
+            <div className="flex justify-end border-t border-slate-200 pt-4 dark:border-slate-700">
+              <button type="submit" disabled={isSaving} className="flex items-center gap-2 rounded-xl bg-[#0F2C59] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#173B72] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 disabled:opacity-60">
                 {isSaving ? 'Saving and syncing...' : 'Submit KK Profile'}
+                {!isSaving && <CheckCircle2 className="h-4 w-4 text-amber-300" />}
               </button>
             </div>
           </form>

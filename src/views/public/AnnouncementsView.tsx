@@ -89,47 +89,66 @@ export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ announceme
 
       {/* Featured Main Announcement */}
       {featured && (
-        <Reveal className="bg-white dark:bg-slate-900 rounded-2xl border-2 border-amber-400/60 dark:border-amber-500/50 p-6 sm:p-8 shadow-md relative overflow-hidden">
-          {(featured.coverImage || getDefaultAnnouncementCoverImage(featured.id)) && (
-            <PortalImage
-              src={featured.coverImage}
-              fallbackSrc={getDefaultAnnouncementCoverImage(featured.id)}
-              alt=""
-              className="mb-5 min-h-48 max-h-[28rem] w-full rounded-xl object-cover"
-            />
-          )}
-          <div className="flex items-center gap-2 text-xs font-bold text-amber-700 dark:text-amber-400 mb-2">
-            <Pin className="w-4 h-4 fill-amber-500 text-amber-600 dark:text-amber-400" />
-            <span>PINNED OFFICIAL ADVISORY · {featured.category}</span>
-          </div>
+        <Reveal className="relative overflow-hidden rounded-2xl border border-amber-300 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-amber-500/40 dark:bg-slate-900">
+          <div className={`grid ${featured.coverImage || getDefaultAnnouncementCoverImage(featured.id) ? 'md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]' : 'grid-cols-1'}`}>
+            {(featured.coverImage || getDefaultAnnouncementCoverImage(featured.id)) && (
+              <div className="relative h-44 overflow-hidden bg-slate-100 sm:h-52 md:h-full md:min-h-64 dark:bg-slate-800">
+                <PortalImage
+                  src={featured.coverImage}
+                  fallbackSrc={getDefaultAnnouncementCoverImage(featured.id)}
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
+                <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-[#0F2C59]/90 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-amber-300 shadow-sm backdrop-blur-sm">
+                  <Pin className="h-3 w-3 fill-current" />
+                  Pinned advisory
+                </span>
+              </div>
+            )}
 
-          <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white leading-snug">
-            {featured.title}
-          </h2>
+            <div className="flex min-w-0 flex-col justify-center p-4 sm:p-5">
+              <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold">
+                {!featured.coverImage && !getDefaultAnnouncementCoverImage(featured.id) && (
+                  <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-400">
+                    <Pin className="h-3.5 w-3.5 fill-current" />
+                    Pinned advisory
+                  </span>
+                )}
+                <span className="rounded-full bg-amber-50 px-2.5 py-1 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+                  {featured.category}
+                </span>
+              </div>
 
-          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-3 leading-relaxed max-w-4xl line-clamp-3">
-            {featured.excerpt}
-          </p>
+              <h2 className="mt-3 text-lg font-extrabold leading-snug text-slate-900 dark:text-white sm:text-xl">
+                {featured.title}
+              </h2>
 
-          <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
-            <div className="flex items-center gap-4">
-              <span className="flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-                <span className="font-mono text-slate-700 dark:text-slate-300">{featured.date}</span>
-              </span>
-              <span className="flex items-center gap-1.5">
-                <User className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-                <span className="text-slate-700 dark:text-slate-300">{featured.author}</span>
-              </span>
+              <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-slate-600 dark:text-slate-300 sm:text-sm">
+                {featured.excerpt}
+              </p>
+
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3 text-[11px] text-slate-500 dark:border-slate-800 dark:text-slate-400">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                  <span className="flex items-center gap-1.5">
+                    <Calendar className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
+                    <span className="font-mono text-slate-700 dark:text-slate-300">{featured.date}</span>
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <User className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
+                    <span className="text-slate-700 dark:text-slate-300">{featured.author}</span>
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveModalAnnouncement(featured)}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#0F2C59] px-3.5 py-2 font-bold text-white transition-colors hover:bg-[#173B72] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 cursor-pointer"
+                >
+                  <span>Read Full Advisory</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
             </div>
-
-            <button
-              onClick={() => setActiveModalAnnouncement(featured)}
-              className="bg-[#0F2C59] hover:bg-navy-800 text-white font-bold text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <span>Read Full Advisory</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
           </div>
         </Reveal>
       )}

@@ -22,7 +22,7 @@ const slides = [
   { src: homeImg9, alt: 'SK Bagbaguin Youth Assembly' },
 ];
 
-export default function HeroCarousel() {
+export default function HeroCarousel({ variant = 'hero' } = {}) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const [isTabVisible, setIsTabVisible] = useState(
@@ -32,6 +32,7 @@ export default function HeroCarousel() {
     () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   );
   const hasMultipleSlides = slides.length > 1;
+  const isMarquee = variant === 'marquee';
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -49,20 +50,59 @@ export default function HeroCarousel() {
   }, []);
 
   useEffect(() => {
-    if (!hasMultipleSlides || isHovered || !isTabVisible || prefersReducedMotion) return undefined;
+    if (isMarquee || !hasMultipleSlides || isHovered || !isTabVisible || prefersReducedMotion) return undefined;
 
     const timer = window.setInterval(() => {
       setActiveIndex((index) => (index + 1) % slides.length);
     }, 5000);
     return () => window.clearInterval(timer);
-  }, [hasMultipleSlides, isHovered, isTabVisible, prefersReducedMotion]);
+  }, [hasMultipleSlides, isHovered, isMarquee, isTabVisible, prefersReducedMotion]);
 
   useEffect(() => {
-    if (!hasMultipleSlides) return;
+    if (isMarquee || !hasMultipleSlides) return;
     const nextSlide = slides[(activeIndex + 1) % slides.length];
     const image = new Image();
     image.src = nextSlide.src;
-  }, [activeIndex, hasMultipleSlides]);
+  }, [activeIndex, hasMultipleSlides, isMarquee]);
+
+  if (isMarquee) {
+    const renderTrack = (direction) => (
+      <div
+        className={`animate-home-image-marquee flex h-32 w-max shrink-0 ${direction === 'right' ? 'animate-home-image-marquee-right' : ''} sm:h-40`}
+      >
+        {[0, 1].map((copy) => (
+          <div
+            key={copy}
+            className="flex h-full shrink-0 gap-3 pr-3 sm:gap-4 sm:pr-4"
+            aria-hidden={copy === 1}
+          >
+            {slides.map((slide) => (
+              <img
+                key={`${copy}-${slide.src}`}
+                src={slide.src}
+                alt={copy === 0 ? slide.alt : ''}
+                className="h-full w-52 shrink-0 rounded-xl object-cover shadow-sm sm:w-72"
+                loading="lazy"
+                referrerPolicy="no-referrer"
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+    );
+
+    return (
+      <div
+        className="flex h-full flex-col justify-center gap-3 overflow-hidden bg-white py-4 sm:gap-4 sm:py-6"
+        role="region"
+        aria-roledescription="carousel"
+        aria-label="SK Bagbaguin community photos"
+      >
+        {renderTrack('left')}
+        {renderTrack('right')}
+      </div>
+    );
+  }
 
   return (
     <div
@@ -76,9 +116,9 @@ export default function HeroCarousel() {
           src={slide.src}
           alt={slide.alt}
           aria-hidden={index !== activeIndex}
-          className="absolute inset-0 w-full h-full object-cover opacity-20 saturate-120"
+          className="absolute inset-0 h-full w-full object-cover opacity-40 saturate-120"
           style={{
-            opacity: index === activeIndex ? 0.2 : 0,
+            opacity: index === activeIndex ? 0.4 : 0,
             transitionProperty: 'opacity',
             transitionDuration: prefersReducedMotion ? '0ms' : '1000ms',
           }}

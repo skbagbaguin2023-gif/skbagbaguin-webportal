@@ -8,7 +8,8 @@ import {
   ShieldCheck, 
   CheckCircle2, 
   Clock, 
-  AlertTriangle
+  AlertTriangle,
+  ExternalLink
 } from 'lucide-react';
 import Reveal from '../../components/Reveal.jsx';
 import LocationMap from '../../components/LocationMap.jsx';
@@ -133,7 +134,19 @@ export const ContactView: React.FC<ContactViewProps> = ({ onSubmitFeedback }) =>
           <div className="text-xs text-slate-600 dark:text-slate-300 space-y-1">
             <ul className="text-xs text-slate-600 dark:text-slate-300 space-y-1.5">
             <li>Official email address: <strong className="text-slate-700 dark:text-slate-200">skbagbaguin.2023@gmail.com</strong></li>
-            <li>SK Facebook Page: <strong className="text-slate-700 dark:text-slate-200">SK Bagbaguin Valenzuela</strong></li>
+            <li>
+              SK Facebook Page:{' '}
+              <a
+                href="https://web.facebook.com/sk.bagbaguin.valenzuela"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 font-semibold text-[#1877F2] transition-colors hover:text-[#166FE5] hover:underline focus-visible:rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1877F2]"
+              >
+                SK Bagbaguin Valenzuela
+                <ExternalLink aria-hidden="true" className="h-3 w-3" />
+                <span className="sr-only">(opens in a new tab)</span>
+              </a>
+            </li>
             </ul>
           </div>
         </Reveal>

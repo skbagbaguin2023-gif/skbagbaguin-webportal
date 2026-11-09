@@ -12,7 +12,8 @@ import {
   Copy,
   Check,
   Download,
-  Printer
+  Printer,
+  Sparkles
 } from 'lucide-react';
 import { uploadApplicationDocument, uploadPrintingRequestPdf } from '../../services/supabaseData.ts';
 import { ConfirmationModal } from './ConfirmationModal.tsx';
@@ -445,19 +446,26 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
         if (event.target === event.currentTarget && !isSubmitting) handleClose();
       }}
     >
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[calc(100vh-2rem)] border border-slate-200 dark:border-slate-800 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+      <div className="flex max-h-[calc(100dvh-2rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200 dark:border-slate-800 dark:bg-slate-900">
         
         {/* Header */}
-        <div className="bg-[#0F2C59] text-white px-6 py-4 flex items-center justify-between">
-          <div>
+        <div className="flex shrink-0 items-center justify-between gap-4 bg-gradient-to-r from-[#081830] via-[#0F2C59] to-[#173B72] px-5 py-4 text-white sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-amber-300/30 bg-white/10 text-amber-300 shadow-inner">
+              {isPrintingService ? <Printer className="h-5 w-5" /> : <Sparkles className="h-5 w-5" />}
+            </span>
+            <div className="min-w-0">
             <div className="text-[11px] font-semibold text-amber-400 uppercase tracking-wider">
               Barangay Bagbaguin Youth Assistance Portal
             </div>
-            <h2 className="text-lg font-bold">{isPrintingService ? 'Printing Services Request' : 'Online Youth Application Wizard'}</h2>
+            <h2 className="truncate text-lg font-bold">{isPrintingService ? 'Printing Services Request' : 'Online Youth Application Wizard'}</h2>
+            </div>
           </div>
           <button
+            type="button"
+            aria-label="Close application form"
             onClick={handleClose}
-            className="text-slate-300 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+            className="shrink-0 rounded-xl border border-white/10 p-2 text-slate-300 transition-colors hover:bg-white/10 hover:text-white cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -465,8 +473,8 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
 
         {/* Step Indicator */}
         {step < 4 && !isPrintingService && (
-          <div className="bg-slate-50 dark:bg-slate-800/60 px-6 py-3 border-b border-slate-200 dark:border-slate-800">
-            <div className="flex items-center justify-between text-xs font-medium">
+          <div className="shrink-0 border-b border-slate-200 bg-slate-50 px-5 py-3 dark:border-slate-800 dark:bg-slate-800/60 sm:px-6">
+            <div className="flex items-center justify-between gap-1 text-[10px] font-medium sm:text-xs">
               <span className={`flex items-center gap-1.5 ${step >= 1 ? 'text-[#0F2C59] dark:text-amber-400 font-bold' : 'text-slate-400 dark:text-slate-500'}`}>
                 <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${step >= 1 ? 'bg-[#0F2C59] dark:bg-amber-400 text-white dark:text-slate-950 font-bold' : 'bg-slate-200 dark:bg-slate-700'}`}>1</span>
                 Applicant Info
@@ -486,9 +494,20 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
         )}
 
         {/* Modal Body */}
-        <div className="p-6">
+        <div className="application-modal-fields min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
           {step === 1 && isPrintingService && (
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-white p-4 dark:border-amber-900/60 dark:from-amber-950/30 dark:to-slate-900">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0F2C59] text-amber-300 shadow-sm">
+                  <Printer className="h-5 w-5" />
+                </span>
+                <div>
+                  <h3 className="text-sm font-bold text-[#0F2C59] dark:text-white">Tell us about your printing request</h3>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+                    Complete the request details and upload your PDF so our team can prepare your materials.
+                  </p>
+                </div>
+              </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
                   Youth Assistance Program / Service
@@ -715,6 +734,17 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
 
           {step === 1 && !isPrintingService && (
             <div className="space-y-4">
+              <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-white p-4 dark:border-amber-900/60 dark:from-amber-950/30 dark:to-slate-900">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0F2C59] text-amber-300 shadow-sm">
+                  <Sparkles className="h-5 w-5" />
+                </span>
+                <div>
+                  <h3 className="text-sm font-bold text-[#0F2C59] dark:text-white">Start your youth service application</h3>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+                    Add your basic information first. You can review your details at each step before submitting.
+                  </p>
+                </div>
+              </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
                   Youth Assistance Program / Service

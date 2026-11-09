@@ -59,16 +59,26 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const featuredPrograms = programs.slice(0, 3);
   const upcomingEvents = events.slice(0, 3);
   const councilPreview = council.slice(0, 4);
+  const availableServices = services.filter((service) => service.isActive);
+  const serviceCardTheme = {
+    card: 'border-[#0F2C59] bg-gradient-to-br from-[#173B72] to-[#081830] text-white',
+    badge: 'border-amber-300/40 bg-amber-400/15 text-amber-300',
+    number: 'text-amber-300/75',
+    kicker: 'text-amber-300',
+    title: 'text-white',
+    description: 'text-slate-200',
+    button: 'bg-[#F5A623] text-[#081830] hover:bg-[#FFC04D] focus-visible:outline-[#F5A623]',
+  };
 
   return (
     <div className="space-y-16 pb-16">
       
       {/* 1. HERO SECTION */}
-      <section className="relative bg-[#0F2C59] text-white overflow-hidden py-14 sm:py-20 lg:py-24 border-b border-navy-800">
+      <section className="relative flex min-h-[calc(100svh-4.5rem)] items-center overflow-hidden border-b border-navy-800 bg-[#0F2C59] py-12 text-white sm:py-16 md:min-h-[calc(100svh-6.25rem)] lg:py-20">
         {/* Background Image Scrim */}
         <div className="absolute inset-0 z-0">
           <HeroCarousel />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#081830] via-[#0F2C59]/90 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#081830]/75 via-[#0F2C59]/55 to-[#0F2C59]/15" />
         </div>
 
         <Reveal className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -139,29 +149,51 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </p>
         </div>
 
-        {services.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-            {services.map((service) => {
+        {availableServices.length > 0 ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 sm:gap-5">
+            {availableServices.map((service, index) => {
               const Icon = service.name.toLowerCase().includes('print') ? Printer
                 : service.name.toLowerCase().includes('profil') ? UserCheck : FileText;
+              const theme = serviceCardTheme;
+              const serviceDescription = service.description || service.tagline || 'Explore this service and submit your request online.';
+
               return (
-                <button
+                <article
                   key={service.id}
-                  onClick={() => onOpenApplyModal(service.name)}
-                  className="group p-4 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-800 hover:border-amber-400 rounded-xl shadow-xs hover:shadow-md transition-all text-left flex flex-col justify-between cursor-pointer"
+                  className={`group relative flex min-h-64 flex-col overflow-hidden rounded-2xl border p-5 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-lg sm:min-h-72 sm:p-6 ${theme.card}`}
                 >
-                  <div className="w-10 h-10 rounded-lg bg-amber-50 dark:bg-amber-950/50 group-hover:bg-amber-100 dark:group-hover:bg-amber-900/60 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-3 transition-colors">
-                    <Icon className="w-5 h-5" />
+                  <Icon
+                    aria-hidden="true"
+                    className="pointer-events-none absolute -right-3 top-5 h-28 w-28 rotate-[-12deg] opacity-[0.12] transition-transform duration-300 group-hover:rotate-0 group-hover:scale-105 sm:h-36 sm:w-36"
+                  />
+                  <div className="relative flex items-start justify-between">
+                    <span className={`flex h-11 w-11 items-center justify-center rounded-xl border ${theme.badge}`}>
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <span className={`pt-1 text-[11px] font-bold tracking-[0.18em] ${theme.number}`}>
+                      {String(index + 1).padStart(2, '0')}
+                    </span>
                   </div>
-                  <div>
-                    <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white group-hover:text-[#0F2C59] dark:group-hover:text-amber-300 transition-colors leading-tight">
+                  <div className="relative mt-5 flex-1">
+                    <p className={`line-clamp-1 text-[11px] font-semibold ${theme.kicker}`}>
+                      {service.tagline || 'Available Youth Service'}
+                    </p>
+                    <h3 className={`mt-2 text-xl font-extrabold leading-tight sm:text-2xl ${theme.title}`}>
                       {service.name}
                     </h3>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                      {service.tagline || service.description || 'View service details'}
+                    <p className={`mt-2 line-clamp-2 text-sm leading-relaxed ${theme.description}`}>
+                      {serviceDescription}
                     </p>
                   </div>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => onOpenApplyModal(service.name)}
+                    className={`relative mt-5 flex w-full items-center justify-between gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold shadow-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${theme.button}`}
+                  >
+                    <span className="truncate">Apply for {service.name}</span>
+                    <ArrowRight className="h-4 w-4 shrink-0" />
+                  </button>
+                </article>
               );
             })}
           </div>
@@ -434,30 +466,23 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
       <LocationMap />
 
-      {/* 8. TRANSPARENCY & ACCOUNTABILITY BANNER */}
-      <Reveal as="section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-gradient-to-r from-[#0F2C59] to-[#173B72] rounded-2xl p-6 sm:p-10 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 border border-white/10">
-          <div className="space-y-3 max-w-xl text-center md:text-left">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-400/20 text-amber-300 text-xs font-semibold">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Full Public Disclosure Policy</span>
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-white">
-              Open Governance & Public Financial Reports
+      {/* 8. COMMUNITY PHOTO CAROUSEL */}
+      <Reveal as="section" className="w-full">
+        <div className="w-screen bg-white">
+          <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 sm:pt-8 lg:px-8">
+            <p className="text-xs font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">
+              Community Moments
+            </p>
+            <h2 className="mt-1 text-2xl font-bold text-slate-900 dark:text-white sm:text-3xl">
+              SK BAGBAGUIN IN ACTION
             </h2>
-            <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
-              Access the official Comprehensive Barangay Youth Development Plan (CBYDP), Annual Investment Programs (AIP), Commission on Audit liquidation papers, and approved resolutions.
+            <span className="mt-2 block h-1 w-9 rounded-full bg-amber-400" />
+            <p className="mt-3 text-xs text-slate-600 dark:text-slate-400 sm:text-sm">
+              Moments from our programs, projects, and communities.
             </p>
           </div>
-
-          <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0">
-            <button
-              onClick={() => onNavigate('transparency')}
-              className="bg-[#F5A623] hover:bg-[#D98E16] text-[#081830] font-bold text-xs sm:text-sm px-6 py-3 rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap"
-            >
-              <span>View Public Financial Reports</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
+          <div className="relative isolate h-[19rem] overflow-hidden sm:h-[25rem]">
+            <HeroCarousel variant="marquee" />
           </div>
         </div>
       </Reveal>

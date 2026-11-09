@@ -319,6 +319,24 @@ textarea {
   }
 }
 
+@keyframes home-image-marquee {
+  from {
+    transform: translateX(-50%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-home-image-marquee {
+  animation: home-image-marquee 54s linear infinite;
+}
+
+.animate-home-image-marquee-right {
+  animation-direction: reverse;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -342,6 +360,11 @@ textarea {
     animation: none;
   }
 
+  .animate-home-image-marquee {
+    animation: none;
+    transform: translateX(0);
+  }
+
   .initial-loading-screen::before,
   .initial-loading-screen::after,
   .initial-loading-screen__content,
@@ -350,6 +373,57 @@ textarea {
   .initial-loading-screen__progress span {
     animation: none;
   }
+}
+
+.application-modal-fields input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.application-modal-fields select,
+.application-modal-fields textarea,
+.kk-profile-form input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.kk-profile-form select,
+.kk-profile-form textarea {
+  min-height: 2.75rem;
+  border-radius: 0.75rem;
+  border-color: #cbd5e1;
+  padding: 0.65rem 0.85rem;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.05);
+  transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+.application-modal-fields textarea,
+.kk-profile-form textarea {
+  min-height: 6rem;
+}
+
+.application-modal-fields input:focus,
+.application-modal-fields select:focus,
+.application-modal-fields textarea:focus,
+.kk-profile-form input:focus,
+.kk-profile-form select:focus,
+.kk-profile-form textarea:focus {
+  border-color: #0f2c59;
+  box-shadow: 0 0 0 4px rgb(15 44 89 / 0.1);
+  outline: none;
+}
+
+.dark .application-modal-fields input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.dark .application-modal-fields select,
+.dark .application-modal-fields textarea,
+.dark .kk-profile-form input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.dark .kk-profile-form select,
+.dark .kk-profile-form textarea {
+  border-color: #475569;
+  background-color: #1e293b;
+  color: #f8fafc;
+}
+
+.dark .application-modal-fields input:focus,
+.dark .application-modal-fields select:focus,
+.dark .application-modal-fields textarea:focus,
+.dark .kk-profile-form input:focus,
+.dark .kk-profile-form select:focus,
+.dark .kk-profile-form textarea:focus {
+  border-color: #fbbf24;
+  box-shadow: 0 0 0 4px rgb(251 191 36 / 0.1);
 }
 
 /* Glass & elevated styling helpers */
