@@ -4,6 +4,12 @@ verify_jwt = true
 [functions.sync-kk-profile]
 verify_jwt = false
 
+[functions.submit-kk-profile]
+verify_jwt = false
+
+[functions.check-kk-registration]
+verify_jwt = false
+
 [functions.ai-chat]
 # Public endpoint: strict validation, rate limits, and daily cap are enforced in code.
 verify_jwt = false
