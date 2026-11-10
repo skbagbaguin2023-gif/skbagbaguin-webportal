@@ -7,7 +7,3 @@ coverage/
 .env*
 !.env.example
 .aistudio/**/.tempmediaStorage/
-KK_Profiling_Responses*.xlsx
-KK_Profiling_Responses*.csv
-kk-profiling-export*.xlsx
-kk-profiling-export*.csv

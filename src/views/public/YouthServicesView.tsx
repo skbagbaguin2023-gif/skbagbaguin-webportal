@@ -6,13 +6,11 @@ import Reveal from '../../components/Reveal.jsx';
 interface YouthServicesViewProps {
   services: YouthService[];
   onOpenApplyModal: (service?: string) => void;
-  onCheckKkRegistration: () => void;
 }
 
 export const YouthServicesView: React.FC<YouthServicesViewProps> = ({
   services,
   onOpenApplyModal,
-  onCheckKkRegistration,
 }) => {
   const activeServices = services.filter((service) => service.isActive);
   const serviceCardTheme = {
@@ -158,15 +156,6 @@ export const YouthServicesView: React.FC<YouthServicesViewProps> = ({
                   <span>Apply / Request</span>
                   <ArrowRight className="h-4 w-4 shrink-0" />
                 </button>
-                {service.name.toLowerCase().includes('profil') && (
-                  <button
-                    type="button"
-                    onClick={onCheckKkRegistration}
-                    className="relative mt-2 w-full rounded-xl border border-white/30 px-4 py-2.5 text-center text-xs font-semibold text-white transition-colors hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
-                  >
-                    Check my registration / Suriin ang aking rehistro
-                  </button>
-                )}
               </Reveal>
             );
           })}

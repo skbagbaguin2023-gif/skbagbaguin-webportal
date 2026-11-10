@@ -10,8 +10,7 @@ export type PublicPage =
   | 'services'
   | 'track'
   | 'transparency' 
-  | 'contact'
-  | 'kk-status';
+  | 'contact';
 
 export type AdminSection = 
   | 'dashboard' 
@@ -24,7 +23,6 @@ export type AdminSection =
   | 'feedback'
   | 'council'
   | 'services'
-  | 'kkResponses'
   | 'maintenance';
 
 export type ProgramCategory = 'All' | 'Education' | 'Sports' | 'Livelihood' | 'Environment' | 'Health' | 'Leadership';
@@ -214,66 +212,6 @@ export interface KkProfilingData {
   educationalBackground: string;
 }
 
-export type KkResponseStatus = 'pending' | 'verified' | 'needs_review' | 'rejected';
-export type KkResponseSource = 'google_form_legacy' | 'portal';
-
-export interface KkResponse {
-  id: string;
-  source: KkResponseSource;
-  source_record_id: string | null;
-  portal_application_id: string | null;
-  google_form_response_id: string | null;
-  import_batch_id: string | null;
-  ref_number: string;
-  original_timestamp: string | null;
-  original_timestamp_raw: string | null;
-  status: KkResponseStatus;
-  needs_review: boolean;
-  review_notes: string;
-  reviewed_by: string | null;
-  reviewed_at: string | null;
-  first_name: string;
-  middle_name: string;
-  last_name: string;
-  email: string | null;
-  email_address: string | null;
-  email_account: string | null;
-  gender_identity: string;
-  age: number | null;
-  birthday: string | null;
-  birthplace: string;
-  contact_number: string;
-  civil_status: string;
-  sitio_address: string;
-  sitio_other: string;
-  complete_address: string;
-  voter_status: string;
-  voted_last_sk_election: string;
-  sk_election_vote_count: string;
-  sk_election_vote_count_other: string;
-  national_voter: string;
-  precinct_number: string;
-  youth_classifications: string[];
-  work_status: string;
-  educational_background: string;
-  source_payload: Record<string, unknown>;
-  created_by: string | null;
-  created_at: string;
-  updated_at: string;
-  verified_at: string | null;
-  privacy_consent_at: string | null;
-  privacy_notice_version: string | null;
-}
-
-export type KkAdminResponse = Omit<KkResponse, 'source_payload' | 'created_by'>;
-
-export interface KkAggregateReport {
-  pending: number | '<5';
-  verified: number | '<5';
-  needs_review: number | '<5';
-  rejected: number | '<5';
-}
-
 export type DocCategory = 'Annual Investment Plan (AIP)' | 'CBYDP' | 'Financial & Liquidation' | 'Accomplishment Report' | 'SK Resolution';
 
 export interface TransparencyDoc {
@@ -289,6 +227,18 @@ export interface TransparencyDoc {
   isPublic: boolean;
   description: string;
   storagePath?: string;
+  version?: number;
+  checksum?: string;
+  uploadedAt?: string;
+  versions?: TransparencyDocVersion[];
+}
+
+export interface TransparencyDocVersion {
+  version: number;
+  storagePath: string;
+  fileSize: string;
+  checksum?: string;
+  uploadedAt: string;
 }
 
 export interface CouncilMember {

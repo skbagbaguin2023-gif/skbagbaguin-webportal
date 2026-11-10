@@ -21,8 +21,7 @@ import {
   ShieldCheck, 
   Download,
   CheckCircle2,
-  Sparkles,
-  X,
+  Sparkles
 } from 'lucide-react';
 import { calculateEventCapacity } from '../../utils/portalLogic.ts';
 import Reveal from '../../components/Reveal.jsx';
@@ -59,12 +58,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
   council,
   services,
 }) => {
-  const [showKkCallout, setShowKkCallout] = React.useState(true);
   const featuredPrograms = programs.slice(0, 3);
   const upcomingEvents = events.slice(0, 3);
   const councilPreview = council.slice(0, 4);
   const availableServices = services.filter((service) => service.isActive);
-  const kkProfilingService = availableServices.find((service) => /profil/i.test(service.name));
   const serviceCardTheme = {
     card: 'border-[#0F2C59] bg-gradient-to-br from-[#173B72] to-[#081830] text-white',
     badge: 'border-amber-300/40 bg-amber-400/15 text-amber-300',
@@ -140,47 +137,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </div>
         </Reveal>
       </section>
-
-      {showKkCallout && (
-        <section className="relative mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8" aria-label="KK registration information">
-          <div className="flex flex-1 flex-col justify-between gap-4 rounded-2xl border border-amber-300 bg-amber-50 p-5 pr-14 shadow-sm dark:border-amber-800 dark:bg-amber-950/30 sm:flex-row sm:items-center sm:p-6 sm:pr-16">
-            <div>
-              <p className="text-sm font-bold text-slate-900 dark:text-white">Not registered with KK yet? / Hindi pa rehistrado sa KK?</p>
-              <p className="mt-1 max-w-3xl text-xs leading-relaxed text-slate-700 dark:text-slate-300">
-                Complete the KK Profiling form to register with the Katipunan ng Kabataan. You can also check an existing registration status.
-                {' '}
-                / Kumpletuhin ang KK Profiling form para magparehistro sa Katipunan ng Kabataan. Maaari mo ring suriin ang status ng iyong rehistro.
-              </p>
-            </div>
-            <div className="flex shrink-0 flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => kkProfilingService
-                  ? onOpenApplyModal(kkProfilingService.name)
-                  : onNavigate('services')}
-                className="rounded-lg bg-[#0F2C59] px-4 py-2.5 text-xs font-bold text-white transition-colors hover:bg-[#173B72] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500"
-              >
-                Register now / Magparehistro
-              </button>
-              <button
-                type="button"
-                onClick={() => onNavigate('kk-status')}
-                className="rounded-lg border border-[#0F2C59]/30 px-4 py-2.5 text-xs font-bold text-[#0F2C59] transition-colors hover:bg-[#0F2C59]/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0F2C59] dark:border-amber-300/40 dark:text-amber-300"
-              >
-                Check status / Suriin ang status
-              </button>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowKkCallout(false)}
-            aria-label="Dismiss KK registration information"
-            className="absolute right-6 top-3 rounded-lg p-2 text-slate-600 hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0F2C59] dark:text-slate-300 sm:right-8"
-          >
-            <X className="h-4 w-4" aria-hidden="true" />
-          </button>
-        </section>
-      )}
 
       <Announcements
         announcements={announcements}
@@ -422,58 +378,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
       </Reveal>
 
-      {/* 6. COUNCIL ACHIEVEMENTS & IMPACT METRICS */}
-      <Reveal as="section" className="bg-[#081830] dark:bg-[#061224] text-white py-14 border-y border-white/5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-10">
-            <span className="text-xs font-bold text-amber-400 uppercase tracking-widest">
-              Current Portal Activity
-            </span>
-            <h2 className="text-2xl sm:text-4xl font-extrabold text-white mt-1">
-              Published Information
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-400 mt-2">
-              Counts reflect records currently added to the portal.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 text-center">
-            <div className="p-6 rounded-xl bg-white/5 border border-white/10">
-              <span className="block text-3xl sm:text-4xl font-black text-amber-400 font-mono">
-                {programs.length}
-              </span>
-              <h3 className="text-sm font-bold text-white mt-2">Programs</h3>
-              <p className="text-xs text-slate-400 mt-1">Added to the portal</p>
-            </div>
-
-            <div className="p-6 rounded-xl bg-white/5 border border-white/10">
-              <span className="block text-3xl sm:text-4xl font-black text-amber-400 font-mono">
-                {events.length}
-              </span>
-              <h3 className="text-sm font-bold text-white mt-2">Events</h3>
-              <p className="text-xs text-slate-400 mt-1">Added to the portal</p>
-            </div>
-
-            <div className="p-6 rounded-xl bg-white/5 border border-white/10">
-              <span className="block text-3xl sm:text-4xl font-black text-amber-400 font-mono">
-                {announcements.length}
-              </span>
-              <h3 className="text-sm font-bold text-white mt-2">Announcements</h3>
-              <p className="text-xs text-slate-400 mt-1">Added to the portal</p>
-            </div>
-
-            <div className="p-6 rounded-xl bg-white/5 border border-white/10">
-              <span className="block text-3xl sm:text-4xl font-black text-amber-400 font-mono">
-                {council.length}
-              </span>
-              <h3 className="text-sm font-bold text-white mt-2">Council Members</h3>
-              <p className="text-xs text-slate-400 mt-1">Added to the directory</p>
-            </div>
-          </div>
-        </div>
-      </Reveal>
-
-      {/* 7. MEET YOUR SK COUNCIL PREVIEW */}
+      {/* 6. MEET YOUR SK COUNCIL PREVIEW */}
       <Reveal as="section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-8">
           <div>

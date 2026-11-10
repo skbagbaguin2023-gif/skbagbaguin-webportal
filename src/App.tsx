@@ -26,6 +26,7 @@ import { DEFAULT_COUNCIL_MEMBERS } from './data/councilMembers.ts';
 import { DEFAULT_ANNOUNCEMENTS } from './data/defaultAnnouncements.ts';
 import { Analytics } from '@vercel/analytics/react';
 import { generateUuid } from './utils/uuid.ts';
+import { calculateFileSha256 } from './utils/documentIntegrity.ts';
 
 // Public Components & Views
 import { Header } from './components/Header.tsx';
@@ -36,7 +37,6 @@ import { ProgramsView } from './views/public/ProgramsView.tsx';
 import { EventsView } from './views/public/EventsView.tsx';
 import { AnnouncementsView } from './views/public/AnnouncementsView.tsx';
 import { YouthServicesView } from './views/public/YouthServicesView.tsx';
-import { KkRegistrationStatusView } from './views/public/KkRegistrationStatusView.tsx';
 import { TrackRequestView } from './views/public/TrackRequestView.tsx';
 import { TransparencyView } from './views/public/TransparencyView.tsx';
 import { ContactView } from './views/public/ContactView.tsx';
@@ -91,7 +91,7 @@ export default function App() {
     const updatePathname = () => {
       setPathname(window.location.pathname);
       const page = new URLSearchParams(window.location.search).get('page') as PublicPage | null;
-      if (page && ['home', 'about', 'programs', 'events', 'announcements', 'services', 'track', 'transparency', 'contact', 'kk-status'].includes(page)) {
+      if (page && ['home', 'about', 'programs', 'events', 'announcements', 'services', 'track', 'transparency', 'contact'].includes(page)) {
         setCurrentPage(page);
       } else if (window.location.pathname === '/') {
         setCurrentPage('home');
@@ -628,8 +628,16 @@ export default function App() {
   };
 
   const handleAddTransparencyDoc = async (doc: TransparencyDoc, file: File): Promise<void> => {
+    const checksum = await calculateFileSha256(file);
     const storagePath = await uploadTransparencyDocument(file, doc.id);
-    const savedDoc = { ...doc, storagePath };
+    const savedDoc = {
+      ...doc,
+      storagePath,
+      checksum,
+      version: 1,
+      uploadedAt: new Date().toISOString(),
+      versions: [],
+    };
     try {
       await savePortalRecord('transparencyDocs', savedDoc);
       setTransparencyDocs((prev) => [savedDoc, ...prev]);
@@ -638,6 +646,45 @@ export default function App() {
         await deleteTransparencyDocument(storagePath);
       } catch (cleanupError) {
         console.error('Unable to remove an unlinked transparency PDF.', cleanupError);
+      }
+      reportWriteError(error);
+      throw error;
+    }
+  };
+
+  const handleAddTransparencyVersion = async (doc: TransparencyDoc, file: File): Promise<void> => {
+    const checksum = await calculateFileSha256(file);
+    const storagePath = await uploadTransparencyDocument(file, doc.id);
+    const uploadedAt = new Date().toISOString();
+    const previousVersion = doc.version ?? 1;
+    const previousVersions = doc.storagePath
+      ? [{
+          version: previousVersion,
+          storagePath: doc.storagePath,
+          fileSize: doc.fileSize,
+          checksum: doc.checksum ?? '',
+          uploadedAt: doc.uploadedAt ?? doc.publishedDate,
+        }, ...(doc.versions ?? [])]
+      : (doc.versions ?? []);
+    const savedDoc: TransparencyDoc = {
+      ...doc,
+      isPublic: false,
+      storagePath,
+      fileSize: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
+      checksum,
+      version: previousVersion + 1,
+      uploadedAt,
+      versions: previousVersions,
+    };
+
+    try {
+      await savePortalRecord('transparencyDocs', savedDoc);
+      setTransparencyDocs((previous) => previous.map((item) => item.id === doc.id ? savedDoc : item));
+    } catch (error) {
+      try {
+        await deleteTransparencyDocument(storagePath);
+      } catch (cleanupError) {
+        console.error('Unable to remove an unlinked transparency PDF revision.', cleanupError);
       }
       reportWriteError(error);
       throw error;
@@ -657,6 +704,13 @@ export default function App() {
       if (document?.storagePath) {
         try {
           await deleteTransparencyDocument(document.storagePath);
+        } catch (error) {
+          reportWriteError(error);
+        }
+      }
+      for (const version of document?.versions ?? []) {
+        try {
+          await deleteTransparencyDocument(version.storagePath);
         } catch (error) {
           reportWriteError(error);
         }
@@ -762,6 +816,7 @@ export default function App() {
             onUpdateApplicationStatus={handleUpdateApplicationStatus}
             onDeleteApplication={handleDeleteApplication}
             onAddTransparencyDoc={handleAddTransparencyDoc}
+            onAddTransparencyVersion={handleAddTransparencyVersion}
             onUpdateTransparencyDoc={handleUpdateTransparencyDoc}
             onDeleteTransparencyDoc={handleDeleteTransparencyDoc}
             onAddCouncilMember={handleAddCouncilMember}
@@ -882,25 +937,7 @@ export default function App() {
               )}
 
               {currentPage === 'services' && (
-              <YouthServicesView
-                services={services}
-                onOpenApplyModal={handleOpenApplyModal}
-                onCheckKkRegistration={() => {
-                  setCurrentPage('kk-status');
-                  window.history.pushState({}, '', '/?page=kk-status');
-                  window.scrollTo({ top: 0 });
-                }}
-              />
-              )}
-
-              {currentPage === 'kk-status' && (
-                <KkRegistrationStatusView
-                  onBackToServices={() => {
-                    setCurrentPage('services');
-                    window.history.pushState({}, '', '/?page=services');
-                    window.scrollTo({ top: 0 });
-                  }}
-                />
+              <YouthServicesView services={services} onOpenApplyModal={handleOpenApplyModal} />
               )}
 
               {currentPage === 'track' && (
@@ -913,6 +950,7 @@ export default function App() {
               {currentPage === 'transparency' && (
               <TransparencyView
                 documents={transparencyDocs}
+                fiscalYears={programFiscalYears}
                 onPreviewDoc={(doc) => setSelectedDocModal(doc)}
               />
               )}
