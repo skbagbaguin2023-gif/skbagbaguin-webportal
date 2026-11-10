@@ -1,17 +1,12 @@
 import { useState } from 'react';
 import { CheckCircle2, ClipboardList, X } from 'lucide-react';
-import type { KkProfilingData, YouthApplication, YouthService } from '../../types/index.ts';
-import { generateApplicationRef } from '../../utils/portalLogic.ts';
-import { generateUuid } from '../../utils/uuid.ts';
-import { syncKkProfileToGoogle } from '../../services/supabaseData.ts';
+import type { KkProfilingData } from '../../types/index.ts';
+import { submitKkProfile, syncKkProfileToGoogle } from '../../services/supabaseData.ts';
+import { KK_PRIVACY_NOTICE_VERSION, normalizeKkPhone, validateKkProfile } from '../../utils/kkLogic.ts';
 import { useModalScrollLock } from '../useModalScrollLock.ts';
 
 interface KkProfilingFormProps {
   onClose: () => void;
-  services: YouthService[];
-  serviceType: string;
-  onServiceChange: (service: string) => void;
-  onSubmitApplication: (application: YouthApplication) => Promise<void>;
 }
 
 const SITIO_OPTIONS = [
@@ -120,13 +115,10 @@ function RadioGroup({
 
 export function KkProfilingForm({
   onClose,
-  services,
-  serviceType,
-  onServiceChange,
-  onSubmitApplication,
 }: KkProfilingFormProps) {
   useModalScrollLock(true);
   const [profile, setProfile] = useState<KkProfilingData>(EMPTY_PROFILE);
+  const [privacyConsent, setPrivacyConsent] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
   const [reference, setReference] = useState('');
@@ -140,72 +132,34 @@ export function KkProfilingForm({
     event.preventDefault();
     setError('');
     setSyncError('');
-    if (!profile.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.email)) {
-      setError('Enter a valid email address.');
-      return;
-    }
-    if (!Number.isInteger(profile.age) || profile.age < 15 || profile.age > 30) {
-      setError('KK profiling is for youth ages 15 to 30.');
-      return;
-    }
-    if (!/^(09\d{9}|\+639\d{9})$/.test(profile.contactNumber.replace(/[\s-]/g, ''))) {
-      setError('Enter a valid 11-digit Philippine contact number.');
-      return;
-    }
-    if (profile.youthClassifications.length === 0) {
-      setError('Choose at least one youth classification.');
-      return;
-    }
-    if (profile.sitioAddress === 'Iba pa:' && !profile.sitioOther.trim()) {
-      setError('Enter your street or sitio.');
+    const validationErrors = validateKkProfile(profile, privacyConsent);
+    if (Object.keys(validationErrors).length > 0) {
+      setError(Object.values(validationErrors)[0]);
       return;
     }
 
     setIsSaving(true);
-    const serviceName = services.find((service) => /profiling/i.test(service.name))?.name
-      ?? 'Katipunan ng Kabataan (KK) Official Profiling';
-    const fullName = [profile.firstName, profile.middleName, profile.lastName]
-      .map((part) => part.trim())
-      .filter(Boolean)
-      .join(' ');
     const normalizedProfile = {
       ...profile,
       email: profile.email.trim(),
       firstName: profile.firstName.trim(),
       middleName: profile.middleName.trim(),
       lastName: profile.lastName.trim(),
-      contactNumber: profile.contactNumber.replace(/[\s-]/g, ''),
+      contactNumber: normalizeKkPhone(profile.contactNumber),
       sitioOther: profile.sitioOther.trim(),
       completeAddress: profile.completeAddress.trim(),
       precinctNumber: profile.precinctNumber.trim(),
     };
-    const id = `app-${generateUuid()}`;
-    const application: YouthApplication = {
-      id,
-      refNumber: generateApplicationRef(serviceName, Math.floor(100 + Math.random() * 900)),
-      applicantName: fullName,
-      age: profile.age,
-      birthday: profile.birthday,
-      gender: profile.genderIdentity,
-      sitio: profile.sitioAddress === 'Iba pa:' ? profile.sitioOther.trim() : profile.sitioAddress,
-      address: normalizedProfile.completeAddress,
-      contactNumber: normalizedProfile.contactNumber,
-      email: normalizedProfile.email,
-      serviceType: serviceName,
-      details: 'Katipunan ng Kabataan profiling form submission.',
-      kkProfile: normalizedProfile,
-      googleSyncStatus: 'Pending',
-      status: 'Pending',
-      submittedAt: new Date().toISOString(),
-      adminNotes: 'KK profile submitted through the youth portal.',
-      documentsAttached: [],
-    };
 
     try {
-      await onSubmitApplication(application);
-      setReference(application.refNumber);
+      const saved = await submitKkProfile({
+        ...normalizedProfile,
+        privacyConsent: true,
+        privacyNoticeVersion: KK_PRIVACY_NOTICE_VERSION,
+      });
+      setReference(saved.refNumber);
       try {
-        await syncKkProfileToGoogle(id);
+        await syncKkProfileToGoogle(saved.applicationId);
       } catch (syncFailure) {
         setSyncError(syncFailure instanceof Error
           ? syncFailure.message
@@ -266,34 +220,19 @@ export function KkProfilingForm({
             </div>
             <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 shadow-xs dark:border-slate-700 dark:bg-slate-800/40 sm:p-5">
               <div className="mb-4">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white">Service and personal details</h3>
-                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Tell us how to identify and contact you.</p>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">Personal details / Impormasyon ng sarili</h3>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Tell us how to identify and contact you. / Ibigay ang impormasyon para makilala at makontak ka.</p>
               </div>
-            <div>
-              <label htmlFor="kk-service-type" className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                Youth Assistance Program / Service
-              </label>
-              <select
-                id="kk-service-type"
-                value={serviceType}
-                onChange={(event) => onServiceChange(event.target.value)}
-                className={fieldClass}
-              >
-                {services.filter((service) => service.isActive).map((service) => (
-                  <option key={service.id} value={service.name}>{service.name}</option>
-                ))}
-              </select>
-            </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Complete the required fields. This submission is saved in the portal and synchronized to the existing Google Form response sheet.</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Complete the required fields. This submission is saved securely in the portal. / Kumpletuhin ang mga kinakailangang field. Ligtas na ise-save ang impormasyong ito sa portal.</p>
             <div className="grid gap-4 sm:grid-cols-2">
-              <FormField label="Email Account"><input type="email" autoComplete="email" required value={profile.email} onChange={(event) => update('email', event.target.value)} className={fieldClass} /></FormField>
-              <FormField label="First Name"><input required value={profile.firstName} onChange={(event) => update('firstName', event.target.value)} className={fieldClass} /></FormField>
-              <FormField label="Middle Name"><input required value={profile.middleName} onChange={(event) => update('middleName', event.target.value)} className={fieldClass} /></FormField>
-              <FormField label="Last Name"><input required value={profile.lastName} onChange={(event) => update('lastName', event.target.value)} className={fieldClass} /></FormField>
-              <FormField label="Age (15–30)"><input type="number" min="15" max="30" required value={profile.age || ''} onChange={(event) => update('age', Number(event.target.value))} className={fieldClass} /></FormField>
-              <FormField label="Birthday"><input type="date" required value={profile.birthday} onChange={(event) => update('birthday', event.target.value)} className={fieldClass} /></FormField>
-              <FormField label="Birthplace"><input required value={profile.birthplace} onChange={(event) => update('birthplace', event.target.value)} className={fieldClass} /></FormField>
-              <FormField label="Contact Number"><input type="tel" autoComplete="tel" required value={profile.contactNumber} onChange={(event) => update('contactNumber', event.target.value)} className={fieldClass} /></FormField>
+              <FormField label="Email Account / Email ng account"><input type="email" autoComplete="email" required value={profile.email} onChange={(event) => update('email', event.target.value)} className={fieldClass} /></FormField>
+              <FormField label="First Name / Pangalan"><input required value={profile.firstName} onChange={(event) => update('firstName', event.target.value)} className={fieldClass} /></FormField>
+              <FormField label="Middle Name / Gitnang pangalan"><input required value={profile.middleName} onChange={(event) => update('middleName', event.target.value)} className={fieldClass} /></FormField>
+              <FormField label="Last Name / Apelyido"><input required value={profile.lastName} onChange={(event) => update('lastName', event.target.value)} className={fieldClass} /></FormField>
+              <FormField label="Age (15–30) / Edad"><input type="number" min="15" max="30" required value={profile.age || ''} onChange={(event) => update('age', Number(event.target.value))} className={fieldClass} /></FormField>
+              <FormField label="Birthday / Kaarawan"><input type="date" required value={profile.birthday} onChange={(event) => update('birthday', event.target.value)} className={fieldClass} /></FormField>
+              <FormField label="Birthplace / Lugar ng kapanganakan"><input required value={profile.birthplace} onChange={(event) => update('birthplace', event.target.value)} className={fieldClass} /></FormField>
+              <FormField label="Contact Number / Numero ng telepono"><input type="tel" autoComplete="tel" required value={profile.contactNumber} onChange={(event) => update('contactNumber', event.target.value)} className={fieldClass} /></FormField>
               <FormField label="Street / Sitio Address">
                 <select required value={profile.sitioAddress} onChange={(event) => update('sitioAddress', event.target.value)} className={fieldClass}>
                   <option value="">Select street or sitio</option>
@@ -301,17 +240,17 @@ export function KkProfilingForm({
                 </select>
               </FormField>
               {profile.sitioAddress === 'Iba pa:' && (
-                <FormField label="Other Street / Sitio"><input required value={profile.sitioOther} onChange={(event) => update('sitioOther', event.target.value)} className={fieldClass} /></FormField>
+                <FormField label="Other Street / Sitio / Iba pang kalye o sitio"><input required value={profile.sitioOther} onChange={(event) => update('sitioOther', event.target.value)} className={fieldClass} /></FormField>
               )}
-              <FormField label="Complete Address"><input required value={profile.completeAddress} onChange={(event) => update('completeAddress', event.target.value)} className={fieldClass} /></FormField>
-              <FormField label="Precinct Number (if applicable)"><input value={profile.precinctNumber} onChange={(event) => update('precinctNumber', event.target.value)} className={fieldClass} /></FormField>
+              <FormField label="Complete Address / Kumpletong tirahan"><input required value={profile.completeAddress} onChange={(event) => update('completeAddress', event.target.value)} className={fieldClass} /></FormField>
+              <FormField label="Precinct Number (if applicable) / Numero ng presinto (kung mayroon)"><input value={profile.precinctNumber} onChange={(event) => update('precinctNumber', event.target.value)} className={fieldClass} /></FormField>
             </div>
             </div>
 
             <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 shadow-xs dark:border-slate-700 dark:bg-slate-800/40 sm:p-5">
             <div className="mb-1">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white">About you and your community</h3>
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Select the options that best describe your background and participation.</p>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">About you and your community / Tungkol sa iyo at sa iyong komunidad</h3>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Select the options that best describe your background. / Piliin ang mga naaangkop na sagot.</p>
             </div>
             <RadioGroup label="Sex / Gender Identity" value={profile.genderIdentity} options={['MALE', 'FEMALE', 'GAY', 'LESBIAN', 'BISEXUAL', 'Prefer not to say']} onChange={(value) => update('genderIdentity', value)} />
             <RadioGroup label="Civil Status" value={profile.civilStatus} options={CIVIL_STATUSES} onChange={(value) => update('civilStatus', value)} />
@@ -356,10 +295,23 @@ export function KkProfilingForm({
             <RadioGroup label="Educational Background" value={profile.educationalBackground} options={EDUCATIONAL_BACKGROUNDS} onChange={(value) => update('educationalBackground', value)} />
             </div>
 
+            <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 text-sm leading-relaxed text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+              <input
+                type="checkbox"
+                required
+                checked={privacyConsent}
+                onChange={(event) => setPrivacyConsent(event.target.checked)}
+                className="mt-1 h-4 w-4 shrink-0 accent-[#0F2C59]"
+              />
+              <span>
+                I consent to the collection and use of my information for KK profiling and SK service eligibility. Only authorized SK officials can review my profile. / Pumapayag ako sa pagkolekta at paggamit ng aking impormasyon para sa KK profiling at pagiging kwalipikado sa mga serbisyo ng SK. Mga awtorisadong opisyal lamang ng SK ang maaaring tumingin nito.
+              </span>
+            </label>
+
             {error && <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700 dark:bg-rose-950/40 dark:text-rose-300">{error}</p>}
             <div className="flex justify-end border-t border-slate-200 pt-4 dark:border-slate-700">
               <button type="submit" disabled={isSaving} className="flex items-center gap-2 rounded-xl bg-[#0F2C59] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#173B72] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 disabled:opacity-60">
-                {isSaving ? 'Saving and syncing...' : 'Submit KK Profile'}
+                {isSaving ? 'Saving...' : 'Submit KK Profile / Isumite ang profile ng KK'}
                 {!isSaving && <CheckCircle2 className="h-4 w-4 text-amber-300" />}
               </button>
             </div>

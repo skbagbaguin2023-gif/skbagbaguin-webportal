@@ -21,7 +21,8 @@ import {
   ShieldCheck, 
   Download,
   CheckCircle2,
-  Sparkles
+  Sparkles,
+  X,
 } from 'lucide-react';
 import { calculateEventCapacity } from '../../utils/portalLogic.ts';
 import Reveal from '../../components/Reveal.jsx';
@@ -58,10 +59,12 @@ export const HomeView: React.FC<HomeViewProps> = ({
   council,
   services,
 }) => {
+  const [showKkCallout, setShowKkCallout] = React.useState(true);
   const featuredPrograms = programs.slice(0, 3);
   const upcomingEvents = events.slice(0, 3);
   const councilPreview = council.slice(0, 4);
   const availableServices = services.filter((service) => service.isActive);
+  const kkProfilingService = availableServices.find((service) => /profil/i.test(service.name));
   const serviceCardTheme = {
     card: 'border-[#0F2C59] bg-gradient-to-br from-[#173B72] to-[#081830] text-white',
     badge: 'border-amber-300/40 bg-amber-400/15 text-amber-300',
@@ -137,6 +140,47 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </div>
         </Reveal>
       </section>
+
+      {showKkCallout && (
+        <section className="relative mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8" aria-label="KK registration information">
+          <div className="flex flex-1 flex-col justify-between gap-4 rounded-2xl border border-amber-300 bg-amber-50 p-5 pr-14 shadow-sm dark:border-amber-800 dark:bg-amber-950/30 sm:flex-row sm:items-center sm:p-6 sm:pr-16">
+            <div>
+              <p className="text-sm font-bold text-slate-900 dark:text-white">Not registered with KK yet? / Hindi pa rehistrado sa KK?</p>
+              <p className="mt-1 max-w-3xl text-xs leading-relaxed text-slate-700 dark:text-slate-300">
+                Complete the KK Profiling form to register with the Katipunan ng Kabataan. You can also check an existing registration status.
+                {' '}
+                / Kumpletuhin ang KK Profiling form para magparehistro sa Katipunan ng Kabataan. Maaari mo ring suriin ang status ng iyong rehistro.
+              </p>
+            </div>
+            <div className="flex shrink-0 flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => kkProfilingService
+                  ? onOpenApplyModal(kkProfilingService.name)
+                  : onNavigate('services')}
+                className="rounded-lg bg-[#0F2C59] px-4 py-2.5 text-xs font-bold text-white transition-colors hover:bg-[#173B72] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500"
+              >
+                Register now / Magparehistro
+              </button>
+              <button
+                type="button"
+                onClick={() => onNavigate('kk-status')}
+                className="rounded-lg border border-[#0F2C59]/30 px-4 py-2.5 text-xs font-bold text-[#0F2C59] transition-colors hover:bg-[#0F2C59]/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0F2C59] dark:border-amber-300/40 dark:text-amber-300"
+              >
+                Check status / Suriin ang status
+              </button>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowKkCallout(false)}
+            aria-label="Dismiss KK registration information"
+            className="absolute right-6 top-3 rounded-lg p-2 text-slate-600 hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0F2C59] dark:text-slate-300 sm:right-8"
+          >
+            <X className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </section>
+      )}
 
       <Announcements
         announcements={announcements}

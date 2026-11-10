@@ -36,6 +36,7 @@ import { ProgramsView } from './views/public/ProgramsView.tsx';
 import { EventsView } from './views/public/EventsView.tsx';
 import { AnnouncementsView } from './views/public/AnnouncementsView.tsx';
 import { YouthServicesView } from './views/public/YouthServicesView.tsx';
+import { KkRegistrationStatusView } from './views/public/KkRegistrationStatusView.tsx';
 import { TrackRequestView } from './views/public/TrackRequestView.tsx';
 import { TransparencyView } from './views/public/TransparencyView.tsx';
 import { ContactView } from './views/public/ContactView.tsx';
@@ -90,7 +91,7 @@ export default function App() {
     const updatePathname = () => {
       setPathname(window.location.pathname);
       const page = new URLSearchParams(window.location.search).get('page') as PublicPage | null;
-      if (page && ['home', 'about', 'programs', 'events', 'announcements', 'services', 'track', 'transparency', 'contact'].includes(page)) {
+      if (page && ['home', 'about', 'programs', 'events', 'announcements', 'services', 'track', 'transparency', 'contact', 'kk-status'].includes(page)) {
         setCurrentPage(page);
       } else if (window.location.pathname === '/') {
         setCurrentPage('home');
@@ -881,7 +882,25 @@ export default function App() {
               )}
 
               {currentPage === 'services' && (
-              <YouthServicesView services={services} onOpenApplyModal={handleOpenApplyModal} />
+              <YouthServicesView
+                services={services}
+                onOpenApplyModal={handleOpenApplyModal}
+                onCheckKkRegistration={() => {
+                  setCurrentPage('kk-status');
+                  window.history.pushState({}, '', '/?page=kk-status');
+                  window.scrollTo({ top: 0 });
+                }}
+              />
+              )}
+
+              {currentPage === 'kk-status' && (
+                <KkRegistrationStatusView
+                  onBackToServices={() => {
+                    setCurrentPage('services');
+                    window.history.pushState({}, '', '/?page=services');
+                    window.scrollTo({ top: 0 });
+                  }}
+                />
               )}
 
               {currentPage === 'track' && (

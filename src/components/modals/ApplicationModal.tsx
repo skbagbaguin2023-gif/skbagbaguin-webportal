@@ -98,10 +98,6 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
     return (
       <KkProfilingForm
         onClose={onClose}
-        services={services}
-        serviceType={serviceType}
-        onServiceChange={handleServiceChange}
-        onSubmitApplication={onSubmitApplication}
       />
     );
   }

@@ -1,6 +1,14 @@
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from './supabase.ts';
-import type { Announcement, CouncilMember, EventRegistration } from '../types/index.ts';
+import type {
+  Announcement,
+  CouncilMember,
+  EventRegistration,
+  KkAdminResponse,
+  KkAggregateReport,
+  KkResponseStatus,
+  KkProfilingData,
+} from '../types/index.ts';
 import { generateUuid } from '../utils/uuid.ts';
 
 export type PortalCollection =
@@ -270,6 +278,124 @@ export async function syncKkProfileToGoogle(applicationId: string): Promise<void
   if (!data?.synced || data.statusSaved === false) {
     throw new Error('Google form sync could not be confirmed. The portal profile remains saved and can be retried.');
   }
+}
+
+export async function submitKkProfile(
+  profile: KkProfilingData & { privacyConsent: true; privacyNoticeVersion: string }
+): Promise<{ applicationId: string; refNumber: string }> {
+  const { data, error } = await getClient().functions.invoke('submit-kk-profile', {
+    body: { profile },
+  });
+
+  if (error) {
+    const context = error.context;
+    if (context instanceof Response) {
+      try {
+        const result = await context.clone().json() as { error?: unknown };
+        if (typeof result.error === 'string') throw new Error(result.error);
+      } catch (responseError) {
+        if (responseError instanceof Error && responseError.message !== 'Unexpected end of JSON input') {
+          throw responseError;
+        }
+      }
+    }
+    throw new Error(`The KK profile could not be saved. ${error.message}`);
+  }
+  if (
+    typeof data?.applicationId !== 'string'
+    || typeof data?.refNumber !== 'string'
+  ) {
+    throw new Error('The KK profile could not be confirmed as saved.');
+  }
+  return { applicationId: data.applicationId, refNumber: data.refNumber };
+}
+
+export async function checkKkRegistrationStatus(
+  refNumber: string,
+  identifier: string
+): Promise<'pending' | 'verified' | 'needs_review' | 'rejected' | 'not_found'> {
+  const { data, error } = await getClient().functions.invoke('check-kk-registration', {
+    body: { refNumber, identifier },
+  });
+  if (error) {
+    const context = error.context;
+    if (context instanceof Response) {
+      try {
+        const result = await context.clone().json() as { error?: unknown };
+        if (typeof result.error === 'string') throw new Error(result.error);
+      } catch (responseError) {
+        if (responseError instanceof Error && responseError.message !== 'Unexpected end of JSON input') {
+          throw responseError;
+        }
+      }
+    }
+    throw new Error(`Registration status could not be checked. ${error.message}`);
+  }
+  if (
+    data?.status !== 'pending'
+    && data?.status !== 'verified'
+    && data?.status !== 'needs_review'
+    && data?.status !== 'rejected'
+    && data?.status !== 'not_found'
+  ) {
+    throw new Error('Registration status could not be confirmed.');
+  }
+  return data.status;
+}
+
+export async function fetchKkResponses(options: {
+  status: KkResponseStatus | '';
+  search: string;
+  limit: number;
+  offset: number;
+}): Promise<{ responses: KkAdminResponse[]; totalCount: number }> {
+  const { data, error } = await getClient().rpc('get_kk_responses', {
+    p_status: options.status || null,
+    p_search: options.search.trim(),
+    p_limit: options.limit,
+    p_offset: options.offset,
+  });
+  if (error) throw new Error(`KK responses could not be loaded. ${error.message}`);
+  if (!Array.isArray(data)) throw new Error('KK responses could not be confirmed.');
+
+  const rows = data as Array<{ response?: KkAdminResponse; total_count?: number }>;
+  return {
+    responses: rows.flatMap((row) => row.response ? [row.response] : []),
+    totalCount: Number(rows[0]?.total_count ?? 0),
+  };
+}
+
+export async function fetchKkAggregateReport(): Promise<KkAggregateReport> {
+  const { data, error } = await getClient().rpc('get_kk_aggregate_report');
+  if (error) throw new Error(`KK aggregate report could not be loaded. ${error.message}`);
+  if (!data || typeof data !== 'object' || !('pending' in data)) {
+    throw new Error('KK aggregate report could not be confirmed.');
+  }
+  return data as KkAggregateReport;
+}
+
+export async function reviewKkResponse(
+  responseId: string,
+  status: KkResponseStatus,
+  reviewNotes: string
+): Promise<void> {
+  const { error } = await getClient().rpc('review_kk_response', {
+    p_response_id: responseId,
+    p_status: status,
+    p_review_notes: reviewNotes,
+  });
+  if (error) throw new Error(`KK response could not be updated. ${error.message}`);
+}
+
+export async function exportKkResponsesCsv(purpose: string): Promise<string> {
+  const { data, error } = await getClient().rpc('export_kk_responses_csv', {
+    p_purpose: purpose.trim(),
+  });
+  if (error) throw new Error(`KK response export failed. ${error.message}`);
+  if (typeof data !== 'string' || !data.startsWith('id,source,')) {
+    throw new Error('KK response export could not be confirmed.');
+  }
+  return data;
 }
 
 export async function initializePortalDefaults(

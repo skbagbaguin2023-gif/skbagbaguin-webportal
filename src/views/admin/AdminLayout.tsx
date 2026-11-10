@@ -47,6 +47,7 @@ import { FeedbackInbox } from './FeedbackInbox.tsx';
 import { CouncilManager } from './CouncilManager.tsx';
 import { ServicesManager } from './ServicesManager.tsx';
 import { MaintenanceManager } from './MaintenanceManager.tsx';
+import { KkResponsesManager } from './KkResponsesManager.tsx';
 import { ThemeToggle } from '../../components/ThemeToggle.tsx';
 import skLogo from '../../assets/images/skLogo.png';
 import { ConfirmationModal } from '../../components/modals/ConfirmationModal.tsx';
@@ -184,6 +185,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       badge: newFeedbackCount > 0 ? newFeedbackCount : undefined 
     },
     { id: 'council', label: 'Council Profile', icon: <UserCheck className="w-4 h-4" /> },
+    { id: 'kkResponses', label: 'KK Profiling Responses', icon: <ShieldCheck className="w-4 h-4" /> },
     { id: 'services', label: 'Youth Services', icon: <Settings className="w-4 h-4" /> },
     { id: 'maintenance', label: 'Maintenance & Bugs', icon: <AlertTriangle className="w-4 h-4" /> },
   ];
@@ -570,6 +572,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
               onReorderCouncil={onReorderCouncil}
             />
           )}
+          {activeSection === 'kkResponses' && <KkResponsesManager />}
           {activeSection === 'maintenance' && (
             <MaintenanceManager
               issues={maintenanceIssues}
