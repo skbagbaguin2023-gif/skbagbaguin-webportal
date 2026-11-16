@@ -227,6 +227,18 @@ export interface TransparencyDoc {
   isPublic: boolean;
   description: string;
   storagePath?: string;
+  version?: number;
+  checksum?: string;
+  uploadedAt?: string;
+  versions?: TransparencyDocVersion[];
+}
+
+export interface TransparencyDocVersion {
+  version: number;
+  storagePath: string;
+  fileSize: string;
+  checksum?: string;
+  uploadedAt: string;
 }
 
 export interface CouncilMember {

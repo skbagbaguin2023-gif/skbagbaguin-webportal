@@ -16,6 +16,7 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
   onClose,
 }) => {
   const [signedUrl, setSignedUrl] = useState('');
+  const [versionUrls, setVersionUrls] = useState<Record<number, string>>({});
   const [loadError, setLoadError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   useModalScrollLock(isOpen);
@@ -23,6 +24,7 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
   useEffect(() => {
     let isCurrent = true;
     setSignedUrl('');
+    setVersionUrls({});
     setLoadError('');
 
     if (isOpen && doc?.storagePath) {
@@ -38,6 +40,16 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
         })
         .finally(() => {
           if (isCurrent) setIsLoading(false);
+        });
+      void Promise.all((doc.versions ?? []).map(async (version) => ({
+        version: version.version,
+        url: await getTransparencyDocumentSignedUrl(version.storagePath),
+      })))
+        .then((items) => {
+          if (isCurrent) setVersionUrls(Object.fromEntries(items.map((item) => [item.version, item.url])));
+        })
+        .catch((error: unknown) => {
+          console.error('Unable to load previous transparency PDF versions.', error);
         });
     } else {
       setIsLoading(false);
@@ -106,6 +118,31 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
             </p>
           </div>
 
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500 dark:text-slate-400">
+            <span>Version {doc.version ?? 1}</span>
+            <span>Uploaded {doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : doc.publishedDate}</span>
+            {doc.checksum && <span className="break-all font-mono">SHA-256: {doc.checksum}</span>}
+          </div>
+
+          {(doc.versions?.length ?? 0) > 0 && (
+            <div className="space-y-2 rounded-xl border border-slate-200 p-3 dark:border-slate-700">
+              <h3 className="text-xs font-bold text-slate-800 dark:text-slate-100">Previous versions</h3>
+              {doc.versions?.map((version) => (
+                <div key={version.version} className="flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                  <span className="text-slate-600 dark:text-slate-300">
+                    Version {version.version} · {new Date(version.uploadedAt).toLocaleDateString()} · {version.fileSize}
+                    {version.checksum && <span className="block break-all font-mono text-slate-400">SHA-256: {version.checksum}</span>}
+                  </span>
+                  {versionUrls[version.version] && (
+                    <a href={versionUrls[version.version]} target="_blank" rel="noreferrer" className="font-semibold text-[#0F2C59] hover:underline dark:text-amber-400">
+                      Open version
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
           {doc.resolutionNumber && (
             <div className="flex items-center gap-2 text-xs bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 px-3 py-2 rounded-lg border border-amber-200 dark:border-amber-900/60">
               <Hash className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400" />
@@ -148,9 +185,9 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
           )}
 
           <div className="pt-2 flex items-center justify-between">
-            <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium flex items-center gap-1">
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5" />
-              <span>COA & DILG Seal Verified</span>
+              <span>{doc.checksum ? 'SHA-256 checksum recorded' : 'Document metadata'}</span>
             </span>
 
             <div className="flex gap-2">

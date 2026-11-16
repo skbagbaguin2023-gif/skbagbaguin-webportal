@@ -18,6 +18,7 @@ import { generateUuid } from '../../utils/uuid.ts';
 interface TransparencyManagerProps {
   documents: TransparencyDoc[];
   onAddDoc: (doc: TransparencyDoc, file: File) => Promise<void>;
+  onAddVersion: (doc: TransparencyDoc, file: File) => Promise<void>;
   onUpdateDoc: (doc: TransparencyDoc) => void;
   onDeleteDoc: (id: string) => Promise<void>;
 }
@@ -25,6 +26,7 @@ interface TransparencyManagerProps {
 export const TransparencyManager: React.FC<TransparencyManagerProps> = ({
   documents,
   onAddDoc,
+  onAddVersion,
   onUpdateDoc,
   onDeleteDoc,
 }) => {
@@ -43,11 +45,13 @@ export const TransparencyManager: React.FC<TransparencyManagerProps> = ({
   // New report form states
   const [formTitle, setFormTitle] = useState('');
   const [formCategory, setFormCategory] = useState<DocCategory>('Accomplishment Report');
-  const [formYear, setFormYear] = useState(2026);
-  const [formQuarter, setFormQuarter] = useState('Q4');
+  const [formYear, setFormYear] = useState(new Date().getFullYear());
+  const [formQuarter, setFormQuarter] = useState('');
   const [formResolution, setFormResolution] = useState('');
   const [formDescription, setFormDescription] = useState('');
-  const [formIsPublic, setFormIsPublic] = useState(true);
+  const [formIsPublic, setFormIsPublic] = useState(false);
+  const [revisionUploadingId, setRevisionUploadingId] = useState<string | null>(null);
+  const [revisionError, setRevisionError] = useState('');
 
   const categories: DocCategory[] = [
     'Annual Investment Plan (AIP)',
@@ -64,7 +68,22 @@ export const TransparencyManager: React.FC<TransparencyManagerProps> = ({
   const openUploadModal = (file?: File) => {
     setSelectedFile(file ?? null);
     setUploadError('');
+    setFormIsPublic(false);
     setIsModalOpen(true);
+  };
+
+  const handleUploadVersion = async (doc: TransparencyDoc, file?: File) => {
+    if (!file) return;
+    if (!validateSelectedFile(file)) return;
+    setRevisionUploadingId(doc.id);
+    setRevisionError('');
+    try {
+      await onAddVersion(doc, file);
+    } catch (error) {
+      setRevisionError(error instanceof Error ? error.message : 'The document revision could not be uploaded.');
+    } finally {
+      setRevisionUploadingId(null);
+    }
   };
 
   const validateSelectedFile = (file: File): boolean => {
@@ -97,7 +116,7 @@ export const TransparencyManager: React.FC<TransparencyManagerProps> = ({
       title: formTitle.trim(),
       category: formCategory,
       year: Number(formYear),
-      quarter: formQuarter,
+      quarter: formQuarter || undefined,
       documentType: 'PDF',
       fileSize: `${(selectedFile.size / (1024 * 1024)).toFixed(2)} MB`,
       resolutionNumber: formResolution || undefined,
@@ -123,9 +142,13 @@ export const TransparencyManager: React.FC<TransparencyManagerProps> = ({
   };
 
   const toggleVisibility = (doc: TransparencyDoc) => {
+    const isPublishing = !doc.isPublic;
+    const now = new Date();
+    const publishedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     onUpdateDoc({
       ...doc,
-      isPublic: !doc.isPublic,
+      isPublic: isPublishing,
+      publishedDate: isPublishing ? publishedDate : doc.publishedDate,
     });
   };
 
@@ -243,6 +266,9 @@ export const TransparencyManager: React.FC<TransparencyManagerProps> = ({
                   <td className="py-3 px-4 max-w-xs">
                     <span className="font-bold text-slate-900 dark:text-white block truncate">{doc.title}</span>
                     <span className="text-slate-500 dark:text-slate-400 text-[11px] truncate block">{doc.description}</span>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                      Version {doc.version ?? 1} · SHA-256 {doc.checksum ? `${doc.checksum.slice(0, 12)}…` : 'Not recorded'}
+                    </span>
                   </td>
                   <td className="py-3 px-4">
                     <span className="font-semibold text-[#0F2C59] dark:text-amber-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-[11px]">
@@ -270,6 +296,21 @@ export const TransparencyManager: React.FC<TransparencyManagerProps> = ({
                     </button>
                   </td>
                   <td className="py-3 px-4 text-right">
+                    <label className={`mr-2 inline-flex cursor-pointer items-center gap-1 rounded px-2 py-1 text-[11px] font-semibold ${revisionUploadingId === doc.id ? 'cursor-wait opacity-60' : 'hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
+                      <Upload className="h-3 w-3" />
+                      New version
+                      <input
+                        type="file"
+                        accept="application/pdf,.pdf"
+                        disabled={revisionUploadingId === doc.id}
+                        className="sr-only"
+                        aria-label={`Upload a new version of ${doc.title}`}
+                        onChange={(event) => {
+                          void handleUploadVersion(doc, event.target.files?.[0]);
+                          event.target.value = '';
+                        }}
+                      />
+                    </label>
                     <button
                       onClick={() => setDocumentToDelete(doc)}
                       className="p-1 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 cursor-pointer"
@@ -279,6 +320,11 @@ export const TransparencyManager: React.FC<TransparencyManagerProps> = ({
                   </td>
                 </tr>
               ))}
+              {revisionError && (
+                <tr>
+                  <td colSpan={6} role="alert" className="px-4 py-3 text-xs text-rose-700 dark:text-rose-300">{revisionError}</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -345,7 +391,7 @@ export const TransparencyManager: React.FC<TransparencyManagerProps> = ({
                   </div>
                 ) : (
                   <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-                    Select a PDF or drag and drop it here. Maximum size: 35 MB.
+                    Select a PDF or drag and drop it here. Maximum size: 35 MB. Uploads stay private until published.
                   </p>
                 )}
                 {uploadError && <p role="alert" className="mt-1 text-xs font-medium text-rose-600">{uploadError}</p>}
@@ -387,12 +433,34 @@ export const TransparencyManager: React.FC<TransparencyManagerProps> = ({
                   </label>
                   <input
                     type="number"
+                    min="2000"
+                    max="2100"
+                    required
                     disabled={isUploading}
                     value={formYear}
                     onChange={(e) => setFormYear(Number(e.target.value))}
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-mono bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label htmlFor="transparency-quarter" className="block font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                  Reporting Period
+                </label>
+                <select
+                  id="transparency-quarter"
+                  value={formQuarter}
+                  disabled={isUploading}
+                  onChange={(event) => setFormQuarter(event.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-xs bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                >
+                  <option value="">Full year / Not applicable</option>
+                  <option value="Q1">Quarter 1</option>
+                  <option value="Q2">Quarter 2</option>
+                  <option value="Q3">Quarter 3</option>
+                  <option value="Q4">Quarter 4</option>
+                </select>
               </div>
 
               <div>

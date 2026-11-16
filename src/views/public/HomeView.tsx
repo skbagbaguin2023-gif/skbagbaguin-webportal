@@ -378,58 +378,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
       </Reveal>
 
-      {/* 6. COUNCIL ACHIEVEMENTS & IMPACT METRICS */}
-      <Reveal as="section" className="bg-[#081830] dark:bg-[#061224] text-white py-14 border-y border-white/5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-10">
-            <span className="text-xs font-bold text-amber-400 uppercase tracking-widest">
-              Current Portal Activity
-            </span>
-            <h2 className="text-2xl sm:text-4xl font-extrabold text-white mt-1">
-              Published Information
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-400 mt-2">
-              Counts reflect records currently added to the portal.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 text-center">
-            <div className="p-6 rounded-xl bg-white/5 border border-white/10">
-              <span className="block text-3xl sm:text-4xl font-black text-amber-400 font-mono">
-                {programs.length}
-              </span>
-              <h3 className="text-sm font-bold text-white mt-2">Programs</h3>
-              <p className="text-xs text-slate-400 mt-1">Added to the portal</p>
-            </div>
-
-            <div className="p-6 rounded-xl bg-white/5 border border-white/10">
-              <span className="block text-3xl sm:text-4xl font-black text-amber-400 font-mono">
-                {events.length}
-              </span>
-              <h3 className="text-sm font-bold text-white mt-2">Events</h3>
-              <p className="text-xs text-slate-400 mt-1">Added to the portal</p>
-            </div>
-
-            <div className="p-6 rounded-xl bg-white/5 border border-white/10">
-              <span className="block text-3xl sm:text-4xl font-black text-amber-400 font-mono">
-                {announcements.length}
-              </span>
-              <h3 className="text-sm font-bold text-white mt-2">Announcements</h3>
-              <p className="text-xs text-slate-400 mt-1">Added to the portal</p>
-            </div>
-
-            <div className="p-6 rounded-xl bg-white/5 border border-white/10">
-              <span className="block text-3xl sm:text-4xl font-black text-amber-400 font-mono">
-                {council.length}
-              </span>
-              <h3 className="text-sm font-bold text-white mt-2">Council Members</h3>
-              <p className="text-xs text-slate-400 mt-1">Added to the directory</p>
-            </div>
-          </div>
-        </div>
-      </Reveal>
-
-      {/* 7. MEET YOUR SK COUNCIL PREVIEW */}
+      {/* 6. MEET YOUR SK COUNCIL PREVIEW */}
       <Reveal as="section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-8">
           <div>

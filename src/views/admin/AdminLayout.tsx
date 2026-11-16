@@ -82,6 +82,7 @@ interface AdminLayoutProps {
   onUpdateApplicationStatus: (id: string, status: ApplicationStatus, notes?: string) => void;
   onDeleteApplication: (id: string) => Promise<void>;
   onAddTransparencyDoc: (doc: TransparencyDoc, file: File) => Promise<void>;
+  onAddTransparencyVersion: (doc: TransparencyDoc, file: File) => Promise<void>;
   onUpdateTransparencyDoc: (doc: TransparencyDoc) => void;
   onDeleteTransparencyDoc: (id: string) => Promise<void>;
   onAddCouncilMember: (member: CouncilMember) => Promise<void>;
@@ -133,6 +134,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   onUpdateApplicationStatus,
   onDeleteApplication,
   onAddTransparencyDoc,
+  onAddTransparencyVersion,
   onUpdateTransparencyDoc,
   onDeleteTransparencyDoc,
   onAddCouncilMember,
@@ -548,6 +550,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
             <TransparencyManager
               documents={transparencyDocs}
               onAddDoc={onAddTransparencyDoc}
+              onAddVersion={onAddTransparencyVersion}
               onUpdateDoc={onUpdateTransparencyDoc}
               onDeleteDoc={onDeleteTransparencyDoc}
             />

@@ -1,31 +1,32 @@
 import React, { useState } from 'react';
-import { TransparencyDoc, DocCategory } from '../../types/index.ts';
+import { TransparencyDoc, DocCategory, ProgramFiscalYear } from '../../types/index.ts';
+import { formatCurrencyPHP } from '../../utils/portalLogic.ts';
 import { 
   ShieldCheck, 
   Search, 
   FileText, 
   Download, 
   Eye, 
-  Calendar, 
-  Award, 
-  Lock, 
-  CheckCircle2,
-  FileSpreadsheet
+  Calendar
 } from 'lucide-react';
 import Reveal from '../../components/Reveal.jsx';
 
 interface TransparencyViewProps {
   documents: TransparencyDoc[];
+  fiscalYears: ProgramFiscalYear[];
   onPreviewDoc: (doc: TransparencyDoc) => void;
 }
 
 export const TransparencyView: React.FC<TransparencyViewProps> = ({
   documents,
+  fiscalYears,
   onPreviewDoc,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<'All' | DocCategory>('All');
   const [selectedYear, setSelectedYear] = useState('All');
+  const availableYears = Array.from(new Set(documents.filter((doc) => doc.isPublic).map((doc) => doc.year)))
+    .sort((first, second) => second - first);
 
   const categories: ('All' | DocCategory)[] = [
     'All',
@@ -38,7 +39,10 @@ export const TransparencyView: React.FC<TransparencyViewProps> = ({
 
   const filtered = documents.filter((doc) => {
     const q = searchQuery.toLowerCase().trim();
-    const matchesQuery = !q || doc.title.toLowerCase().includes(q) || doc.description.toLowerCase().includes(q);
+    const matchesQuery = !q
+      || doc.title.toLowerCase().includes(q)
+      || doc.description.toLowerCase().includes(q)
+      || doc.resolutionNumber?.toLowerCase().includes(q);
     const matchesCategory = selectedCategory === 'All' || doc.category === selectedCategory;
     const matchesYear = selectedYear === 'All' || String(doc.year) === selectedYear;
     return matchesQuery && matchesCategory && matchesYear && doc.isPublic;
@@ -63,38 +67,26 @@ export const TransparencyView: React.FC<TransparencyViewProps> = ({
         </div>
       </Reveal>
 
-      {/* Compliance Highlights */}
-      <Reveal className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs flex items-start gap-3">
-          <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400">
-            <CheckCircle2 className="w-5 h-5" />
-          </div>
+      {fiscalYears.length > 0 && (
+        <Reveal as="section" className="space-y-4">
           <div>
-            <h3 className="font-bold text-xs text-slate-900 dark:text-white">COA Circular 2020-004 Compliant</h3>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Strict liquidation guidelines and quarterly bank reconciliations enforced.</p>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Public Budget Summary</h2>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Fiscal-year totals published in the SK Programs budget settings.</p>
           </div>
-        </div>
-
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs flex items-start gap-3">
-          <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400">
-            <Award className="w-5 h-5" />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[...fiscalYears].sort((first, second) => second.year - first.year).map((year) => (
+              <article key={year.id} className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                <h3 className="font-bold text-[#0F2C59] dark:text-amber-400">Fiscal Year {year.year}</h3>
+                <dl className="mt-3 space-y-2 text-xs">
+                  <div className="flex justify-between gap-3"><dt className="text-slate-500 dark:text-slate-400">SK total funds</dt><dd className="font-semibold text-slate-900 dark:text-white">{formatCurrencyPHP(year.totalFunds)}</dd></div>
+                  <div className="flex justify-between gap-3"><dt className="text-slate-500 dark:text-slate-400">Total disbursed</dt><dd className="font-semibold text-slate-900 dark:text-white">{formatCurrencyPHP(year.totalDisbursed)}</dd></div>
+                  <div className="flex justify-between gap-3 border-t border-slate-100 pt-2 dark:border-slate-800"><dt className="text-slate-500 dark:text-slate-400">Remaining balance</dt><dd className="font-semibold text-slate-900 dark:text-white">{formatCurrencyPHP(Math.max(0, year.totalFunds - year.totalDisbursed))}</dd></div>
+                </dl>
+              </article>
+            ))}
           </div>
-          <div>
-            <h3 className="font-bold text-xs text-slate-900 dark:text-white">DILG Seal of Good Youth Governance</h3>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Evaluated with perfect marks for public accountability and fund tracking.</p>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs flex items-start gap-3">
-          <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400">
-            <ShieldCheck className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="font-bold text-xs text-slate-900 dark:text-white">Freedom of Information (FOI)</h3>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Official documents available for citizen review with zero redactions on budgets.</p>
-          </div>
-        </div>
-      </Reveal>
+        </Reveal>
+      )}
 
       {/* Filter and Search */}
       <Reveal className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
@@ -118,9 +110,7 @@ export const TransparencyView: React.FC<TransparencyViewProps> = ({
               className="px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-xs bg-white dark:bg-slate-800 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-[#0F2C59] dark:focus:ring-amber-400"
             >
               <option value="All">All Years</option>
-              <option value="2026">2026</option>
-              <option value="2025">2025</option>
-              <option value="2024">2024</option>
+              {availableYears.map((year) => <option key={year} value={year}>{year}</option>)}
             </select>
           </div>
         </div>
@@ -179,6 +169,10 @@ export const TransparencyView: React.FC<TransparencyViewProps> = ({
                 <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed max-w-3xl">
                   {doc.description}
                 </p>
+                <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                  Fiscal year {doc.year}{doc.quarter ? ` · ${doc.quarter}` : ''} · Version {doc.version ?? 1}
+                  {doc.checksum ? ` · SHA-256 ${doc.checksum.slice(0, 12)}…` : ''}
+                </p>
               </div>
             </div>
 
@@ -202,6 +196,13 @@ export const TransparencyView: React.FC<TransparencyViewProps> = ({
             </div>
           </Reveal>
         ))}
+        {filtered.length === 0 && (
+          <div className="rounded-xl border border-dashed border-slate-300 p-8 text-center dark:border-slate-700">
+            <FileText className="mx-auto h-8 w-8 text-slate-400" />
+            <h2 className="mt-3 font-bold text-slate-800 dark:text-white">No published documents found</h2>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Try a different fiscal year, category, or search term.</p>
+          </div>
+        )}
       </div>
 
     </div>

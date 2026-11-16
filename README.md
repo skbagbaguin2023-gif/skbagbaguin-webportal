@@ -111,6 +111,10 @@ upload. PDFs are limited to 35 MB and are saved in Supabase Storage. If the
 database was already created, run
 [`supabase/transparency_35mb_migration.sql`](./supabase/transparency_35mb_migration.sql)
 once to update the existing Storage bucket.
+Run [`supabase/transparency_versioning_migration.sql`](./supabase/transparency_versioning_migration.sql)
+to allow public access to retained document revisions only while their
+transparency record is published. New transparency PDFs stay private until
+explicitly published from the admin document manager.
 No Firebase project credentials are used by the app.
 
 #### SK Bagbaguin Digital Assistant

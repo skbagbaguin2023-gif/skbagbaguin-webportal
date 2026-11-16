@@ -153,6 +153,8 @@ export async function uploadTransparencyDocument(file: File, documentId: string)
   if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
     throw new Error('Choose a PDF file.');
   }
+  const pdfHeader = new TextDecoder().decode(await file.slice(0, 5).arrayBuffer());
+  if (pdfHeader !== '%PDF-') throw new Error('The selected file is not a valid PDF document.');
   if (file.size > MAX_TRANSPARENCY_DOCUMENT_SIZE) {
     throw new Error('PDF files must be 35 MB or smaller.');
   }
