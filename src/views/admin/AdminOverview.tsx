@@ -314,6 +314,8 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
                         ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300'
                         : app.status === 'Rejected'
                         ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300'
+                        : app.status === 'Cancelled'
+                        ? 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200'
                         : 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300'
                     }`}>
                       {app.status}

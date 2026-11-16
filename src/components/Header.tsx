@@ -14,7 +14,8 @@ import {
   Layers, 
   Bell,
   ChevronRight,
-  SearchCheck
+  SearchCheck,
+  UserRound,
 } from 'lucide-react';
 import { searchPublicContent, type SearchResult } from '../services/search.ts';
 import { expandSearchQuery } from '../services/searchLogic.ts';
@@ -24,6 +25,7 @@ interface HeaderProps {
   onNavigate: (page: PublicPage) => void;
   onOpenApplyModal: () => void;
   onSearch: (query: string) => void;
+  isSignedIn: boolean;
   searchResults?: SearchResult[];
 }
 
@@ -32,6 +34,7 @@ export const Header: React.FC<HeaderProps> = ({
   onNavigate,
   onOpenApplyModal,
   onSearch,
+  isSignedIn,
   searchResults = [],
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -240,6 +243,15 @@ export const Header: React.FC<HeaderProps> = ({
             <ThemeToggle variant="header" />
 
             <button
+              type="button"
+              onClick={() => onNavigate('account')}
+              className="hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-white/20 px-2.5 py-2 text-xs font-semibold text-slate-100 transition-colors hover:bg-white/10"
+            >
+              <UserRound className="h-4 w-4" />
+              {isSignedIn ? 'My Account' : 'Sign in'}
+            </button>
+
+            <button
               onClick={onOpenApplyModal}
               className="bg-[#F5A623] hover:bg-[#D98E16] text-[#081830] font-bold text-xs sm:text-sm px-2.5 sm:px-3 py-2 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 whitespace-nowrap shrink-0 flex items-center gap-1.5 cursor-pointer"
             >
@@ -343,6 +355,17 @@ export const Header: React.FC<HeaderProps> = ({
             })}
 
             <div className="pt-3 border-t border-white/10 mt-2 flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  onNavigate('account');
+                  setMobileMenuOpen(false);
+                }}
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-200 hover:bg-white/10"
+              >
+                <UserRound className="h-4 w-4" />
+                <span>{isSignedIn ? 'My Account' : 'Sign in'}</span>
+              </button>
               <div className="flex items-center justify-between px-3 py-2 bg-white/5 rounded-lg text-xs text-slate-300">
                 <span>Dark / Night Theme</span>
                 <ThemeToggle variant="header" />

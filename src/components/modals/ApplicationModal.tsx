@@ -80,6 +80,8 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
     const preferredService = activeServices.find((service) => service.name === defaultService);
     if (preferredService) {
       setServiceType(preferredService.name);
+    } else if (defaultService.toLowerCase().includes('profiling')) {
+      setServiceType(defaultService);
     } else if (!activeServices.some((service) => service.name === serviceType)) {
       setServiceType(activeServices[0]?.name ?? '');
     }

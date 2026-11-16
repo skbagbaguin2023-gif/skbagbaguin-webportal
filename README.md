@@ -99,12 +99,13 @@ public portal. If the database already has the older announcement policy, run
 in Supabase SQL Editor to publish existing drafts and allow public reads.
 
 Public content can be read publicly. Visitors can submit applications and
-feedback, while those private records are readable only by admins. Event
-registration is handled by a database function that checks capacity
-atomically. CMS data syncs in real time. Application documents are stored in a
-separate private bucket and can be opened by administrators through short-lived
-signed links. Transparency PDFs are stored in a private bucket; only
-administrators and visitors viewing documents marked public can access them.
+feedback; application records are readable by administrators and the signed-in
+resident who owns them, while feedback remains admin-only. Event registration
+is handled by a database function that checks capacity atomically. CMS data
+syncs in real time. Application documents are stored in a separate private
+bucket and can be opened by administrators through short-lived signed links.
+Transparency PDFs are stored in a private bucket; only administrators and
+visitors viewing documents marked public can access them.
 In the admin Transparency section, select a PDF with **Select File to Upload**
 or drag it onto the dashed upload area, fill in its details, then confirm the
 upload. PDFs are limited to 35 MB and are saved in Supabase Storage. If the
@@ -116,6 +117,38 @@ to allow public access to retained document revisions only while their
 transparency record is published. New transparency PDFs stay private until
 explicitly published from the admin document manager.
 No Firebase project credentials are used by the app.
+
+#### Optional resident accounts
+
+Residents can continue submitting service requests without an account. Optional
+email/password accounts provide a dashboard for linked applications, pending
+request edits or cancellations, and opt-in email status notifications. Previous
+requests can be linked only after confirming the account email used on the
+submission. KK profile edits change the portal record; the original Google Form
+response is retained unchanged.
+
+To enable resident accounts (after `schema.sql` on a new project, or after the
+existing application/storage migrations on an established project):
+
+1. Run [`supabase/resident_accounts_migration.sql`](./supabase/resident_accounts_migration.sql)
+   after the core schema, application/storage policies, and printing-services
+   migration have been applied.
+2. In **Authentication > URL Configuration**, set the site's public URL and
+   allow the local and production account callback URLs, such as
+   `http://localhost:3000/?page=account` and
+   `https://<your-domain>/?page=account`. Keep email confirmation enabled so
+   residents must verify their address before claiming older submissions.
+3. Deploy the `send-application-status-email` Edge Function:
+   `supabase functions deploy send-application-status-email`
+4. If the Google Apps Script Gmail mailer is already deployed, update its code
+   from [`google-apps-script/Code.gs`](./google-apps-script/Code.gs) and deploy
+   a new version. The existing `GMAIL_MAILER_URL` and `GMAIL_MAILER_SECRET`
+   Edge Function secrets are reused for status messages.
+
+Email updates are opt-in and are sent only to a confirmed email address on the
+resident's account. If the mailer is not configured, account tracking and
+dashboard status updates still work; the admin interface reports email delivery
+failures separately from saved status changes.
 
 #### SK Bagbaguin Digital Assistant
 

@@ -126,6 +126,9 @@ Deno.serve(async (request) => {
   ) {
     return jsonResponse(400, { error: 'The saved record is not a complete KK profiling submission.' });
   }
+  if (profileRecord.googleSyncStatus === 'Portal Updated') {
+    return jsonResponse(409, { error: 'This profile was edited after Google Forms sync. The original Google response cannot be overwritten.' });
+  }
   if (profileRecord.googleSyncStatus === 'Synced') {
     return jsonResponse(200, { synced: true, alreadySynced: true });
   }

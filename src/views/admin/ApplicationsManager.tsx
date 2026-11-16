@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { YouthApplication, ApplicationStatus, YouthService } from '../../types/index.ts';
 import { 
   Search, 
@@ -17,7 +17,12 @@ import {
   Trash2
 } from 'lucide-react';
 import Reveal from '../../components/Reveal.jsx';
-import { getApplicationDocumentSignedUrl, syncKkProfileToGoogle } from '../../services/supabaseData.ts';
+import {
+  getApplicationDocumentSignedUrl,
+  getApplicationEditHistory,
+  syncKkProfileToGoogle,
+  type ApplicationEditHistory,
+} from '../../services/supabaseData.ts';
 import { ConfirmationModal } from '../../components/modals/ConfirmationModal.tsx';
 
 interface ApplicationsManagerProps {
@@ -56,6 +61,34 @@ export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isDeletingApplication, setIsDeletingApplication] = useState(false);
   const [deleteError, setDeleteError] = useState('');
+  const [editHistory, setEditHistory] = useState<ApplicationEditHistory[]>([]);
+  const [editHistoryError, setEditHistoryError] = useState('');
+  const [isLoadingEditHistory, setIsLoadingEditHistory] = useState(false);
+
+  useEffect(() => {
+    let isActive = true;
+    if (!activeApp) {
+      setEditHistory([]);
+      return () => { isActive = false; };
+    }
+
+    setIsLoadingEditHistory(true);
+    setEditHistoryError('');
+    void getApplicationEditHistory(activeApp.id)
+      .then((history) => {
+        if (isActive) setEditHistory(history);
+      })
+      .catch((error: unknown) => {
+        if (isActive) {
+          setEditHistoryError(error instanceof Error ? error.message : 'Could not load applicant edit history.');
+        }
+      })
+      .finally(() => {
+        if (isActive) setIsLoadingEditHistory(false);
+      });
+
+    return () => { isActive = false; };
+  }, [activeApp?.id]);
 
   const filtered = applications.filter((app) => {
     const q = search.toLowerCase();
@@ -213,6 +246,7 @@ export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
                 <option value="Under Review">Under Review</option>
                 <option value="Approved">Approved</option>
                 <option value="Rejected">Rejected</option>
+                <option value="Cancelled">Cancelled</option>
               </select>
 
               <select
@@ -251,6 +285,8 @@ export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
                         ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300'
                         : app.status === 'Rejected'
                         ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300'
+                        : app.status === 'Cancelled'
+                        ? 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200'
                         : 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300'
                     }`}>
                       {app.status}
@@ -341,11 +377,13 @@ export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
                   <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${
                     activeApp.googleSyncStatus === 'Synced'
                       ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
+                      : activeApp.googleSyncStatus === 'Portal Updated'
+                        ? 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200'
                       : activeApp.googleSyncStatus === 'Failed'
                         ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300'
                         : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
                   }`}>
-                    Google sync: {activeApp.googleSyncStatus || 'Pending'}
+                    Google sync: {activeApp.googleSyncStatus === 'Portal Updated' ? 'Portal profile updated' : activeApp.googleSyncStatus || 'Pending'}
                   </span>
                 </div>
                 <div className="grid gap-2 text-xs sm:grid-cols-2">
@@ -374,8 +412,12 @@ export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
                     </p>
                   ))}
                 </div>
-                {kkSyncMessage && <p role="status" className="text-xs text-amber-800 dark:text-amber-300">{kkSyncMessage}</p>}
-                {activeApp.googleSyncStatus !== 'Synced' && (
+                {activeApp.googleSyncStatus === 'Portal Updated' ? (
+                  <p className="text-xs text-slate-600 dark:text-slate-300">
+                    The portal now has resident edits. The original Google Form response remains unchanged.
+                  </p>
+                ) : kkSyncMessage && <p role="status" className="text-xs text-amber-800 dark:text-amber-300">{kkSyncMessage}</p>}
+                {activeApp.googleSyncStatus !== 'Synced' && activeApp.googleSyncStatus !== 'Portal Updated' && (
                   <button
                     type="button"
                     disabled={isSyncingKkProfile}
@@ -566,6 +608,23 @@ export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
                   <span>Save Notes</span>
                 </button>
               </div>
+
+              {(isLoadingEditHistory || editHistoryError || editHistory.length > 0) && (
+                <section className="space-y-2 border-t border-slate-200 pt-4 dark:border-slate-800">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-white">Resident edit history</h4>
+                  {isLoadingEditHistory && <p className="text-xs text-slate-500">Loading edit history…</p>}
+                  {editHistoryError && <p role="alert" className="text-xs text-rose-600 dark:text-rose-300">{editHistoryError}</p>}
+                  {editHistory.map((entry) => (
+                    <div key={entry.id} className="rounded-lg bg-slate-50 p-3 text-xs dark:bg-slate-800">
+                      <p className="font-semibold text-slate-700 dark:text-slate-200">{new Date(entry.created_at).toLocaleString()}</p>
+                      <p className="mt-1 text-slate-600 dark:text-slate-300">{entry.reason}</p>
+                      <p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400">
+                        Changed: {entry.changed_fields.map((field) => field.replace(/([a-z])([A-Z])/g, '$1 $2')).join(', ')}
+                      </p>
+                    </div>
+                  ))}
+                </section>
+              )}
             </div>
 
           </div>

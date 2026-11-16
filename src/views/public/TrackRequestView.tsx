@@ -11,6 +11,7 @@ interface TrackRequestViewProps {
 const statusSteps = ['Pending', 'Under Review', 'Approved'];
 
 function getStatusMessage(result: ApplicationTrackingResult): string {
+  if (result.status === 'Cancelled') return 'This request was cancelled by the applicant.';
   if (result.status === 'Rejected') return 'The request was not approved. Please contact the SK Council Secretariat for assistance.';
   if (result.status === 'Approved') return 'Your request has been approved. Please wait for pickup or release instructions from the SK Council Secretariat.';
   if (result.status === 'Under Review') return 'The SK Council is reviewing your request and will contact you if clarification is needed.';
@@ -114,7 +115,13 @@ export const TrackRequestView: React.FC<TrackRequestViewProps> = ({ onNavigateTo
               <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Reference Code</p>
               <p className="font-mono font-bold text-lg text-[#0F2C59] dark:text-amber-400">{result.refNumber}</p>
             </div>
-            <span className="rounded-full bg-amber-100 dark:bg-amber-950/50 px-3 py-1 text-xs font-bold text-amber-800 dark:text-amber-300">{result.status}</span>
+            <span className={`rounded-full px-3 py-1 text-xs font-bold ${
+              result.status === 'Cancelled' || result.status === 'Rejected'
+                ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/50 dark:text-rose-300'
+                : result.status === 'Approved'
+                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300'
+                  : 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300'
+            }`}>{result.status}</span>
           </div>
 
           <div className="grid grid-cols-2 gap-4 text-xs">
@@ -124,7 +131,7 @@ export const TrackRequestView: React.FC<TrackRequestViewProps> = ({ onNavigateTo
             {result.copiesNeeded !== undefined && <div><span className="block text-slate-500 dark:text-slate-400">Copies</span><strong>{result.copiesNeeded}</strong></div>}
           </div>
 
-          {result.status !== 'Rejected' && (
+          {result.status !== 'Rejected' && result.status !== 'Cancelled' && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 {statusSteps.map((step, index) => (

@@ -41,6 +41,7 @@ import { TrackRequestView } from './views/public/TrackRequestView.tsx';
 import { TransparencyView } from './views/public/TransparencyView.tsx';
 import { ContactView } from './views/public/ContactView.tsx';
 import { SearchView } from './views/public/SearchView.tsx';
+import { ResidentAccountView } from './views/public/ResidentAccountView.tsx';
 import type { SearchResult } from './services/search.ts';
 const ChatAssistant = lazy(() => import('./components/ChatAssistant.tsx').then((module) => ({ default: module.ChatAssistant })));
 
@@ -64,6 +65,7 @@ import {
   registerForEvent,
   savePortalRecord,
   saveCouncilOrder,
+  sendApplicationStatusEmail,
   sendFeedbackReplyEmail,
   subscribeToPortalCollection,
   uploadTransparencyDocument,
@@ -80,6 +82,7 @@ export default function App() {
   const [selectedAnnouncementId, setSelectedAnnouncementId] = useState<string | null>(null);
   const [isInitialLoading, setIsInitialLoading] = useState(window.location.pathname === '/');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isAuthReady, setIsAuthReady] = useState(false);
   const [backendError, setBackendError] = useState('');
   const [toast, setToast] = useState<ToastMessage | null>(null);
 
@@ -91,7 +94,7 @@ export default function App() {
     const updatePathname = () => {
       setPathname(window.location.pathname);
       const page = new URLSearchParams(window.location.search).get('page') as PublicPage | null;
-      if (page && ['home', 'about', 'programs', 'events', 'announcements', 'services', 'track', 'transparency', 'contact'].includes(page)) {
+      if (page && ['home', 'about', 'programs', 'events', 'announcements', 'services', 'track', 'account', 'transparency', 'contact'].includes(page)) {
         setCurrentPage(page);
       } else if (window.location.pathname === '/') {
         setCurrentPage('home');
@@ -125,7 +128,10 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    return observeAuthState(setCurrentUser);
+    return observeAuthState((user) => {
+      setCurrentUser(user);
+      setIsAuthReady(true);
+    });
   }, []);
 
   // Core Data Collections
@@ -327,11 +333,12 @@ export default function App() {
   // Handlers for Youth Submissions
   const handleOpenApplyModal = (service?: ServiceType) => {
     const activeServices = services.filter((item) => item.isActive);
-    setApplyDefaultService(
-      activeServices.find((item) => item.name === service)?.name
-      ?? activeServices[0]?.name
-      ?? ''
-    );
+    const requestedProfilingService = service?.toLowerCase().includes('profiling');
+    const selectedService = activeServices.find((item) => item.name === service)
+      ?? (requestedProfilingService ? activeServices.find((item) => /profiling/i.test(item.name)) : undefined)
+      ?? (requestedProfilingService ? undefined : activeServices[0]);
+    setApplyDefaultService(selectedService?.name
+      ?? (requestedProfilingService ? 'Katipunan ng Kabataan (KK) Official Profiling' : ''));
     setIsApplyModalOpen(true);
   };
 
@@ -587,23 +594,31 @@ export default function App() {
   };
 
   const handleUpdateApplicationStatus = (id: string, status: ApplicationStatus, notes?: string) => {
-    setApplications((prev) =>
-      prev.map((app) =>
-        app.id === id
-          ? {
-              ...app,
-              status,
-              adminNotes: notes !== undefined ? notes : app.adminNotes,
-            }
-          : app
-      )
-    );
     const application = applications.find((item) => item.id === id);
-    if (application) saveRecord('applications', {
+    if (!application) return;
+    const updatedApplication = {
       ...application,
       status,
       adminNotes: notes !== undefined ? notes : application.adminNotes,
-    });
+    };
+    setApplications((prev) =>
+      prev.map((app) => app.id === id ? updatedApplication : app)
+    );
+    void savePortalRecord('applications', updatedApplication)
+      .then(async () => {
+        notify('success', 'Application status updated.');
+        if (application.status !== status) {
+          try {
+            const result = await sendApplicationStatusEmail(id, status);
+            if (result.sent) notify('success', 'Status update email sent to the resident.');
+          } catch (error) {
+            const message = error instanceof Error ? error.message : 'The status email could not be sent.';
+            setBackendError(`Status was updated, but the resident email could not be sent. ${message}`);
+            notify('error', 'Status updated, but the resident email could not be sent.');
+          }
+        }
+      })
+      .catch(reportWriteError);
   };
 
   const handleDeleteApplication = async (id: string): Promise<void> => {
@@ -858,6 +873,7 @@ export default function App() {
         <>
           <Header
             currentPage={currentPage}
+            isSignedIn={Boolean(currentUser)}
             onNavigate={(page) => {
               setCurrentPage(page);
               setSelectedProgramId(null);
@@ -933,6 +949,10 @@ export default function App() {
                 selectedAnnouncementId={selectedAnnouncementId}
                 onSelectAnnouncement={openAnnouncementPage}
                 onBackFromAnnouncement={() => returnFromDetailPage('announcements')}
+                onStartKkProfiling={() => handleOpenApplyModal(
+                  services.find((service) => service.isActive && /profiling/i.test(service.name))?.name
+                  ?? 'Katipunan ng Kabataan (KK) Official Profiling'
+                )}
               />
               )}
 
@@ -945,6 +965,14 @@ export default function App() {
                 setCurrentPage('services');
                 window.scrollTo({ top: 0 });
               }} />
+              )}
+
+              {currentPage === 'account' && (
+              <ResidentAccountView
+                user={currentUser}
+                authReady={isAuthReady}
+                onSignOut={logout}
+              />
               )}
 
               {currentPage === 'transparency' && (
