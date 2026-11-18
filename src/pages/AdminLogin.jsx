@@ -5,6 +5,7 @@ import { supabaseConfigured } from '../services/supabase.ts';
 import skLogo from '../assets/images/skLogo.png';
 import backgroundImage from '../assets/images/3sbg.jpg';
 import { ResidentAuthPanel } from '../components/ResidentAuthPanel.tsx';
+import { getUserFacingError } from '../utils/userFacingError.ts';
 
 export default function AdminLogin() {
   const isPasswordRecovery = window.location.pathname === '/reset-password'
@@ -33,7 +34,7 @@ export default function AdminLogin() {
         setError('This account is not authorized as an administrator.');
       }
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Unable to sign in right now. Please try again.');
+      setError(getUserFacingError(error, 'Unable to sign in right now. Please try again.'));
     } finally {
       setIsLoading(false);
     }

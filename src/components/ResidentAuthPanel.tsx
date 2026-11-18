@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Eye, EyeOff, Loader2, LockKeyhole, Mail } from 'lucide-react';
-import { supabase } from '../services/supabase.ts';
+import { isAdminUser, supabase } from '../services/supabase.ts';
+import { getUserFacingError } from '../utils/userFacingError.ts';
 import { EMPTY_RESIDENT_PROFILE } from '../services/residentProfile.ts';
 import type { ResidentProfile } from '../types/index.ts';
 import skLogo from '../assets/images/skLogo.png';
@@ -91,8 +92,14 @@ export function ResidentAuthPanel({ onAuthenticated }: { onAuthenticated: () => 
     setIsLoading(true);
     try {
       if (mode === 'sign-in') {
-        const { error: signInError } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
         if (signInError) throw signInError;
+        if (isAdminUser(data.user)) {
+          const { error: signOutError } = await supabase.auth.signOut();
+          if (signOutError) throw signOutError;
+          setError('This account is reserved for SK administrators. Choose Administrator login instead.');
+          return;
+        }
         onAuthenticated();
       } else if (mode === 'sign-up') {
         const { data, error: signUpError } = await supabase.auth.signUp({
@@ -131,14 +138,7 @@ export function ResidentAuthPanel({ onAuthenticated }: { onAuthenticated: () => 
         onAuthenticated();
       }
     } catch (requestError) {
-      if (mode === 'sign-in'
-        && requestError instanceof Error
-        && 'code' in requestError
-        && requestError.code === 'invalid_credentials') {
-        setError('The email or password was not accepted. If you already created this account, use Forgot password? to set a new password.');
-      } else {
-        setError(requestError instanceof Error ? requestError.message : 'Your account request could not be completed.');
-      }
+      setError(getUserFacingError(requestError, 'Your account request could not be completed.'));
     } finally {
       setIsLoading(false);
     }
@@ -247,7 +247,7 @@ export function ResidentAuthPanel({ onAuthenticated }: { onAuthenticated: () => 
             </span>
           </label>
         )}
-        {mode === 'sign-up' && <p className="text-xs leading-relaxed text-slate-600">Use at least 8 characters with uppercase, lowercase, a number, and a symbol. For immediate access, email confirmation must be disabled in Supabase. Use an email address you control; older requests cannot be claimed until verification is enabled.</p>}
+        {mode === 'sign-up' &&         <p className="text-xs leading-relaxed text-slate-600">Use at least 8 characters with uppercase, lowercase, a number, and a symbol. For immediate access, email confirmation must be disabled in Supabase. You can ask the SK office to review and link earlier applications after creating your account.</p>}
 
         {error && <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-300">{error}</p>}
         {message && <p role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300">{message}</p>}

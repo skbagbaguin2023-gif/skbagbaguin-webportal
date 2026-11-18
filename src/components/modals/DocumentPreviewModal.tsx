@@ -3,6 +3,7 @@ import { TransparencyDoc } from '../../types/index.ts';
 import { X, FileText, ExternalLink, ShieldCheck, Calendar, Hash, LoaderCircle } from 'lucide-react';
 import { getTransparencyDocumentSignedUrl } from '../../services/supabaseData.ts';
 import { useModalScrollLock } from '../useModalScrollLock.ts';
+import { getUserFacingError } from '../../utils/userFacingError.ts';
 
 interface DocumentPreviewModalProps {
   doc: TransparencyDoc | null;
@@ -35,7 +36,7 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
         })
         .catch((error: unknown) => {
           if (isCurrent) {
-            setLoadError(error instanceof Error ? error.message : 'Could not load the PDF.');
+            setLoadError(getUserFacingError(error, 'Could not load the PDF.'));
           }
         })
         .finally(() => {

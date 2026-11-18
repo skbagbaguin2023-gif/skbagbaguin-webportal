@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import Reveal from '../../components/Reveal.jsx';
 import LocationMap from '../../components/LocationMap.jsx';
+import { getUserFacingError } from '../../utils/userFacingError.ts';
 
 interface ContactViewProps {
   onSubmitFeedback: (item: FeedbackSuggestion) => Promise<void>;
@@ -67,7 +68,7 @@ export const ContactView: React.FC<ContactViewProps> = ({ onSubmitFeedback }) =>
       await onSubmitFeedback(newFeedback);
       setIsSubmitted(true);
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : 'Your message could not be submitted. Please try again.');
+      setError(getUserFacingError(submitError, 'Your message could not be submitted. Please try again.'));
     } finally {
       setIsSubmitting(false);
     }

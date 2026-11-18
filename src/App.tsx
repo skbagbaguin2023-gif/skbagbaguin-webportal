@@ -27,6 +27,7 @@ import { DEFAULT_ANNOUNCEMENTS } from './data/defaultAnnouncements.ts';
 import { Analytics } from '@vercel/analytics/react';
 import { generateUuid } from './utils/uuid.ts';
 import { calculateFileSha256 } from './utils/documentIntegrity.ts';
+import { getUserFacingError } from './utils/userFacingError.ts';
 
 // Public Components & Views
 import { Header } from './components/Header.tsx';
@@ -312,12 +313,8 @@ export default function App() {
 
   const reportWriteError = (error: unknown) => {
     console.error('Supabase data write failed.', error);
-    const message = error instanceof Error ? error.message : 'Supabase could not save this change. Please try again.';
-    setBackendError(
-      error instanceof Error
-        ? `Supabase could not save this change: ${error.message}`
-        : 'Supabase could not save this change. Please try again.'
-    );
+    const message = getUserFacingError(error, 'Could not save this change. Please try again.');
+    setBackendError(message);
     notify('error', message);
   };
 
@@ -622,7 +619,7 @@ export default function App() {
             const result = await sendApplicationStatusEmail(id, status);
             if (result.sent) notify('success', 'Status update email sent to the resident.');
           } catch (error) {
-            const message = error instanceof Error ? error.message : 'The status email could not be sent.';
+            const message = getUserFacingError(error, 'The status email could not be sent.');
             setBackendError(`Status was updated, but the resident email could not be sent. ${message}`);
             notify('error', 'Status updated, but the resident email could not be sent.');
           }
@@ -779,7 +776,7 @@ export default function App() {
       await sendFeedbackReplyEmail(id, reply);
       return { emailSent: true };
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Reply saved, but its email could not be sent.';
+      const message = getUserFacingError(error, 'Reply saved, but its email could not be sent.');
       setBackendError(message);
       throw error;
     }

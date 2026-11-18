@@ -1,25 +1,26 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
-import { AlertCircle, Bell, CheckCircle2, Clock3, FileSearch, Home, LayoutDashboard, Loader2, LogOut, Mail, Pencil, ShieldCheck, Trash2, UserRound } from 'lucide-react';
+import { AlertCircle, Bell, CheckCircle2, Clock3, FileSearch, Home, LayoutDashboard, Loader2, LogOut, Pencil, RefreshCw, ShieldCheck, Trash2, UserRound, XCircle } from 'lucide-react';
 import type { ApplicationEditHistory, ResidentApplication } from '../../services/supabaseData.ts';
 import {
   cancelResidentApplication,
-  claimResidentApplications,
   deleteApplicationDocument,
   getApplicationEditHistory,
+  getResidentApplicationClaims,
   getResidentApplications,
-  getResidentPreferences,
-  saveResidentPreferences,
+  submitResidentApplicationClaim,
+  subscribeToResidentApplications,
   updateResidentApplication,
   uploadApplicationDocument,
   uploadPrintingRequestPdf,
 } from '../../services/supabaseData.ts';
-import type { KkProfilingData, ResidentProfile, YouthApplication } from '../../types/index.ts';
+import type { ApplicationStatus, KkProfilingData, ResidentProfile, YouthApplication } from '../../types/index.ts';
 import { getResidentProfile } from '../../services/residentProfile.ts';
 import { saveResidentProfile } from '../../services/residentProfileService.ts';
+import { isAdminUser } from '../../services/supabase.ts';
 import { ResidentAuthPanel } from '../../components/ResidentAuthPanel.tsx';
 import { TrackRequestView } from './TrackRequestView.tsx';
-import { residentEmailVerificationEnabled } from '../../services/supabase.ts';
+import { getUserFacingError } from '../../utils/userFacingError.ts';
 import Reveal from '../../components/Reveal.jsx';
 
 export type DashboardTab = 'overview' | 'applications' | 'track' | 'profile' | 'notifications';
@@ -81,6 +82,43 @@ const topLevelFields: { key: keyof YouthApplication; label: string; type?: strin
 
 function getApplicationEmail(application: ResidentApplication): string {
   return application.email || application.kkProfile?.email || '';
+}
+
+function getApplicationStatusMessage(status: ApplicationStatus): string {
+  switch (status) {
+    case 'Pending':
+      return 'Your application is waiting for review.';
+    case 'Under Review':
+      return 'The SK office is reviewing your application.';
+    case 'Approved':
+      return 'Your application has been approved.';
+    case 'Rejected':
+      return 'Your application was not approved.';
+    case 'Cancelled':
+      return 'This application was cancelled.';
+  }
+}
+
+function getApplicationStatusClasses(status: ApplicationStatus): string {
+  switch (status) {
+    case 'Approved':
+      return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300';
+    case 'Rejected':
+      return 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300';
+    case 'Pending':
+      return 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300';
+    case 'Under Review':
+      return 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300';
+    case 'Cancelled':
+      return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300';
+  }
+}
+
+function formatApplicationUpdatedAt(value: string): string {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? 'Update time unavailable'
+    : new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
 }
 
 function ApplicationEditor({
@@ -179,9 +217,9 @@ function ApplicationEditor({
         try {
           await deleteApplicationDocument(path);
         } catch (requestError) {
-          removalError = requestError instanceof Error
-            ? `Your changes were saved, but an old document could not be removed: ${requestError.message}`
-            : 'Your changes were saved, but an old document could not be removed.';
+          removalError = `Your changes were saved, but an old document could not be removed: ${
+            getUserFacingError(requestError, 'Please try again later.')
+          }`;
         }
       }
       await onSaved(removalError);
@@ -193,7 +231,7 @@ function ApplicationEditor({
           console.error('Unable to remove a newly uploaded document after a failed application edit.', cleanupError);
         }
       }
-      setError(requestError instanceof Error ? requestError.message : 'The application could not be updated.');
+      setError(getUserFacingError(requestError, 'The application could not be updated.'));
     } finally {
       setIsSaving(false);
     }
@@ -321,14 +359,15 @@ export const ResidentAccountView: React.FC<{
   onReturnToPublic: (page?: 'home' | 'services') => void;
 }> = ({ user, authReady, onSignOut, initialTab = 'overview', onReturnToPublic }) => {
   const [applications, setApplications] = useState<ResidentApplication[]>([]);
+  const [applicationClaims, setApplicationClaims] = useState<Awaited<ReturnType<typeof getResidentApplicationClaims>>>([]);
   const [history, setHistory] = useState<ApplicationEditHistory[]>([]);
-  const [statusEmailOptIn, setStatusEmailOptIn] = useState(false);
   const [profile, setProfile] = useState<ResidentProfile>(() => getResidentProfile(user));
   const [activeTab, setActiveTab] = useState<DashboardTab>(initialTab);
   const [isLoading, setIsLoading] = useState(false);
-  const [isSavingPreference, setIsSavingPreference] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isClaiming, setIsClaiming] = useState(false);
+  const [claimRefNumber, setClaimRefNumber] = useState('');
+  const [claimContactNumber, setClaimContactNumber] = useState('');
   const [editingApplicationId, setEditingApplicationId] = useState('');
   const [cancellingApplication, setCancellingApplication] = useState<ResidentApplication | null>(null);
   const [cancelReason, setCancelReason] = useState('');
@@ -337,6 +376,7 @@ export const ResidentAccountView: React.FC<{
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(
     () => new URLSearchParams(window.location.hash.slice(1)).get('type') === 'recovery'
   );
+  const isAdminAccount = isAdminUser(user);
 
   const sortedHistory = useMemo(() => history.reduce<Record<string, ApplicationEditHistory[]>>((grouped, item) => {
     (grouped[item.application_id] ??= []).push(item);
@@ -348,16 +388,16 @@ export const ResidentAccountView: React.FC<{
     setIsLoading(true);
     setError('');
     try {
-      const [nextApplications, nextPreferences, nextHistory] = await Promise.all([
+      const [nextApplications, nextClaims, nextHistory] = await Promise.all([
         getResidentApplications(),
-        getResidentPreferences(),
+        getResidentApplicationClaims(),
         getApplicationEditHistory(),
       ]);
       setApplications(nextApplications);
-      setStatusEmailOptIn(nextPreferences.statusEmailOptIn);
+      setApplicationClaims(nextClaims);
       setHistory(nextHistory);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : 'Your account information could not be loaded.');
+      setError(getUserFacingError(requestError, 'Your account information could not be loaded.'));
     } finally {
       setIsLoading(false);
     }
@@ -368,12 +408,44 @@ export const ResidentAccountView: React.FC<{
   }, [user?.id]);
 
   useEffect(() => {
+    if (!user) return;
+
+    let isActive = true;
+    const unsubscribe = subscribeToResidentApplications(user.id, () => {
+      void getResidentApplications()
+        .then((nextApplications) => {
+          if (isActive) setApplications(nextApplications);
+        })
+        .catch((requestError: unknown) => {
+          if (isActive) {
+            setError(getUserFacingError(requestError, 'Application status notifications could not be refreshed.'));
+          }
+        });
+    }, (subscriptionError) => {
+      if (isActive) setError(getUserFacingError(subscriptionError, 'Application status notifications could not be connected.'));
+    });
+
+    return () => {
+      isActive = false;
+      unsubscribe();
+    };
+  }, [user?.id]);
+
+  useEffect(() => {
     setProfile(getResidentProfile(user));
   }, [user]);
 
   useEffect(() => {
     setActiveTab(initialTab);
   }, [initialTab]);
+
+  useEffect(() => {
+    if (authReady && isAdminAccount) {
+      window.location.replace('/admin');
+    } else if (authReady && !user && !isPasswordRecovery) {
+      window.location.replace('/admin/login?mode=resident');
+    }
+  }, [authReady, isAdminAccount, isPasswordRecovery, user]);
 
   const selectTab = (tab: DashboardTab) => {
     setActiveTab(tab);
@@ -383,41 +455,21 @@ export const ResidentAccountView: React.FC<{
     window.history.replaceState({}, '', `/?${params.toString()}`);
   };
 
-  const claimOlderApplications = async () => {
-    if (!residentEmailVerificationEnabled) {
-      setError('Previous submissions can only be claimed after email ownership verification is enabled.');
-      return;
-    }
+  const submitApplicationClaim = async (event: React.FormEvent) => {
+    event.preventDefault();
     setError('');
     setNotice('');
     setIsClaiming(true);
     try {
-      const count = await claimResidentApplications();
+      await submitResidentApplicationClaim(claimRefNumber, claimContactNumber);
+      setClaimRefNumber('');
+      setClaimContactNumber('');
       await refresh();
-      setNotice(count
-        ? `${count} previous submission${count === 1 ? '' : 's'} linked to this verified email.`
-        : 'No unclaimed submissions were found for this verified email.');
+      setNotice('Your request was sent to the SK office for verification. The application will appear in your account after an administrator approves the link.');
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : 'Previous submissions could not be linked.');
+      setError(getUserFacingError(requestError, 'Your application link request could not be submitted.'));
     } finally {
       setIsClaiming(false);
-    }
-  };
-
-  const saveEmailPreference = async (nextValue: boolean) => {
-    setError('');
-    setNotice('');
-    setIsSavingPreference(true);
-    try {
-      await saveResidentPreferences({ statusEmailOptIn: nextValue });
-      setStatusEmailOptIn(nextValue);
-      setNotice(nextValue
-        ? 'Status email notifications are enabled.'
-        : 'Status email notifications are disabled.');
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : 'Your notification preference could not be saved.');
-    } finally {
-      setIsSavingPreference(false);
     }
   };
 
@@ -431,9 +483,19 @@ export const ResidentAccountView: React.FC<{
       setProfile(savedProfile);
       setNotice('Your personal details were saved and will be used to prefill service forms.');
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : 'Your profile could not be saved.');
+      setError(getUserFacingError(requestError, 'Your profile could not be saved.'));
     } finally {
       setIsSavingProfile(false);
+    }
+  };
+
+  const signOutAndReturnHome = async () => {
+    setError('');
+    try {
+      await onSignOut();
+      window.location.assign('/');
+    } catch (requestError) {
+      setError(getUserFacingError(requestError, 'You could not be signed out.'));
     }
   };
 
@@ -449,7 +511,7 @@ export const ResidentAccountView: React.FC<{
       setNotice('Your application was cancelled.');
       await refresh();
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : 'The application could not be cancelled.');
+      setError(getUserFacingError(requestError, 'The application could not be cancelled.'));
     }
   };
 
@@ -465,21 +527,12 @@ export const ResidentAccountView: React.FC<{
     );
   }
 
+  if (isAdminAccount) {
+    return <div className="mx-auto max-w-3xl px-4 py-16 text-center text-sm text-slate-500">Redirecting to the administrator dashboard…</div>;
+  }
+
   if (!user) {
-    return (
-      <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
-        <section className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <UserRound className="mx-auto h-10 w-10 text-[#0F2C59] dark:text-amber-300" />
-          <h1 className="mt-4 text-2xl font-bold text-slate-900 dark:text-white">Resident account</h1>
-          <p className="mx-auto mt-2 max-w-lg text-sm text-slate-600 dark:text-slate-300">
-            Sign in or create an account to manage service requests and save your details for future forms.
-          </p>
-          <a href="/admin/login?mode=resident" className="mt-6 inline-flex rounded-lg bg-[#0F2C59] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#173B72]">
-            Sign in or create account
-          </a>
-        </section>
-      </div>
-    );
+    return <div className="mx-auto max-w-3xl px-4 py-16 text-center text-sm text-slate-500">Redirecting to sign in…</div>;
   }
 
   const displayName = [profile.firstName, profile.lastName].filter(Boolean).join(' ') || user.email || 'Resident';
@@ -515,7 +568,7 @@ export const ResidentAccountView: React.FC<{
         <button type="button" onClick={() => onReturnToPublic('home')} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-amber-400 px-3 py-2 text-sm font-bold text-slate-950 hover:bg-amber-300">
           <Home className="h-4 w-4" />Back to home
         </button>
-        <button type="button" onClick={() => void onSignOut()} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
+        <button type="button" onClick={() => void signOutAndReturnHome()} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
           <LogOut className="h-4 w-4" />Sign out
         </button>
       </aside>
@@ -551,20 +604,69 @@ export const ResidentAccountView: React.FC<{
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <h2 className="font-bold text-slate-900 dark:text-white">{user.email}</h2>
-                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Use a verified email to link previous submissions.</p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Request staff review to link an existing application submitted before you signed in.</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <button type="button" onClick={() => void refresh()} disabled={isLoading} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-xs font-bold text-slate-700 disabled:opacity-60 dark:border-slate-700 dark:text-slate-200">
                   {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
                   Refresh
                 </button>
-                <button type="button" onClick={() => void claimOlderApplications()} disabled={isClaiming || !residentEmailVerificationEnabled} className="inline-flex items-center gap-2 rounded-lg border border-[#0F2C59] px-3 py-2 text-xs font-bold text-[#0F2C59] disabled:opacity-60 dark:border-amber-400 dark:text-amber-300">
-                  {isClaiming && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {residentEmailVerificationEnabled ? 'Find previous submissions' : 'Previous requests unavailable'}
-                </button>
               </div>
             </div>
-            {!residentEmailVerificationEnabled && <p className="mt-3 text-xs text-amber-800 dark:text-amber-300">Email ownership verification is disabled, so older requests cannot be safely linked yet.</p>}
+            <form onSubmit={(event) => void submitApplicationClaim(event)} className="mt-4 grid gap-3 border-t border-slate-100 pt-4 dark:border-slate-800 sm:grid-cols-2">
+              <label className="space-y-1 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Application reference number
+                <input
+                  required
+                  minLength={4}
+                  maxLength={80}
+                  value={claimRefNumber}
+                  onChange={(event) => setClaimRefNumber(event.target.value)}
+                  className={fieldClass}
+                  placeholder="For example, SKB-PRT-2026-0383"
+                />
+              </label>
+              <label className="space-y-1 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Contact number used on the application
+                <input
+                  required
+                  minLength={7}
+                  maxLength={32}
+                  value={claimContactNumber}
+                  onChange={(event) => setClaimContactNumber(event.target.value)}
+                  className={fieldClass}
+                  placeholder="Enter the number exactly as submitted"
+                />
+              </label>
+              <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400 sm:col-span-2">
+                An SK administrator will verify the request before linking it. A matching name or contact number alone does not grant account access.
+              </p>
+              <div className="sm:col-span-2">
+                <button type="submit" disabled={isClaiming} className="inline-flex items-center gap-2 rounded-lg bg-[#0F2C59] px-4 py-2 text-xs font-bold text-white disabled:opacity-60">
+                  {isClaiming && <Loader2 className="h-4 w-4 animate-spin" />}
+                  Request application link
+                </button>
+              </div>
+            </form>
+
+            {applicationClaims.length > 0 && (
+              <div className="mt-4 space-y-2 border-t border-slate-100 pt-4 dark:border-slate-800">
+                <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Link request history</h3>
+                {applicationClaims.map((claim) => (
+                  <div key={claim.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2 text-xs dark:bg-slate-800">
+                    <span className="font-semibold text-slate-700 dark:text-slate-200">{claim.ref_number}</span>
+                    <span className={`rounded-full px-2 py-1 font-bold ${
+                      claim.status === 'Approved'
+                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
+                        : claim.status === 'Rejected'
+                          ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300'
+                          : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
+                    }`}>{claim.status}</span>
+                    <span className="text-slate-500 dark:text-slate-400">{formatApplicationUpdatedAt(claim.created_at)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>}
 
           {activeTab === 'profile' && <div id="profile" className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
@@ -611,22 +713,68 @@ export const ResidentAccountView: React.FC<{
             </form>
           </div>}
 
-          {activeTab === 'notifications' && <div id="notifications" className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
-            <Mail className="mt-0.5 h-5 w-5 shrink-0 text-[#0F2C59] dark:text-amber-300" />
-            <div className="flex-1">
-              <h2 className="font-bold text-slate-900 dark:text-white">Email status updates</h2>
-              <p className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-300">Get an email when the SK office changes the status of an application linked to your account. This is optional.</p>
+          {activeTab === 'notifications' && <section id="notifications" className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+              <div>
+                <h2 className="font-bold text-slate-900 dark:text-white">Application status updates</h2>
+                <p className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+                  Updates here come directly from the status set by the SK office. You do not need email notifications.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => void refresh()}
+                disabled={isLoading}
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-xs font-bold text-slate-700 disabled:opacity-60 dark:border-slate-700 dark:text-slate-200"
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                Refresh
+              </button>
             </div>
-            <input
-              type="checkbox"
-              aria-label="Receive application status email updates"
-              checked={statusEmailOptIn}
-              disabled={isSavingPreference || !residentEmailVerificationEnabled}
-              onChange={(event) => void saveEmailPreference(event.target.checked)}
-              className="mt-1 h-5 w-5 accent-[#0F2C59] disabled:opacity-60"
-            />
-          </div>}
-          {activeTab === 'notifications' && !residentEmailVerificationEnabled && <p className="text-xs text-slate-500">Email status notifications will be available after email ownership verification is implemented.</p>}
+
+            {isLoading ? (
+              <div className="flex items-center justify-center gap-2 py-10 text-sm text-slate-500">
+                <Loader2 className="h-5 w-5 animate-spin" />Loading your status updates…
+              </div>
+            ) : applications.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center dark:border-slate-700 dark:bg-slate-900">
+                <Bell className="mx-auto h-8 w-8 text-slate-400" />
+                <h3 className="mt-3 font-bold text-slate-900 dark:text-white">No application updates yet</h3>
+                <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">When you submit a request, its current status will appear here.</p>
+              </div>
+            ) : (
+              <div aria-live="polite" className="space-y-3">
+                {applications.map((application) => (
+                  <article key={application.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className="font-bold text-slate-900 dark:text-white">{application.serviceType}</h3>
+                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                          Reference: {application.refNumber || 'Not available'}
+                        </p>
+                      </div>
+                      <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${getApplicationStatusClasses(application.status)}`}>
+                        {application.status === 'Approved' && <CheckCircle2 className="h-3.5 w-3.5" />}
+                        {application.status === 'Rejected' && <XCircle className="h-3.5 w-3.5" />}
+                        {(application.status === 'Pending' || application.status === 'Under Review') && <Clock3 className="h-3.5 w-3.5" />}
+                        {application.status === 'Cancelled' && <AlertCircle className="h-3.5 w-3.5" />}
+                        {application.status}
+                      </span>
+                    </div>
+                    <p className="mt-3 text-sm text-slate-700 dark:text-slate-200">{getApplicationStatusMessage(application.status)}</p>
+                    {application.adminNotes && (
+                      <p className="mt-3 rounded-lg bg-slate-50 p-3 text-sm text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                        <span className="font-semibold">Note from the SK office: </span>{application.adminNotes}
+                      </p>
+                    )}
+                    <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                      Last updated {formatApplicationUpdatedAt(application.updatedAt)}
+                    </p>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>}
 
           {error && <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-300">{error}</p>}
           {notice && <p role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300">{notice}</p>}

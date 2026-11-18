@@ -5,6 +5,7 @@ import { generateApplicationRef } from '../../utils/portalLogic.ts';
 import { generateUuid } from '../../utils/uuid.ts';
 import { syncKkProfileToGoogle } from '../../services/supabaseData.ts';
 import { getAgeFromBirthday } from '../../services/residentProfile.ts';
+import { getUserFacingError } from '../../utils/userFacingError.ts';
 import { useModalScrollLock } from '../useModalScrollLock.ts';
 
 interface KkProfilingFormProps {
@@ -235,14 +236,10 @@ export function KkProfilingForm({
       try {
         await syncKkProfileToGoogle(id);
       } catch (syncFailure) {
-        setSyncError(syncFailure instanceof Error
-          ? syncFailure.message
-          : 'The profile is saved in the portal, but Google sync could not be confirmed.');
+        setSyncError(getUserFacingError(syncFailure, 'The profile is saved in the portal, but Google sync could not be confirmed.'));
       }
     } catch (saveFailure) {
-      setError(saveFailure instanceof Error
-        ? saveFailure.message
-        : 'The profile could not be saved. Please try again.');
+      setError(getUserFacingError(saveFailure, 'The profile could not be saved. Please try again.'));
     } finally {
       setIsSaving(false);
     }

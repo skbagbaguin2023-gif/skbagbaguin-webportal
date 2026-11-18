@@ -23,6 +23,7 @@ import { KkProfilingForm } from './KkProfilingForm.tsx';
 import { validatePrintingRequest } from '../../utils/printingLogic.ts';
 import { useModalScrollLock } from '../useModalScrollLock.ts';
 import { getAgeFromBirthday, getResidentProfile } from '../../services/residentProfile.ts';
+import { getUserFacingError } from '../../utils/userFacingError.ts';
 
 const getLocalDateString = () => {
   const date = new Date();
@@ -207,6 +208,10 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
       setErrors({ submit: 'This service is no longer available. Please choose an active service.' });
       return;
     }
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setErrors({ email: 'Enter a valid email address or leave this field blank.' });
+      return;
+    }
     if (isPrintingService) {
       const nextErrors = validatePrintingRequest({
         applicantName,
@@ -290,7 +295,7 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
         id: `app-${generateUuid()}`,
         refNumber: newRef,
         applicantName: applicantName.trim(),
-        ...(email ? { email } : {}),
+        email: email.trim(),
         ...(isPrintingService ? {} : { age: Number(age) }),
         ...(isPrintingService
           ? {
@@ -331,14 +336,7 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
       setStep(4);
       setIsSubmitConfirmOpen(false);
     } catch (error) {
-      const message = error instanceof Error
-        ? error.message
-        : typeof error === 'object' && error !== null && 'message' in error
-          ? String(error.message)
-          : 'Your application could not be submitted. Please try again.';
-      setErrors({
-        submit: message,
-      });
+      setErrors({ submit: getUserFacingError(error, 'Your service request could not be submitted. Please try again.') });
       setIsSubmitConfirmOpen(false);
     } finally {
       setIsSubmitting(false);
@@ -669,6 +667,26 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
               </div>
 
               <div>
+                <label htmlFor="printing-email" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                  Email Address (optional)
+                </label>
+                <input
+                  id="printing-email"
+                  type="email"
+                  autoComplete="email"
+                  maxLength={254}
+                  value={email}
+                  onChange={(event) => {
+                    setEmail(event.target.value);
+                    setErrors((current) => ({ ...current, email: '' }));
+                  }}
+                  placeholder="name@example.com"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                />
+                {errors.email && <p role="alert" className="mt-1 text-xs text-rose-600">{errors.email}</p>}
+              </div>
+
+              <div>
                 <label htmlFor="printing-notification-preference" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
                   Preferred Notification Method *
                 </label>
@@ -954,13 +972,18 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
-                  Email Address (for Status Notifications) *
+                  Email Address (optional)
                 </label>
                 <input
                   type="email"
+                  autoComplete="email"
+                  maxLength={254}
                   placeholder="name@plv.edu.ph or personal email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setErrors((current) => ({ ...current, email: '' }));
+                  }}
                   className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0F2C59] dark:focus:ring-amber-400"
                 />
                 {errors.email && (

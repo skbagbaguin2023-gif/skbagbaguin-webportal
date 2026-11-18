@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import Reveal from '../../components/Reveal.jsx';
 import { ConfirmationModal } from '../../components/modals/ConfirmationModal.tsx';
+import { getUserFacingError } from '../../utils/userFacingError.ts';
 
 interface FeedbackInboxProps {
   feedbacks: FeedbackSuggestion[];
@@ -85,7 +86,7 @@ export const FeedbackInbox: React.FC<FeedbackInboxProps> = ({
       setSentToast(false);
       setReplyError('');
     } catch (error) {
-      setDeleteError(error instanceof Error ? error.message : 'The concern could not be deleted. Please try again.');
+      setDeleteError(getUserFacingError(error, 'The concern could not be deleted. Please try again.'));
     } finally {
       setIsDeletingFeedback(false);
     }
@@ -108,7 +109,7 @@ export const FeedbackInbox: React.FC<FeedbackInboxProps> = ({
       setPendingReplyStatus(null);
       setTimeout(() => setSentToast(false), 5000);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'The reply could not be saved and emailed.';
+      const message = getUserFacingError(error, 'The reply could not be saved and emailed.');
       if (message.startsWith('Reply saved, but')) {
         setActiveFeedback({
           ...activeFeedback,

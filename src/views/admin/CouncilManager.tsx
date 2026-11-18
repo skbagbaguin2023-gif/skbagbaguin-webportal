@@ -5,6 +5,7 @@ import Reveal from '../../components/Reveal.jsx';
 import { deletePortalImage, uploadPortalImage } from '../../services/supabaseData.ts';
 import { ConfirmationModal } from '../../components/modals/ConfirmationModal.tsx';
 import { CouncilMemberAvatar } from '../../components/CouncilMemberAvatar.tsx';
+import { getUserFacingError } from '../../utils/userFacingError.ts';
 
 interface CouncilManagerProps {
   council: CouncilMember[];
@@ -67,7 +68,7 @@ export const CouncilManager: React.FC<CouncilManagerProps> = ({
     try {
       await onReorderCouncil(reorderedCouncil);
     } catch (error) {
-      setReorderError(error instanceof Error ? error.message : 'Could not save council member order. Please try again.');
+      setReorderError(getUserFacingError(error, 'Could not save council member order. Please try again.'));
     } finally {
       setIsReordering(false);
     }
@@ -186,7 +187,7 @@ export const CouncilManager: React.FC<CouncilManagerProps> = ({
       }
       setErrors((current) => ({
         ...current,
-        imageUrl: error instanceof Error ? error.message : 'Could not save this council profile.',
+        imageUrl: getUserFacingError(error, 'Could not save this council profile.'),
       }));
     } finally {
       setIsSaving(false);

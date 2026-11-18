@@ -15,6 +15,7 @@ import { deletePortalImage, uploadPortalImage } from '../../services/supabaseDat
 import { ConfirmationModal } from '../../components/modals/ConfirmationModal.tsx';
 import { PortalImage } from '../../components/PortalImage.tsx';
 import { getDefaultAnnouncementCoverImage } from '../../data/defaultAnnouncements.ts';
+import { getUserFacingError } from '../../utils/userFacingError.ts';
 
 interface AnnouncementsManagerProps {
   announcements: Announcement[];
@@ -197,7 +198,7 @@ export const AnnouncementsManager: React.FC<AnnouncementsManagerProps> = ({
           console.error('Unable to remove an unlinked announcement image.', cleanupError);
         }
       }
-      const message = error instanceof Error ? error.message : 'Could not save this announcement.';
+      const message = getUserFacingError(error, 'Could not save this announcement.');
       setImageError(message);
       setManagerError(message);
     } finally {

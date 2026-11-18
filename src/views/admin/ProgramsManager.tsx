@@ -16,6 +16,7 @@ import Reveal from '../../components/Reveal.jsx';
 import { ConfirmationModal } from '../../components/modals/ConfirmationModal.tsx';
 import { deletePortalImage, uploadPortalImage } from '../../services/supabaseData.ts';
 import { ImageCropper } from '../../components/ImageCropper.tsx';
+import { getUserFacingError } from '../../utils/userFacingError.ts';
 
 const parseMoney = (value: string): number => {
   const parsed = Number(value.replace(/,/g, '').trim());
@@ -244,7 +245,7 @@ export const ProgramsManager: React.FC<ProgramsManagerProps> = ({
           console.error('Unable to remove an unlinked program image.', cleanupError);
         }
       }
-      setImageError(error instanceof Error ? error.message : 'Could not save this program.');
+      setImageError(getUserFacingError(error, 'Could not save this program.'));
     } finally {
       setIsSaving(false);
     }

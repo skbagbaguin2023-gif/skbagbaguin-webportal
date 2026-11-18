@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { EventItem } from '../../types/index.ts';
 import { X, CheckCircle2, Calendar, MapPin, Clock, QrCode } from 'lucide-react';
 import { useModalScrollLock } from '../useModalScrollLock.ts';
+import { getUserFacingError } from '../../utils/userFacingError.ts';
 
 interface EventRegistrationModalProps {
   event: EventItem | null;
@@ -61,7 +62,7 @@ export const EventRegistrationModal: React.FC<EventRegistrationModalProps> = ({
       setTicketCode(generatedCode);
       setIsSuccess(true);
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : 'Registration failed. Please try again.');
+      setError(getUserFacingError(submitError, 'Registration failed. Please try again.'));
     } finally {
       setIsSubmitting(false);
     }

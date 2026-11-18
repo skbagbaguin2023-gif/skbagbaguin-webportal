@@ -145,9 +145,15 @@ existing application/storage migrations on an established project):
    after the core schema, application/storage policies, and printing-services
    migration have been applied.
 2. Run [`supabase/resident_email_verification_gate_migration.sql`](./supabase/resident_email_verification_gate_migration.sql).
-   It keeps previous-request claiming disabled in the database until verified
-   email ownership is available.
-3. In **Authentication > URL Configuration**, set the site's public URL and
+   It keeps email-based claiming disabled in the database until verified email
+   ownership is available.
+3. Run [`supabase/resident_application_claims_migration.sql`](./supabase/resident_application_claims_migration.sql)
+   to let residents request links to prior applications and let administrators
+   review those requests. Run it after `resident_accounts_migration.sql`.
+   Administrators must independently verify each applicant before approving;
+   the reference number and contact number are used to locate the application,
+   not as automatic proof of ownership.
+4. In **Authentication > URL Configuration**, set the site's public URL and
    allow the local and production account callback URLs, such as
    `http://localhost:3000/?page=account` and
    `https://<your-domain>/?page=account`, plus the resident password-reset
@@ -155,15 +161,16 @@ existing application/storage migrations on an established project):
    `https://<your-domain>/reset-password`. Add both reset URLs to the
    **Redirect URLs** allowlist; reset links now open the dedicated new-password
    form at `/reset-password`.
-4. For temporary no-verification signup, go to **Authentication > Providers >
+5. For temporary no-verification signup, go to **Authentication > Providers >
    Email** and turn off **Confirm email**. Email/password signup will then create
    an active session immediately. Residents should use an email address they
    control, but email ownership is not proven until verification is implemented.
-   Keep `VITE_RESIDENT_EMAIL_VERIFICATION_ENABLED` unset or set to `false`; this
-   disables the UI for claiming older requests and email status notifications.
-5. Deploy the `send-application-status-email` Edge Function:
+   Keep `VITE_RESIDENT_EMAIL_VERIFICATION_ENABLED` unset or set to `false` until
+   email ownership is verified; admin-reviewed application linking does not
+   depend on this setting.
+6. Deploy the `send-application-status-email` Edge Function:
    `supabase functions deploy send-application-status-email`
-6. If the Google Apps Script Gmail mailer is already deployed, update its code
+7. If the Google Apps Script Gmail mailer is already deployed, update its code
    from [`google-apps-script/Code.gs`](./google-apps-script/Code.gs) and deploy
    a new version. The existing `GMAIL_MAILER_URL` and `GMAIL_MAILER_SECRET`
    Edge Function secrets are reused for status messages.

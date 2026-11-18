@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Bot, ChevronDown, LoaderCircle, RotateCcw, Send, ShieldCheck, X } from 'lucide-react';
 import { sendAiChat, type ChatMessage } from '../services/aiChat.ts';
+import { getUserFacingError } from '../utils/userFacingError.ts';
 
 interface ChatAssistantProps {
   onNavigate: (page: 'home' | 'about' | 'programs' | 'events' | 'announcements' | 'services' | 'transparency' | 'contact') => void;
@@ -89,7 +90,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ onNavigate }) => {
       setMessages([...nextMessages, { role: 'assistant' as const, content: result.reply }].slice(-10));
     } catch (caught) {
       if (!controller.signal.aborted) {
-        setError(caught instanceof Error ? caught.message : 'The assistant is temporarily unavailable.');
+        setError(getUserFacingError(caught, 'The assistant is temporarily unavailable.'));
         setMessages(nextMessages);
       }
     } finally {

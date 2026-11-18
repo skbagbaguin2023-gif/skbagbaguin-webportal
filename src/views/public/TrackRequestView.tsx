@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AlertCircle, CheckCircle2, Clock3, FileSearch, Loader2, Search } from 'lucide-react';
 import type { ApplicationTrackingResult } from '../../services/supabaseData.ts';
 import { findApplicationForTracking } from '../../services/supabaseData.ts';
+import { getUserFacingError } from '../../utils/userFacingError.ts';
 import Reveal from '../../components/Reveal.jsx';
 
 interface TrackRequestViewProps {
@@ -39,7 +40,7 @@ export const TrackRequestView: React.FC<TrackRequestViewProps> = ({ onNavigateTo
         setResult(trackingResult);
       }
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : 'The request could not be checked. Please try again.');
+      setError(getUserFacingError(requestError, 'The request could not be checked. Please try again.'));
     } finally {
       setIsSearching(false);
     }

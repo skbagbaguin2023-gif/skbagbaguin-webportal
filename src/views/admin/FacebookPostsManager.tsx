@@ -5,6 +5,7 @@ import { ConfirmationModal } from '../../components/modals/ConfirmationModal.tsx
 import { PortalImage } from '../../components/PortalImage.tsx';
 import { ImageCropper } from '../../components/ImageCropper.tsx';
 import { ChevronLeft, ChevronRight, Edit3, Plus, Save, Trash2, X } from 'lucide-react';
+import { getUserFacingError } from '../../utils/userFacingError.ts';
 
 interface FacebookPostsManagerProps {
   posts: FacebookPost[];
@@ -137,7 +138,7 @@ export const FacebookPostsManager: React.FC<FacebookPostsManagerProps> = ({ post
       reset();
     } catch (saveError) {
       await Promise.all(uploadedUrls.map((url) => deletePortalImage(url).catch(() => undefined)));
-      setError(saveError instanceof Error ? saveError.message : 'Could not save this Facebook post.');
+      setError(getUserFacingError(saveError, 'Could not save this Facebook post.'));
     } finally {
       setIsSaving(false);
     }

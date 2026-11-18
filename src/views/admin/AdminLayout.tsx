@@ -50,6 +50,7 @@ import { MaintenanceManager } from './MaintenanceManager.tsx';
 import { ThemeToggle } from '../../components/ThemeToggle.tsx';
 import skLogo from '../../assets/images/skLogo.png';
 import { ConfirmationModal } from '../../components/modals/ConfirmationModal.tsx';
+import { getUserFacingError } from '../../utils/userFacingError.ts';
 
 interface AdminLayoutProps {
   onReturnToPublic: () => Promise<void>;
@@ -202,7 +203,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       await onReturnToPublic();
       setIsLogoutConfirmOpen(false);
     } catch (error) {
-      setLogoutError(error instanceof Error ? error.message : 'Unable to log out. Please try again.');
+      setLogoutError(getUserFacingError(error, 'Unable to log out. Please try again.'));
     } finally {
       setIsLoggingOut(false);
     }

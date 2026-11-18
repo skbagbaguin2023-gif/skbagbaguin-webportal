@@ -124,8 +124,8 @@ export function validateYouthApplication(input: ApplicationFormInput): { isValid
   }
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!input.email || !emailRegex.test(input.email)) {
-    errors.email = 'Please provide a valid email address for application tracking.';
+  if (input.email.trim() && !emailRegex.test(input.email.trim())) {
+    errors.email = 'Enter a valid email address or leave this field blank.';
   }
 
   if (!input.dataPrivacyConsent) {

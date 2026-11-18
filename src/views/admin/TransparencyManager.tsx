@@ -14,6 +14,7 @@ import {
 import Reveal from '../../components/Reveal.jsx';
 import { ConfirmationModal } from '../../components/modals/ConfirmationModal.tsx';
 import { generateUuid } from '../../utils/uuid.ts';
+import { getUserFacingError } from '../../utils/userFacingError.ts';
 
 interface TransparencyManagerProps {
   documents: TransparencyDoc[];
@@ -80,7 +81,7 @@ export const TransparencyManager: React.FC<TransparencyManagerProps> = ({
     try {
       await onAddVersion(doc, file);
     } catch (error) {
-      setRevisionError(error instanceof Error ? error.message : 'The document revision could not be uploaded.');
+      setRevisionError(getUserFacingError(error, 'The document revision could not be uploaded.'));
     } finally {
       setRevisionUploadingId(null);
     }
@@ -135,7 +136,7 @@ export const TransparencyManager: React.FC<TransparencyManagerProps> = ({
       setFormResolution('');
       setFormDescription('');
     } catch (error) {
-      setUploadError(error instanceof Error ? error.message : 'The PDF could not be uploaded. Please try again.');
+      setUploadError(getUserFacingError(error, 'The PDF could not be uploaded. Please try again.'));
     } finally {
       setIsUploading(false);
     }
@@ -543,7 +544,7 @@ export const TransparencyManager: React.FC<TransparencyManagerProps> = ({
             await onDeleteDoc(documentToDelete.id);
             setDocumentToDelete(null);
           } catch (error) {
-            setDeleteError(error instanceof Error ? error.message : 'The document could not be deleted.');
+            setDeleteError(getUserFacingError(error, 'The document could not be deleted.'));
           } finally {
             setIsDeletingDocument(false);
           }

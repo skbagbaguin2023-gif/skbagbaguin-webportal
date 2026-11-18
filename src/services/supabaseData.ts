@@ -68,6 +68,19 @@ export interface ApplicationEditHistory {
   created_at: string;
 }
 
+export interface ResidentApplicationClaim {
+  id: string;
+  ref_number: string;
+  contact_number: string;
+  status: 'Pending' | 'Approved' | 'Rejected';
+  created_at: string;
+}
+
+export interface AdminApplicationClaim extends ResidentApplicationClaim {
+  resident_user_id: string;
+  resident_email: string;
+}
+
 export interface ResidentPreferences {
   statusEmailOptIn: boolean;
 }
@@ -506,6 +519,30 @@ export async function getResidentApplications(): Promise<ResidentApplication[]> 
   }));
 }
 
+export function subscribeToResidentApplications(
+  userId: string,
+  onChange: () => void,
+  onError: (error: Error) => void,
+): () => void {
+  const client = getClient();
+  const channel: RealtimeChannel = client
+    .channel(`resident-applications-${userId}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'portal_records', filter: 'collection=eq.applications' },
+      onChange,
+    )
+    .subscribe((status, error) => {
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        onError(error ?? new Error('Realtime application notifications could not be connected.'));
+      }
+    });
+
+  return () => {
+    void client.removeChannel(channel);
+  };
+}
+
 export async function getApplicationEditHistory(applicationId?: string): Promise<ApplicationEditHistory[]> {
   let query = getClient()
     .from('application_edit_history')
@@ -521,6 +558,69 @@ export async function claimResidentApplications(): Promise<number> {
   const { data, error } = await getClient().rpc('claim_my_applications');
   if (error) throw error;
   return Number(data ?? 0);
+}
+
+export async function getResidentApplicationClaims(): Promise<ResidentApplicationClaim[]> {
+  const { data, error } = await getClient()
+    .from('resident_application_claims')
+    .select('id, ref_number, contact_number, status, created_at')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function submitResidentApplicationClaim(
+  refNumber: string,
+  contactNumber: string,
+): Promise<void> {
+  const client = getClient();
+  const { data: { user }, error: userError } = await client.auth.getUser();
+  if (userError) throw userError;
+  if (!user) throw new Error('Sign in before requesting an application link.');
+
+  const { error } = await client.from('resident_application_claims').insert({
+    resident_user_id: user.id,
+    ref_number: refNumber.trim(),
+    contact_number: contactNumber.trim(),
+  });
+  if (error) {
+    if (error.code === '23505') {
+      throw new Error('A pending link request already exists for this reference number.');
+    }
+    throw error;
+  }
+}
+
+export async function getPendingApplicationClaims(): Promise<AdminApplicationClaim[]> {
+  const { data, error } = await getClient()
+    .from('resident_application_claims')
+    .select('id, resident_user_id, resident_email, ref_number, contact_number, status, created_at')
+    .eq('status', 'Pending')
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function reviewResidentApplicationClaim(
+  claimId: string,
+  approve: boolean,
+): Promise<void> {
+  const { error } = await getClient().rpc('review_resident_application_claim', {
+    p_claim_id: claimId,
+    p_approve: approve,
+  });
+  if (error) {
+    const messages: Record<string, string> = {
+      APPLICATION_NOT_MATCHED: 'No application matches both the reference number and contact number submitted.',
+      APPLICATION_MATCH_NOT_UNIQUE: 'More than one application matches; resolve the duplicate records before linking.',
+      APPLICATION_ALREADY_LINKED: 'This application is already linked to a different resident account.',
+      CLAIM_ALREADY_REVIEWED: 'This link request has already been reviewed.',
+      CLAIM_NOT_FOUND: 'This link request no longer exists.',
+      ADMIN_REQUIRED: 'Only an administrator can review application link requests.',
+    };
+    const code = error.message.match(/(?:^|[\s:])([A-Z_]{5,})(?:$|[\s:])/i)?.[1];
+    throw new Error((code && messages[code]) || error.message);
+  }
 }
 
 export async function updateResidentApplication(

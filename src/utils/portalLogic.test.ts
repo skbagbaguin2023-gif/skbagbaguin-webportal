@@ -127,6 +127,21 @@ test('validateYouthApplication enforces Philippine Youth age and Data Privacy co
   assert.equal(validResult.isValid, true);
 });
 
+test('validateYouthApplication allows an omitted email but validates one when provided', () => {
+  const application = {
+    applicantName: 'Maria Santos',
+    age: 21,
+    sitio: 'Sitio Centro',
+    contactNumber: '09181234567',
+    email: '',
+    serviceType: 'Educational Assistance',
+    dataPrivacyConsent: true,
+  };
+
+  assert.equal(validateYouthApplication(application).isValid, true);
+  assert.ok(validateYouthApplication({ ...application, email: 'not-an-email' }).errors.email);
+});
+
 test('aggregateAdminMetrics accurately counts ongoing and pending states', () => {
   const announcements = [{ id: '1' }, { id: '2' }] as Announcement[];
   const programs = [
