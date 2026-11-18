@@ -208,32 +208,33 @@ begin
   if length(trim(coalesce(updated_data ->> 'applicantName', ''))) not between 1 and 120 then
     raise exception 'INVALID_APPLICANT_NAME';
   end if;
-  if case
-    when jsonb_typeof(updated_data -> 'documentsAttached') = 'array'
-      then jsonb_array_length(updated_data -> 'documentsAttached') <= 10
-    else false
-  end is not true then
+  if jsonb_typeof(updated_data -> 'documentsAttached') is distinct from 'array' then
     raise exception 'INVALID_APPLICATION_DOCUMENTS';
   end if;
-  if updated_data ? 'age' and case
-    when updated_data ->> 'age' ~ '^[0-9]{1,2}$'
-      then (updated_data ->> 'age')::integer between 15 and 30
-    else false
-  end is not true then
-    raise exception 'INVALID_APPLICANT_AGE';
+  if jsonb_array_length(updated_data -> 'documentsAttached') > 10 then
+    raise exception 'INVALID_APPLICATION_DOCUMENTS';
+  end if;
+  if updated_data ? 'age' then
+    if not coalesce(updated_data ->> 'age' ~ '^[0-9]{1,2}$', false) then
+      raise exception 'INVALID_APPLICANT_AGE';
+    end if;
+    if (updated_data ->> 'age')::integer not between 15 and 30 then
+      raise exception 'INVALID_APPLICANT_AGE';
+    end if;
   end if;
   if updated_data ? 'contactNumber'
      and not coalesce(updated_data ->> 'contactNumber' ~ '^(09[0-9]{9}|\+639[0-9]{9})$', false) then
     raise exception 'INVALID_CONTACT_NUMBER';
   end if;
-  if updated_data ? 'kkProfile' and case
-    when jsonb_typeof(updated_data -> 'kkProfile') = 'object'
-      and jsonb_typeof(updated_data #> '{kkProfile,age}') = 'number'
-      and updated_data #>> '{kkProfile,age}' ~ '^[0-9]{1,2}$'
-      then (updated_data #>> '{kkProfile,age}')::integer between 15 and 30
-    else false
-  end is not true then
-    raise exception 'INVALID_KK_PROFILE_AGE';
+  if updated_data ? 'kkProfile' then
+    if jsonb_typeof(updated_data -> 'kkProfile') is distinct from 'object'
+       or jsonb_typeof(updated_data #> '{kkProfile,age}') is distinct from 'number'
+       or not coalesce(updated_data #>> '{kkProfile,age}' ~ '^[0-9]{1,2}$', false) then
+      raise exception 'INVALID_KK_PROFILE_AGE';
+    end if;
+    if (updated_data #>> '{kkProfile,age}')::integer not between 15 and 30 then
+      raise exception 'INVALID_KK_PROFILE_AGE';
+    end if;
   end if;
   if exists (
     select 1

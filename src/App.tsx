@@ -41,7 +41,7 @@ import { TrackRequestView } from './views/public/TrackRequestView.tsx';
 import { TransparencyView } from './views/public/TransparencyView.tsx';
 import { ContactView } from './views/public/ContactView.tsx';
 import { SearchView } from './views/public/SearchView.tsx';
-import { ResidentAccountView } from './views/public/ResidentAccountView.tsx';
+import { ResidentAccountView, type DashboardTab } from './views/public/ResidentAccountView.tsx';
 import type { SearchResult } from './services/search.ts';
 const ChatAssistant = lazy(() => import('./components/ChatAssistant.tsx').then((module) => ({ default: module.ChatAssistant })));
 
@@ -77,6 +77,12 @@ import { InitialLoadingScreen } from './components/InitialLoadingScreen.tsx';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<PublicPage>('home');
+  const [accountTab, setAccountTab] = useState<DashboardTab>(() => {
+    const tab = new URLSearchParams(window.location.search).get('tab');
+    return ['overview', 'applications', 'track', 'profile', 'notifications'].includes(tab ?? '')
+      ? tab as DashboardTab
+      : 'overview';
+  });
   const [pathname, setPathname] = useState(window.location.pathname);
   const [selectedProgramId, setSelectedProgramId] = useState<string | null>(null);
   const [selectedAnnouncementId, setSelectedAnnouncementId] = useState<string | null>(null);
@@ -100,6 +106,10 @@ export default function App() {
         setCurrentPage('home');
       }
       const params = new URLSearchParams(window.location.search);
+      const tab = params.get('tab');
+      setAccountTab(['overview', 'applications', 'track', 'profile', 'notifications'].includes(tab ?? '')
+        ? tab as DashboardTab
+        : 'overview');
       setSelectedProgramId(params.get('program'));
       setSelectedAnnouncementId(params.get('announcement'));
     };
@@ -775,6 +785,15 @@ export default function App() {
     }
   };
 
+  if (pathname === '/reset-password'
+    || new URLSearchParams(window.location.hash.slice(1)).get('type') === 'recovery') {
+    return (
+      <ThemeProvider>
+        <AdminLogin />
+      </ThemeProvider>
+    );
+  }
+
   if (pathname === '/admin/login') {
     return (
       <ThemeProvider>
@@ -875,7 +894,16 @@ export default function App() {
             currentPage={currentPage}
             isSignedIn={Boolean(currentUser)}
             onNavigate={(page) => {
+              if (page === 'track' && currentUser) {
+                setCurrentPage('account');
+                setAccountTab('track');
+                window.history.pushState({}, '', '/?page=account&tab=track');
+                setPathname('/');
+                window.scrollTo({ top: 0 });
+                return;
+              }
               setCurrentPage(page);
+              if (page === 'account') setAccountTab('overview');
               setSelectedProgramId(null);
               setSelectedAnnouncementId(null);
               const nextPath = page === 'home' ? '/' : `/?page=${page}`;
@@ -972,6 +1000,15 @@ export default function App() {
                 user={currentUser}
                 authReady={isAuthReady}
                 onSignOut={logout}
+                initialTab={accountTab}
+                onReturnToPublic={(page = 'home') => {
+                  setCurrentPage(page);
+                  setAccountTab('overview');
+                  setSelectedProgramId(null);
+                  setSelectedAnnouncementId(null);
+                  window.history.pushState({}, '', page === 'home' ? '/' : `/?page=${page}`);
+                  window.scrollTo({ top: 0 });
+                }}
               />
               )}
 
@@ -1016,6 +1053,7 @@ export default function App() {
         onClose={() => setIsApplyModalOpen(false)}
         defaultService={applyDefaultService}
         services={services}
+        user={currentUser}
         onSubmitApplication={handleSubmitApplication}
       />
 

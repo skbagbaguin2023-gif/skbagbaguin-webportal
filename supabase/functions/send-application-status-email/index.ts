@@ -76,6 +76,19 @@ Deno.serve(async (request) => {
   const adminClient = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
+  const { data: verificationSetting, error: verificationSettingError } = await adminClient
+    .from('resident_account_settings')
+    .select('is_enabled')
+    .eq('setting_key', 'email_verification_enabled')
+    .maybeSingle();
+  if (verificationSettingError) {
+    console.error('Unable to load resident email verification setting.', verificationSettingError);
+    return jsonResponse(503, { error: 'Resident email verification settings are unavailable.' });
+  }
+  if (!verificationSetting?.is_enabled) {
+    return jsonResponse(200, { sent: false, reason: 'email-verification-disabled' });
+  }
+
   const { data: row, error: recordError } = await adminClient
     .from('portal_records')
     .select('data, owner_user_id')

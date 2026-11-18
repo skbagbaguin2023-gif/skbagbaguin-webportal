@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import type { User } from '@supabase/supabase-js';
 import { NotificationPreference, ServiceType, YouthApplication, YouthService } from '../../types/index.ts';
 import { validateYouthApplication, generateApplicationRef } from '../../utils/portalLogic.ts';
 import { 
@@ -21,6 +22,7 @@ import { generateUuid } from '../../utils/uuid.ts';
 import { KkProfilingForm } from './KkProfilingForm.tsx';
 import { validatePrintingRequest } from '../../utils/printingLogic.ts';
 import { useModalScrollLock } from '../useModalScrollLock.ts';
+import { getAgeFromBirthday, getResidentProfile } from '../../services/residentProfile.ts';
 
 const getLocalDateString = () => {
   const date = new Date();
@@ -32,6 +34,7 @@ interface ApplicationModalProps {
   onClose: () => void;
   defaultService?: ServiceType;
   services: YouthService[];
+  user: User | null;
   onSubmitApplication: (app: YouthApplication) => Promise<void>;
 }
 
@@ -40,6 +43,7 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
   onClose,
   defaultService = '',
   services,
+  user,
   onSubmitApplication,
 }) => {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
@@ -72,8 +76,33 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
   const [isDraggingFiles, setIsDraggingFiles] = useState(false);
   const isPrintingService = serviceType.toLowerCase().includes('printing');
   const isKkProfilingService = serviceType.toLowerCase().includes('profiling');
+  const residentProfile = useMemo(() => getResidentProfile(user), [user]);
   const activeServices = services.filter((service) => service.isActive);
   useModalScrollLock(isOpen);
+
+  useEffect(() => {
+    if (!isOpen || !user) return;
+    const fullName = [residentProfile.firstName, residentProfile.middleName, residentProfile.lastName]
+      .filter(Boolean)
+      .join(' ');
+    if (fullName) setApplicantName((current) => current || fullName);
+    if (residentProfile.birthday) {
+      setBirthday((current) => current || residentProfile.birthday);
+      setAge((current) => current || getAgeFromBirthday(residentProfile.birthday));
+    }
+    if (residentProfile.genderIdentity) {
+      const identity = residentProfile.genderIdentity.toLocaleLowerCase();
+      const applicationGender = identity === 'male' ? 'Male'
+        : identity === 'female' ? 'Female'
+          : identity === 'prefer not to say' ? 'Prefer not to say'
+            : 'Non-binary / LGBTQ+';
+      setGender((current) => current || applicationGender);
+    }
+    if (residentProfile.sitioAddress) setSitio((current) => current || residentProfile.sitioAddress);
+    if (residentProfile.completeAddress) setAddress((current) => current || residentProfile.completeAddress);
+    if (residentProfile.contactNumber) setContactNumber((current) => current || residentProfile.contactNumber);
+    if (user.email) setEmail((current) => current || user.email || '');
+  }, [isOpen, residentProfile, user]);
 
   useEffect(() => {
     const activeServices = services.filter((service) => service.isActive);
@@ -102,6 +131,8 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
         onClose={onClose}
         services={services}
         serviceType={serviceType}
+        residentProfile={residentProfile}
+        residentEmail={user?.email ?? ''}
         onServiceChange={handleServiceChange}
         onSubmitApplication={onSubmitApplication}
       />
@@ -259,6 +290,7 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
         id: `app-${generateUuid()}`,
         refNumber: newRef,
         applicantName: applicantName.trim(),
+        ...(email ? { email } : {}),
         ...(isPrintingService ? {} : { age: Number(age) }),
         ...(isPrintingService
           ? {
@@ -274,7 +306,6 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
               sitio,
               address: address || `${sitio}, Barangay Bagbaguin`,
               contactNumber,
-              email,
             }),
         serviceType,
         ...(isPrintingService

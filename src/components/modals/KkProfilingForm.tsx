@@ -1,15 +1,18 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CheckCircle2, ClipboardList, X } from 'lucide-react';
-import type { KkProfilingData, YouthApplication, YouthService } from '../../types/index.ts';
+import type { KkProfilingData, ResidentProfile, YouthApplication, YouthService } from '../../types/index.ts';
 import { generateApplicationRef } from '../../utils/portalLogic.ts';
 import { generateUuid } from '../../utils/uuid.ts';
 import { syncKkProfileToGoogle } from '../../services/supabaseData.ts';
+import { getAgeFromBirthday } from '../../services/residentProfile.ts';
 import { useModalScrollLock } from '../useModalScrollLock.ts';
 
 interface KkProfilingFormProps {
   onClose: () => void;
   services: YouthService[];
   serviceType: string;
+  residentProfile?: ResidentProfile;
+  residentEmail?: string;
   onServiceChange: (service: string) => void;
   onSubmitApplication: (application: YouthApplication) => Promise<void>;
 }
@@ -122,6 +125,8 @@ export function KkProfilingForm({
   onClose,
   services,
   serviceType,
+  residentProfile,
+  residentEmail,
   onServiceChange,
   onSubmitApplication,
 }: KkProfilingFormProps) {
@@ -131,6 +136,29 @@ export function KkProfilingForm({
   const [error, setError] = useState('');
   const [reference, setReference] = useState('');
   const [syncError, setSyncError] = useState('');
+
+  useEffect(() => {
+    if (!residentProfile) return;
+    setProfile((current) => {
+      const selectedSitio = SITIO_OPTIONS.find(
+        (option) => option.toLocaleLowerCase() === residentProfile.sitioAddress.toLocaleLowerCase()
+      );
+      return {
+        ...current,
+        email: current.email || residentEmail || '',
+        firstName: current.firstName || residentProfile.firstName,
+        middleName: current.middleName || residentProfile.middleName,
+        lastName: current.lastName || residentProfile.lastName,
+        genderIdentity: current.genderIdentity || residentProfile.genderIdentity,
+        age: current.age || getAgeFromBirthday(residentProfile.birthday) || 0,
+        birthday: current.birthday || residentProfile.birthday,
+        contactNumber: current.contactNumber || residentProfile.contactNumber,
+        sitioAddress: current.sitioAddress || selectedSitio || (residentProfile.sitioAddress ? 'Iba pa:' : ''),
+        sitioOther: current.sitioOther || (selectedSitio ? '' : residentProfile.sitioAddress),
+        completeAddress: current.completeAddress || residentProfile.completeAddress,
+      };
+    });
+  }, [residentEmail, residentProfile]);
 
   const update = <K extends keyof KkProfilingData>(key: K, value: KkProfilingData[K]) => {
     setProfile((current) => ({ ...current, [key]: value }));

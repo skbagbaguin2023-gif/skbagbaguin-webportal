@@ -153,6 +153,17 @@ export interface MaintenanceIssue {
 export type ApplicationStatus = 'Pending' | 'Under Review' | 'Approved' | 'Rejected' | 'Cancelled';
 export type NotificationPreference = 'Messenger' | 'SMS' | 'Phone call';
 
+export interface ResidentProfile {
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  contactNumber: string;
+  birthday: string;
+  genderIdentity: string;
+  sitioAddress: string;
+  completeAddress: string;
+}
+
 export interface YouthApplication {
   id: string;
   refNumber: string;
