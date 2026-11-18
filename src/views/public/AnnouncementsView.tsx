@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Announcement, AnnouncementCategory } from '../../types/index.ts';
-import { ArrowLeft, ArrowRight, Bell, Calendar, Pin, Search, User } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Bell, Calendar, Pin, Search, User, UserCheck } from 'lucide-react';
 import Reveal from '../../components/Reveal.jsx';
 import { PortalImage } from '../../components/PortalImage.tsx';
 import { getDefaultAnnouncementCoverImage } from '../../data/defaultAnnouncements.ts';
@@ -10,6 +10,7 @@ interface AnnouncementsViewProps {
   selectedAnnouncementId: string | null;
   onSelectAnnouncement: (announcement: Announcement) => void;
   onBackFromAnnouncement: () => void;
+  onStartKkProfiling: () => void;
 }
 
 export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({
@@ -17,6 +18,7 @@ export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({
   selectedAnnouncementId,
   onSelectAnnouncement,
   onBackFromAnnouncement,
+  onStartKkProfiling,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<'All' | AnnouncementCategory>('All');
@@ -94,6 +96,21 @@ export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({
               <div className="mt-6 whitespace-pre-line text-sm leading-7 text-slate-700 dark:text-slate-200 sm:text-base">
                 {selectedAnnouncement.content}
               </div>
+              {selectedAnnouncement.id === 'kk-profiling-2024' && (
+                <div className="mt-8 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-500/30 dark:bg-amber-950/20 sm:flex sm:items-center sm:justify-between sm:gap-6">
+                  <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-200">
+                    Not registered yet? Complete the KK Profiling form to register your profile.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={onStartKkProfiling}
+                    className="mt-3 inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-lg bg-[#0F2C59] px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#173B72] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 sm:mt-0 sm:w-auto"
+                  >
+                    <UserCheck className="h-4 w-4" />
+                    Register for KK Profiling
+                  </button>
+                </div>
+              )}
             </div>
           </article>
         ) : (

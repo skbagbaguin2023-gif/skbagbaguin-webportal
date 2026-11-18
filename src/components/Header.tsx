@@ -14,7 +14,8 @@ import {
   Layers, 
   Bell,
   ChevronRight,
-  SearchCheck
+  SearchCheck,
+  UserRound,
 } from 'lucide-react';
 import { searchPublicContent, type SearchResult } from '../services/search.ts';
 import { expandSearchQuery } from '../services/searchLogic.ts';
@@ -24,6 +25,7 @@ interface HeaderProps {
   onNavigate: (page: PublicPage) => void;
   onOpenApplyModal: () => void;
   onSearch: (query: string) => void;
+  isSignedIn: boolean;
   searchResults?: SearchResult[];
 }
 
@@ -32,6 +34,7 @@ export const Header: React.FC<HeaderProps> = ({
   onNavigate,
   onOpenApplyModal,
   onSearch,
+  isSignedIn,
   searchResults = [],
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -42,6 +45,7 @@ export const Header: React.FC<HeaderProps> = ({
   const [isSearching, setIsSearching] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const searchPanelRef = useRef<HTMLDivElement>(null);
+  const searchToggleRef = useRef<HTMLButtonElement>(null);
   const requestRef = useRef<AbortController | null>(null);
 
   const navLinks: { id: PublicPage; label: string; icon: React.ReactNode }[] = [
@@ -78,9 +82,7 @@ export const Header: React.FC<HeaderProps> = ({
         setSearchOpen(true);
         window.setTimeout(() => searchRef.current?.focus(), 0);
       } else if (event.key === 'Escape') {
-        setSearchOpen(false);
-        setSuggestions([]);
-        searchRef.current?.blur();
+        closeSearch();
       }
     };
     window.addEventListener('keydown', handleShortcut);
@@ -89,7 +91,10 @@ export const Header: React.FC<HeaderProps> = ({
 
   useEffect(() => {
     const handleOutsidePointerDown = (event: PointerEvent) => {
-      if (searchOpen && !searchPanelRef.current?.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (searchOpen
+        && !searchPanelRef.current?.contains(target)
+        && !searchToggleRef.current?.contains(target)) {
         requestRef.current?.abort();
         setSearchOpen(false);
         setSuggestions([]);
@@ -145,6 +150,11 @@ export const Header: React.FC<HeaderProps> = ({
     searchRef.current?.blur();
   };
 
+  const navigateToAccount = () => {
+    setMobileMenuOpen(false);
+    onNavigate('account');
+  };
+
   const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'ArrowDown') {
       event.preventDefault();
@@ -185,15 +195,15 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Main Sticky Header */}
       <header className="sticky top-0 z-40 bg-[#0F2C59] text-white shadow-md border-b border-navy-800">
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between gap-3">
+        <div className="relative mx-auto grid h-18 max-w-7xl grid-cols-[auto_minmax(1rem,1fr)_auto] items-center gap-1 px-2 sm:gap-3 sm:px-6 lg:px-8 2xl:max-w-[1600px]">
           
           {/* Brand Zone */}
           <button
             onClick={() => onNavigate('home')}
-            className="flex items-center gap-3 text-left group cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 rounded-lg p-1"
+            className="flex shrink-0 items-center gap-1 text-left group cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 rounded-lg p-1 sm:gap-3"
           >
             {/* SK Logo Seal Placeholder */}
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 p-0.5 flex items-center justify-center shadow-sm shrink-0">
+            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 p-0.5 flex items-center justify-center shadow-sm shrink-0 sm:h-10 sm:w-10">
               <div className="w-full h-full rounded-full bg-[#0F2C59] flex items-center justify-center font-bold text-amber-400 text-xs tracking-tighter" >
                 <img
                   src={skLogo}
@@ -202,8 +212,8 @@ export const Header: React.FC<HeaderProps> = ({
                 />
               </div>
             </div>
-            <div className="flex flex-col">
-              <span className="font-bold text-base sm:text-lg tracking-tight text-white group-hover:text-amber-300 transition-colors whitespace-nowrap">
+            <div className="flex flex-col max-[280px]:hidden">
+              <span className="font-bold text-xs sm:text-lg tracking-tight text-white group-hover:text-amber-300 transition-colors whitespace-nowrap">
                 SK Bagbaguin
               </span>
               <span className="text-[9px] text-slate-300 font-medium tracking-wide uppercase hidden sm:block">
@@ -213,14 +223,14 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-1 xl:gap-2 text-sm font-medium">
+          <nav className="hidden min-w-0 items-center justify-center gap-0 text-sm font-medium 2xl:flex">
             {navLinks.map((link) => {
               const isActive = currentPage === link.id;
               return (
                 <button
                   key={link.id}
                   onClick={() => onNavigate(link.id)}
-                  className={`px-3 py-1.5 rounded-md transition-all whitespace-nowrap shrink-0 text-xs font-semibold cursor-pointer ${
+                  className={`shrink-0 rounded-md px-1.5 py-1.5 transition-all whitespace-nowrap text-[11px] font-semibold cursor-pointer xl:px-2 xl:text-xs ${
                     isActive
                       ? 'bg-white/15 text-amber-300 font-bold shadow-xs'
                       : 'text-slate-200 hover:text-white hover:bg-white/10'
@@ -233,26 +243,58 @@ export const Header: React.FC<HeaderProps> = ({
           </nav>
 
           {/* Action Zone */}
-          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-            <button type="button" onClick={() => { setSearchOpen((open) => !open); window.setTimeout(() => searchRef.current?.focus(), 0); }} className="rounded-lg p-2 text-slate-200 hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400" aria-label={searchOpen ? 'Close global search' : 'Open global search'}>
-              <SearchCheck className="h-5 w-5" />
+          <div className="col-start-3 flex shrink-0 items-center justify-self-end gap-0.5 sm:gap-1.5 lg:gap-2">
+            <button
+              ref={searchToggleRef}
+              type="button"
+              onClick={() => {
+                if (searchOpen) closeSearch();
+                else {
+                  setSearchOpen(true);
+                  window.setTimeout(() => searchRef.current?.focus(), 0);
+                }
+              }}
+              className="rounded-lg p-1 text-slate-200 hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 sm:p-2"
+              aria-label={searchOpen ? 'Close global search' : 'Open global search'}
+              aria-expanded={searchOpen}
+            >
+              {searchOpen ? <X className="h-5 w-5" /> : <SearchCheck className="h-5 w-5" />}
             </button>
-            <ThemeToggle variant="header" />
+            <ThemeToggle variant="header" className="hidden sm:flex" />
+
+            {isSignedIn ? (
+              <button
+                type="button"
+                onClick={navigateToAccount}
+                className="hidden md:inline-flex items-center gap-1.5 rounded-lg border border-white/20 px-2 py-2 text-xs font-semibold text-slate-100 transition-colors hover:bg-white/10 lg:px-2.5"
+              >
+                <UserRound className="h-4 w-4" />
+                My Account
+              </button>
+            ) : (
+              <a
+                href="/admin/login?mode=resident"
+                className="hidden md:inline-flex items-center gap-1.5 rounded-lg border border-white/20 px-2 py-2 text-xs font-semibold text-slate-100 transition-colors hover:bg-white/10 lg:px-2.5"
+              >
+                <UserRound className="h-4 w-4" />
+                Sign in
+              </a>
+            )}
 
             <button
               onClick={onOpenApplyModal}
-              className="bg-[#F5A623] hover:bg-[#D98E16] text-[#081830] font-bold text-xs sm:text-sm px-2.5 sm:px-3 py-2 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 whitespace-nowrap shrink-0 flex items-center gap-1.5 cursor-pointer"
+              className="bg-[#F5A623] hover:bg-[#D98E16] text-[#081830] font-bold text-[10px] sm:text-xs lg:text-sm px-1.5 sm:px-2.5 lg:px-3 py-1.5 sm:py-2 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 whitespace-nowrap shrink-0 flex items-center gap-1.5 cursor-pointer"
             >
-              <span>Request <span className="hidden sm:inline">a Service</span></span>
+              <span>Request<span className="hidden lg:inline"> a Service</span></span>
             </button>
 
             {/* Mobile Hamburger Toggle */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 text-slate-200 hover:text-white hover:bg-white/10 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+              className="2xl:hidden p-1 text-slate-200 hover:text-white hover:bg-white/10 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 sm:p-2"
               aria-label="Toggle navigation menu"
             >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {mobileMenuOpen ? <X className="w-5 h-5 sm:w-6 sm:h-6" /> : <Menu className="w-5 h-5 sm:w-6 sm:h-6" />}
             </button>
           </div>
         </div>
@@ -314,7 +356,7 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Mobile Navigation Drawer */}
         {mobileMenuOpen && (
-          <div className="absolute left-0 right-0 top-full max-h-[calc(100vh-4.5rem)] overflow-y-auto border-t border-white/10 bg-[#081830]/90 px-4 pt-3 pb-6 shadow-2xl backdrop-blur-md animate-in slide-in-from-top-2 duration-200 lg:hidden">
+          <div className="absolute left-0 right-0 top-full max-h-[calc(100vh-4.5rem)] overflow-y-auto border-t border-white/10 bg-[#081830]/90 px-4 pt-3 pb-6 shadow-2xl backdrop-blur-md animate-in slide-in-from-top-2 duration-200 2xl:hidden">
             <div className="text-xs text-slate-400 font-medium px-3 py-1 uppercase tracking-wider">
               Navigation Menu
             </div>
@@ -343,6 +385,25 @@ export const Header: React.FC<HeaderProps> = ({
             })}
 
             <div className="pt-3 border-t border-white/10 mt-2 flex flex-col gap-2">
+              {isSignedIn ? (
+                <button
+                  type="button"
+                  onClick={navigateToAccount}
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-200 hover:bg-white/10"
+                >
+                  <UserRound className="h-4 w-4" />
+                  <span>My Account</span>
+                </button>
+              ) : (
+                <a
+                  href="/admin/login?mode=resident"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-200 hover:bg-white/10"
+                >
+                  <UserRound className="h-4 w-4" />
+                  <span>Sign in</span>
+                </a>
+              )}
               <div className="flex items-center justify-between px-3 py-2 bg-white/5 rounded-lg text-xs text-slate-300">
                 <span>Dark / Night Theme</span>
                 <ThemeToggle variant="header" />

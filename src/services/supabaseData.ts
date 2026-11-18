@@ -1,6 +1,12 @@
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from './supabase.ts';
-import type { Announcement, CouncilMember, EventRegistration } from '../types/index.ts';
+import type {
+  Announcement,
+  ApplicationStatus,
+  CouncilMember,
+  EventRegistration,
+  YouthApplication,
+} from '../types/index.ts';
 import { generateUuid } from '../utils/uuid.ts';
 
 export type PortalCollection =
@@ -50,6 +56,22 @@ export interface ApplicationTrackingResult {
   lastUpdated: string;
 }
 
+export interface ResidentApplication extends YouthApplication {
+  updatedAt: string;
+}
+
+export interface ApplicationEditHistory {
+  id: string;
+  application_id: string;
+  reason: string;
+  changed_fields: string[];
+  created_at: string;
+}
+
+export interface ResidentPreferences {
+  statusEmailOptIn: boolean;
+}
+
 interface PortalRow {
   id: string;
   data: PortalRecord;
@@ -97,8 +119,11 @@ export async function uploadApplicationDocument(file: File): Promise<string> {
   if (!extension) throw new Error('Choose a PDF, JPG, or PNG document.');
   if (file.size > MAX_APPLICATION_DOCUMENT_SIZE) throw new Error('Each document must be 10 MB or smaller.');
 
-  const path = `submissions/${generateUuid()}/${generateUuid()}.${extension}`;
-  const { error } = await getClient().storage
+  const client = getClient();
+  const { data: { session } } = await client.auth.getSession();
+  const folder = session?.user.id ?? generateUuid();
+  const path = `submissions/${folder}/${generateUuid()}.${extension}`;
+  const { error } = await client.storage
     .from(APPLICATION_DOCUMENTS_BUCKET)
     .upload(path, file, { cacheControl: '3600', contentType: file.type, upsert: false });
 
@@ -115,8 +140,11 @@ export async function uploadPrintingRequestPdf(file: File): Promise<string> {
     throw new Error('The PDF must be 10 MB or smaller.');
   }
 
-  const path = `printing-requests/${generateUuid()}/${generateUuid()}.pdf`;
-  const { error } = await getClient().storage
+  const client = getClient();
+  const { data: { session } } = await client.auth.getSession();
+  const folder = session?.user.id ?? generateUuid();
+  const path = `printing-requests/${folder}/${generateUuid()}.pdf`;
+  const { error } = await client.storage
     .from(APPLICATION_DOCUMENTS_BUCKET)
     .upload(path, file, {
       cacheControl: '3600',
@@ -456,6 +484,105 @@ export async function findApplicationForTracking(
     copiesNeeded: row.copies_needed,
     lastUpdated: row.last_updated,
   };
+}
+
+export async function getResidentApplications(): Promise<ResidentApplication[]> {
+  const client = getClient();
+  const { data: { user }, error: userError } = await client.auth.getUser();
+  if (userError) throw userError;
+  if (!user) throw new Error('Sign in to view your applications.');
+
+  const { data, error } = await client
+    .from('portal_records')
+    .select('data, updated_at')
+    .eq('collection', 'applications')
+    .eq('owner_user_id', user.id)
+    .order('updated_at', { ascending: false });
+  if (error) throw error;
+
+  return (data ?? []).map((row) => ({
+    ...(row.data as YouthApplication),
+    updatedAt: row.updated_at,
+  }));
+}
+
+export async function getApplicationEditHistory(applicationId?: string): Promise<ApplicationEditHistory[]> {
+  let query = getClient()
+    .from('application_edit_history')
+    .select('id, application_id, reason, changed_fields, created_at')
+    .order('created_at', { ascending: false });
+  if (applicationId) query = query.eq('application_id', applicationId);
+  const { data, error } = await query;
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function claimResidentApplications(): Promise<number> {
+  const { data, error } = await getClient().rpc('claim_my_applications');
+  if (error) throw error;
+  return Number(data ?? 0);
+}
+
+export async function updateResidentApplication(
+  application: YouthApplication,
+  reason: string,
+  removedDocumentPaths: string[],
+): Promise<void> {
+  const { error } = await getClient().rpc('update_my_application', {
+    p_application_id: application.id,
+    p_application: application,
+    p_reason: reason,
+    p_removed_document_paths: removedDocumentPaths,
+  });
+  if (error) throw error;
+}
+
+export async function cancelResidentApplication(applicationId: string, reason: string): Promise<void> {
+  const { error } = await getClient().rpc('cancel_my_application', {
+    p_application_id: applicationId,
+    p_reason: reason,
+  });
+  if (error) throw error;
+}
+
+export async function getResidentPreferences(): Promise<ResidentPreferences> {
+  const client = getClient();
+  const { data: { user }, error: userError } = await client.auth.getUser();
+  if (userError) throw userError;
+  if (!user) throw new Error('Sign in to manage your account preferences.');
+
+  const { data, error } = await client
+    .from('resident_preferences')
+    .select('status_email_opt_in')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  if (error) throw error;
+  return { statusEmailOptIn: data?.status_email_opt_in ?? false };
+}
+
+export async function saveResidentPreferences(preferences: ResidentPreferences): Promise<void> {
+  const client = getClient();
+  const { data: { user }, error: userError } = await client.auth.getUser();
+  if (userError) throw userError;
+  if (!user) throw new Error('Sign in to manage your account preferences.');
+
+  const { error } = await client.from('resident_preferences').upsert({
+    user_id: user.id,
+    status_email_opt_in: preferences.statusEmailOptIn,
+    updated_at: new Date().toISOString(),
+  });
+  if (error) throw error;
+}
+
+export async function sendApplicationStatusEmail(
+  applicationId: string,
+  status: ApplicationStatus,
+): Promise<{ sent: boolean; reason?: string }> {
+  const { data, error } = await getClient().functions.invoke('send-application-status-email', {
+    body: { applicationId, status },
+  });
+  if (error) throw error;
+  return data as { sent: boolean; reason?: string };
 }
 
 export async function deletePortalRecord(

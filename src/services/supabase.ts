@@ -6,6 +6,8 @@ const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
   || import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 export const supabaseConfigured = Boolean(supabaseUrl && supabaseKey);
+export const residentEmailVerificationEnabled =
+  import.meta.env.VITE_RESIDENT_EMAIL_VERIFICATION_ENABLED === 'true';
 
 export const supabase = supabaseConfigured
   ? createClient(supabaseUrl, supabaseKey, {

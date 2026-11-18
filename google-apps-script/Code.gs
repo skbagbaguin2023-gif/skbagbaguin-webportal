@@ -28,6 +28,27 @@ function doPost(event) {
     return jsonOutput({ ok: false, error: 'Unauthorized.' });
   }
 
+  if (payload.action === 'application_status_update') {
+    const recipient = typeof payload.to === 'string' ? payload.to.trim() : '';
+    const subject = typeof payload.subject === 'string' ? payload.subject.replace(/[\r\n]/g, ' ').trim() : '';
+    const text = typeof payload.text === 'string' ? payload.text : '';
+    const html = typeof payload.html === 'string' ? payload.html : '';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient) || !subject || !text || !html) {
+      return jsonOutput({ ok: false, error: 'A valid recipient and complete status update are required.' });
+    }
+    try {
+      GmailApp.sendEmail(recipient, subject, text, {
+        htmlBody: html,
+        name: 'SK Bagbaguin Youth Council',
+        replyTo: 'skbagbaguin.2023@gmail.com',
+      });
+      return jsonOutput({ ok: true });
+    } catch (error) {
+      console.error('GmailApp could not send the application status update.', error);
+      return jsonOutput({ ok: false, error: 'Gmail could not send the status update.' });
+    }
+  }
+
   const recipient = typeof payload.to === 'string' ? payload.to.trim() : '';
   const subject = typeof payload.subject === 'string' ? payload.subject.replace(/[\r\n]/g, ' ').trim() : '';
   const html = typeof payload.html === 'string' ? payload.html : '';

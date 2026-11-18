@@ -88,10 +88,11 @@ when diagnosing a backend configuration problem.
 For Vercel, add these variables under **Project Settings > Environment
 Variables**, select the environments you deploy to, and redeploy:
 `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, and
-`VITE_SUPABASE_ADMIN_UIDS`. The first two connect the live site to this
-Supabase project; the UID variable must contain your administrator's auth user
-UUID so the admin page is enabled. Use the public publishable key, never a
-secret/service-role key.
+`VITE_SUPABASE_ADMIN_UIDS`. For resident accounts, optionally set
+`VITE_RESIDENT_EMAIL_VERIFICATION_ENABLED=false` until email verification is
+implemented. The first two connect the live site to this Supabase project; the
+UID variable must contain your administrator's auth user UUID so the admin page
+is enabled. Use the public publishable key, never a secret/service-role key.
 
 All announcements created or edited in the admin system are published to the
 public portal. If the database already has the older announcement policy, run
@@ -99,12 +100,13 @@ public portal. If the database already has the older announcement policy, run
 in Supabase SQL Editor to publish existing drafts and allow public reads.
 
 Public content can be read publicly. Visitors can submit applications and
-feedback, while those private records are readable only by admins. Event
-registration is handled by a database function that checks capacity
-atomically. CMS data syncs in real time. Application documents are stored in a
-separate private bucket and can be opened by administrators through short-lived
-signed links. Transparency PDFs are stored in a private bucket; only
-administrators and visitors viewing documents marked public can access them.
+feedback; application records are readable by administrators and the signed-in
+resident who owns them, while feedback remains admin-only. Event registration
+is handled by a database function that checks capacity atomically. CMS data
+syncs in real time. Application documents are stored in a separate private
+bucket and can be opened by administrators through short-lived signed links.
+Transparency PDFs are stored in a private bucket; only administrators and
+visitors viewing documents marked public can access them.
 In the admin Transparency section, select a PDF with **Select File to Upload**
 or drag it onto the dashed upload area, fill in its details, then confirm the
 upload. PDFs are limited to 35 MB and are saved in Supabase Storage. If the
@@ -116,6 +118,71 @@ to allow public access to retained document revisions only while their
 transparency record is published. New transparency PDFs stay private until
 explicitly published from the admin document manager.
 No Firebase project credentials are used by the app.
+
+#### Optional resident accounts
+
+Residents can continue submitting service requests without an account. Optional
+email/password accounts provide a dashboard for linked applications, pending
+request edits or cancellations, and opt-in email status notifications. Previous
+requests can be linked only after confirming the account email used on the
+submission. KK profile edits change the portal record; the original Google Form
+response is retained unchanged.
+Resident sign-in and sign-up are available from the shared `/admin/login` screen.
+Signup details are stored in the user's Supabase Auth metadata and can be edited
+from the resident dashboard; saved name, contact, birthday, gender, and address
+details prefill applicable service forms.
+User accounts are managed in Supabase **Authentication > Users**. Supabase Auth
+stores password hashes rather than readable passwords, so neither the portal
+nor an administrator can retrieve a user's current password; residents must use
+the password-reset flow to choose a new one. Profile details are stored in the
+account's user metadata, while service requests are stored in
+`public.portal_records`.
+
+To enable resident accounts (after `schema.sql` on a new project, or after the
+existing application/storage migrations on an established project):
+
+1. Run [`supabase/resident_accounts_migration.sql`](./supabase/resident_accounts_migration.sql)
+   after the core schema, application/storage policies, and printing-services
+   migration have been applied.
+2. Run [`supabase/resident_email_verification_gate_migration.sql`](./supabase/resident_email_verification_gate_migration.sql).
+   It keeps previous-request claiming disabled in the database until verified
+   email ownership is available.
+3. In **Authentication > URL Configuration**, set the site's public URL and
+   allow the local and production account callback URLs, such as
+   `http://localhost:3000/?page=account` and
+   `https://<your-domain>/?page=account`, plus the resident password-reset
+   URLs `http://localhost:3000/reset-password` and
+   `https://<your-domain>/reset-password`. Add both reset URLs to the
+   **Redirect URLs** allowlist; reset links now open the dedicated new-password
+   form at `/reset-password`.
+4. For temporary no-verification signup, go to **Authentication > Providers >
+   Email** and turn off **Confirm email**. Email/password signup will then create
+   an active session immediately. Residents should use an email address they
+   control, but email ownership is not proven until verification is implemented.
+   Keep `VITE_RESIDENT_EMAIL_VERIFICATION_ENABLED` unset or set to `false`; this
+   disables the UI for claiming older requests and email status notifications.
+5. Deploy the `send-application-status-email` Edge Function:
+   `supabase functions deploy send-application-status-email`
+6. If the Google Apps Script Gmail mailer is already deployed, update its code
+   from [`google-apps-script/Code.gs`](./google-apps-script/Code.gs) and deploy
+   a new version. The existing `GMAIL_MAILER_URL` and `GMAIL_MAILER_SECRET`
+   Edge Function secrets are reused for status messages.
+
+Email updates are opt-in and are sent only to a confirmed email address on the
+resident's account. If the mailer is not configured, account tracking and
+dashboard status updates still work; the admin interface reports email delivery
+failures separately from saved status changes.
+When email verification is ready, turn **Confirm email** back on, set
+`VITE_RESIDENT_EMAIL_VERIFICATION_ENABLED=true`, and set the database gate with:
+
+```sql
+update public.resident_account_settings
+set is_enabled = true, updated_at = now()
+where setting_key = 'email_verification_enabled';
+```
+
+Redeploy the frontend after changing its environment variable. Only enable the
+database gate after Supabase email confirmation is active.
 
 #### SK Bagbaguin Digital Assistant
 

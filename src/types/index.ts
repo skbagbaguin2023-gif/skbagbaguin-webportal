@@ -9,6 +9,7 @@ export type PublicPage =
   | 'facebookPosts'
   | 'services'
   | 'track'
+  | 'account'
   | 'transparency' 
   | 'contact';
 
@@ -149,8 +150,19 @@ export interface MaintenanceIssue {
   updatedAt: string;
 }
 
-export type ApplicationStatus = 'Pending' | 'Under Review' | 'Approved' | 'Rejected';
+export type ApplicationStatus = 'Pending' | 'Under Review' | 'Approved' | 'Rejected' | 'Cancelled';
 export type NotificationPreference = 'Messenger' | 'SMS' | 'Phone call';
+
+export interface ResidentProfile {
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  contactNumber: string;
+  birthday: string;
+  genderIdentity: string;
+  sitioAddress: string;
+  completeAddress: string;
+}
 
 export interface YouthApplication {
   id: string;
@@ -174,7 +186,7 @@ export interface YouthApplication {
   dateNeeded?: string;
   copiesNeeded?: number;
   kkProfile?: KkProfilingData;
-  googleSyncStatus?: 'Pending' | 'Synced' | 'Failed';
+  googleSyncStatus?: 'Pending' | 'Synced' | 'Failed' | 'Portal Updated';
   googleSyncError?: string;
   status: ApplicationStatus;
   submittedAt: string;
